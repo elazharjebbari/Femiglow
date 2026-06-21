@@ -18,16 +18,21 @@
  * State client uniquement. La persistance draft est faite via
  * updateCampaignDraft() à chaque step transition (pas auto-save debounced).
  */
-import { useEffect, useMemo, useState, useTransition } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   updateCampaignDraft,
   finalizeCampaign,
   sendCampaignTest,
+  saveWizardProgress,
 } from '@/lib/admin/emails/wizard-actions';
+import type { SaveWizardProgressInput } from '@/lib/admin/emails/campaigns-shared';
 import type { ListmonkListLite, ListmonkTemplateLite } from '@/lib/admin/emails/campaigns-queries';
 import { EntityCombobox, type ComboboxOption } from '@/components/admin/emails/common/EntityCombobox';
 import { LeadEmailCombobox } from '@/components/admin/emails/common/combobox-wrappers';
+import { Banner, DEFAULT_TIMEZONE } from '@/components/admin/emails/ui';
+import { useCampaignAutosave, type AutosavePatch } from './use-campaign-autosave';
+import { AutosaveIndicator } from './AutosaveIndicator';
 
 type AudienceLite = {
   id: string;
@@ -48,6 +53,10 @@ type WizardProps = {
     scheduledFor: string | null;
     payloadJson: Record<string, unknown>;
   };
+  /** Étape de reprise (wizard_step déjà normalisé côté serveur) ; défaut 1. */
+  initialStep?: number;
+  /** Révision payload (`_rev`) connue au chargement — optimistic-lock ; défaut 0. */
+  initialRev?: number;
   lists: ListmonkListLite[];
   templates: ListmonkTemplateLite[];
   audiences?: AudienceLite[];
@@ -58,10 +67,16 @@ type WizardProps = {
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6;
 
-export function CampaignWizard({ draftId, initial, lists, templates, audiences = [], listmonkError, adminEmail = '' }: WizardProps) {
+/** Borne défensive d'un numéro d'étape arbitraire vers le type Step (1..6). */
+function clampStep(n: number): Step {
+  if (!Number.isFinite(n)) return 1;
+  return Math.min(6, Math.max(1, Math.trunc(n))) as Step;
+}
+
+export function CampaignWizard({ draftId, initial, initialStep = 1, initialRev = 0, lists, templates, audiences = [], listmonkError, adminEmail = '' }: WizardProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [step, setStep] = useState<Step>(1);
+  const [step, setStep] = useState<Step>(clampStep(initialStep));
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   // `useTransition`'s `pending` revient à false dès le premier `await` d'un
   // callback async (React 18) → inutilisable pour verrouiller la soumission de
@@ -102,6 +117,55 @@ export function CampaignWizard({ draftId, initial, lists, templates, audiences =
   const [testSending, setTestSending] = useState(false);
   const [testFeedback, setTestFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
 
+  // ── Autosave (F05 P3.2-c) ──────────────────────────────────────────────────
+  // `updateCampaignDraft` reste le CHECKPOINT validé au passage d'étape (contrat
+  // CMP-MSW-003/012). `saveWizardProgress` AJOUTE un filet debounced en cours de
+  // frappe : patch partiel (U-033), optimistic-lock par `_rev`, et persistance du
+  // `wizard_step` pour la reprise. `save` est mémoïsé (draftId stable) ; le hook
+  // le lit via une ref → schedule/flush restent stables (pas de re-arm du debounce).
+  const save = useCallback(
+    (patch: AutosavePatch & { expectedRev?: number }) =>
+      saveWizardProgress({ id: draftId, ...patch } as SaveWizardProgressInput),
+    [draftId],
+  );
+  const autosave = useCampaignAutosave({ save, initialRev });
+
+  /**
+   * Patch d'autosave = état courant des champs persistables. On OMET `name` tant
+   * qu'il fait < 3 caractères (le schéma exige min 3) → l'autosave d'un nom en
+   * cours de frappe n'échoue jamais ; les autres champs continuent d'être sauvés.
+   */
+  function buildPatch(stepArg: Step): AutosavePatch {
+    const patch: AutosavePatch = {
+      subject,
+      preheader,
+      audienceLinkIds: audienceIds,
+      audienceId: audienceId ?? null,
+      listmonkTemplateId: templateId,
+      scheduledFor:
+        scheduleMode === 'scheduled' && scheduledFor ? new Date(scheduledFor).toISOString() : null,
+      scheduleTimezone: DEFAULT_TIMEZONE,
+      wizardStep: stepArg,
+      payloadJson: { body: bodyHtml },
+    };
+    if (name.trim().length >= 3) patch.name = name;
+    return patch;
+  }
+
+  // Filet debounced sur la frappe IN-STEP. Le passage d'étape (goNext/goPrev)
+  // flush explicitement avec le nouveau `wizard_step` → `step` n'est PAS une dép
+  // ici (sinon double-save juste après le flush). `didMount` évite un save au
+  // montage : l'état initial est exactement celui de la DB.
+  const didMountRef = useRef(false);
+  useEffect(() => {
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      return;
+    }
+    autosave.schedule(buildPatch(step));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [name, subject, preheader, audienceIds, audienceId, templateId, scheduleMode, scheduledFor, bodyHtml]);
+
   function persistDraft(): void {
     startTransition(async () => {
       try {
@@ -140,12 +204,20 @@ export function CampaignWizard({ draftId, initial, lists, templates, audiences =
     }
     setErrorMsg(null);
     persistDraft();
-    setStep((s) => Math.min(6, s + 1) as Step);
+    const next = Math.min(6, step + 1) as Step;
+    setStep(next);
+    // Checkpoint reprise : persiste tout de suite le wizard_step atteint (sinon
+    // une fermeture < debounce perdrait le pointeur d'étape).
+    autosave.schedule(buildPatch(next));
+    void autosave.flush();
   }
 
   function goPrev(): void {
     setErrorMsg(null);
-    setStep((s) => Math.max(1, s - 1) as Step);
+    const prev = Math.max(1, step - 1) as Step;
+    setStep(prev);
+    autosave.schedule(buildPatch(prev));
+    void autosave.flush();
   }
 
   function submit(): void {
@@ -301,6 +373,29 @@ export function CampaignWizard({ draftId, initial, lists, templates, audiences =
         <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
           ⚠ Listmonk : {listmonkError}
         </div>
+      ) : null}
+
+      {/* Conflit multi-onglets : un autre onglet/session a écrit ce brouillon.
+          L'autosave est figé (jamais d'écrasement) → on invite à recharger. */}
+      {autosave.status === 'conflict' ? (
+        <Banner
+          tone="danger"
+          className="mb-4"
+          data-testid="autosave-conflict"
+          action={
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="font-medium underline"
+            >
+              Recharger
+            </button>
+          }
+        >
+          Cette campagne a été modifiée ailleurs (autre onglet ou session). Recharge la page pour
+          repartir de la dernière version enregistrée — tes modifications non sauvegardées ici
+          seront perdues.
+        </Banner>
       ) : null}
 
       <div className="rounded-lg border border-stone-200 bg-white p-6">
@@ -805,7 +900,7 @@ export function CampaignWizard({ draftId, initial, lists, templates, audiences =
       </div>
 
       {/* Footer */}
-      <div className="mt-6 flex items-center justify-between">
+      <div className="mt-6 flex items-center justify-between gap-4">
         <button
           type="button"
           onClick={goPrev}
@@ -814,6 +909,7 @@ export function CampaignWizard({ draftId, initial, lists, templates, audiences =
         >
           ← Précédent
         </button>
+        <AutosaveIndicator status={autosave.status} savedAt={autosave.savedAt} />
         {step < 6 ? (
           <button
             type="button"

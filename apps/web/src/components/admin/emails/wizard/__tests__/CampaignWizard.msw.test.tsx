@@ -22,9 +22,14 @@ import { server, http, HttpResponse } from '@/test/msw/server';
 // ── Mock des server actions (appelées directement, pas via fetch) ──────────
 const finalizeCampaign = vi.fn();
 const updateCampaignDraft = vi.fn();
+// saveWizardProgress = autosave debounced/flush (P3.2-c). Mocké pour compléter
+// la surface réelle du composant ; ces tests n'observent QUE updateCampaignDraft
+// (checkpoint d'étape) — couverture autosave : CampaignWizard.autosave.test.tsx.
+const saveWizardProgress = vi.fn();
 vi.mock('@/lib/admin/emails/wizard-actions', () => ({
   finalizeCampaign: (...args: unknown[]) => finalizeCampaign(...args),
   updateCampaignDraft: (...args: unknown[]) => updateCampaignDraft(...args),
+  saveWizardProgress: (...args: unknown[]) => saveWizardProgress(...args),
 }));
 
 // ── Mock next/navigation router ────────────────────────────────────────────
@@ -98,6 +103,7 @@ afterAll(() => server.close());
 beforeEach(() => {
   finalizeCampaign.mockResolvedValue({ campaignId: 777 });
   updateCampaignDraft.mockResolvedValue(undefined);
+  saveWizardProgress.mockResolvedValue({ ok: true, rev: 1, updatedAt: '2026-06-20T10:00:00.000Z' });
   server.use(...defaultAudienceHandlers());
 });
 

@@ -20,10 +20,12 @@ import { server, http, HttpResponse } from '@/test/msw/server';
 const finalizeCampaign = vi.fn();
 const updateCampaignDraft = vi.fn();
 const sendCampaignTest = vi.fn();
+const saveWizardProgress = vi.fn();
 vi.mock('@/lib/admin/emails/wizard-actions', () => ({
   finalizeCampaign: (...a: unknown[]) => finalizeCampaign(...a),
   updateCampaignDraft: (...a: unknown[]) => updateCampaignDraft(...a),
   sendCampaignTest: (...a: unknown[]) => sendCampaignTest(...a),
+  saveWizardProgress: (...a: unknown[]) => saveWizardProgress(...a),
 }));
 
 const push = vi.fn();
@@ -93,6 +95,7 @@ beforeEach(() => {
   finalizeCampaign.mockResolvedValue({ campaignId: 777 });
   updateCampaignDraft.mockResolvedValue(undefined);
   sendCampaignTest.mockResolvedValue({ ok: true, email: 'nadia@femiglow-maroc.com' });
+  saveWizardProgress.mockResolvedValue({ ok: true, rev: 1, updatedAt: '2026-06-20T10:00:00.000Z' });
   server.use(...audienceHandlers());
 });
 

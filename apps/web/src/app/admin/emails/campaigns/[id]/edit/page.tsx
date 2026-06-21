@@ -13,6 +13,7 @@ import {
 } from '@/lib/admin/emails/campaigns-queries';
 import { listAudiencesWithSnapshotCount } from '@/lib/mail/audiences/queries';
 import { readPayloadTemplateId } from '@/lib/admin/emails/campaigns-shared';
+import { migratePayload, normalizeWizardStep } from '@/lib/mail/campaigns/campaign-payload';
 import { CampaignWizard } from '@/components/admin/emails/wizard/CampaignWizard';
 
 export const dynamic = 'force-dynamic';
@@ -40,6 +41,13 @@ export default async function CampaignEditPage({ params }: { params: { id: strin
   }));
   const listmonkError = !listsRes.ok ? listsRes.error : !tplRes.ok ? tplRes.error : null;
 
+  // Reprise : l'étape atteinte (wizard_step normalisé) + la révision payload
+  // courante (optimistic-lock) sont passées au wizard pour rouvrir au bon endroit
+  // et détecter les écritures concurrentes (autres onglets) dès le 1er autosave.
+  const payloadRev = migratePayload(draft.payloadJson)._rev;
+  const initialRev = typeof payloadRev === 'number' ? payloadRev : 0;
+  const initialStep = normalizeWizardStep(draft.wizardStep);
+
   return (
     <AdminShell adminEmail={session.email} active="emails">
       <header className="mb-6">
@@ -51,6 +59,8 @@ export default async function CampaignEditPage({ params }: { params: { id: strin
 
       <CampaignWizard
         draftId={draft.id}
+        initialStep={initialStep}
+        initialRev={initialRev}
         initial={{
           name: draft.name,
           subject: draft.subject ?? '',
