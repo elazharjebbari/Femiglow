@@ -59,7 +59,7 @@ describe('Verrous cliquet — section emails', () => {
     // Suppression) puis chantiers C3-C8. NE RIEN AJOUTER ICI.
     const whitelist = new Set([
       'src/app/admin/emails/automation/AutomationRowActions.tsx',
-      'src/app/admin/emails/campaigns/[id]/CampaignActions.tsx',
+      // CampaignActions : MIGRÉ sur ConfirmDialog socle — P3.3-d.
       'src/components/admin/emails/cockpit/RetryButton.tsx',
       'src/components/admin/emails/cockpit/TransactionalCockpit.tsx',
     ]);
@@ -112,7 +112,7 @@ describe('Verrous cliquet — section emails', () => {
       'src/app/admin/emails/automation/runs/run-status.tsx',
       'src/app/admin/emails/campaigns/CampaignsListClient.tsx',
       'src/app/admin/emails/campaigns/CreateCampaignForm.tsx',
-      'src/app/admin/emails/campaigns/[id]/CampaignActions.tsx',
+      // CampaignActions/[id] : MIGRÉ sur Button + tokens (socle v2) — P3.3-d.
       'src/app/admin/emails/error.tsx',
       'src/app/admin/emails/events/error.tsx',
       'src/app/admin/emails/listmonk/[[...path]]/page.tsx',
