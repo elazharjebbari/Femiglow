@@ -26,4 +26,36 @@ describe('F07 — VersionDiff', () => {
     fireEvent.click(screen.getByRole('button', { name: /Fermer/i }));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
+
+  it('F07-C-038 — navigation entre hunks : compteur + bornes + ligne active', () => {
+    render(
+      <VersionDiff
+        versionNumber={2}
+        oldSource={'a\nX\nb\nc\nY\nd'}
+        newSource={'a\nb\nc\nd'}
+        onClose={() => {}}
+      />,
+    );
+    const counter = screen.getByTestId('version-diff-hunk');
+    expect(counter).toHaveTextContent('1 / 2');
+    // Au 1er hunk : ◀ désactivé, la 1re ligne modifiée est active.
+    expect(screen.getByRole('button', { name: 'Modification précédente' })).toBeDisabled();
+    expect(screen.getByText(/^X$/).closest('[data-diff]')).toHaveAttribute('data-active-hunk', 'true');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Modification suivante' }));
+    expect(counter).toHaveTextContent('2 / 2');
+    expect(screen.getByText(/^Y$/).closest('[data-diff]')).toHaveAttribute('data-active-hunk', 'true');
+    // Au dernier hunk : ▶ désactivé.
+    expect(screen.getByRole('button', { name: 'Modification suivante' })).toBeDisabled();
+  });
+
+  it('F07-C-039 — aucun changement → pas de contrôles de navigation', () => {
+    render(
+      <VersionDiff versionNumber={1} oldSource={'a\nb'} newSource={'a\nb'} onClose={() => {}} />,
+    );
+    expect(screen.queryByTestId('version-diff-hunk')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Modification suivante' }),
+    ).not.toBeInTheDocument();
+  });
 });

@@ -43,6 +43,22 @@ export function lineDiff(oldText: string, newText: string): DiffRow[] {
   return rows;
 }
 
+/**
+ * Indices (dans `rows`) du PREMIER changement de chaque « hunk » — un hunk est
+ * une suite contiguë de lignes add/remove, séparée des autres par du contexte.
+ * Sert à la navigation ◀/▶ entre modifications (F07-D). `[]` si aucun changement.
+ */
+export function diffHunks(rows: DiffRow[]): number[] {
+  const starts: number[] = [];
+  let inHunk = false;
+  for (let k = 0; k < rows.length; k++) {
+    const changed = rows[k]!.type !== 'context';
+    if (changed && !inHunk) starts.push(k);
+    inHunk = changed;
+  }
+  return starts;
+}
+
 /** Compteurs +/- pour l'en-tête du diff. */
 export function diffStats(rows: DiffRow[]): { added: number; removed: number } {
   let added = 0;

@@ -3,7 +3,7 @@
  * F07 P3.4-j (Lot 6) — diff de lignes (LCS) pur.
  */
 import { describe, expect, it } from 'vitest';
-import { lineDiff, diffStats } from '../version-diff';
+import { lineDiff, diffStats, diffHunks } from '../version-diff';
 
 describe('F07 — lineDiff', () => {
   it('F07-U-116 — textes identiques → tout en context, 0 add/remove', () => {
@@ -33,5 +33,25 @@ describe('F07 — lineDiff', () => {
     expect(diffStats(rows)).toEqual({ added: 1, removed: 1 });
     expect(rows.find((r) => r.type === 'remove')!.text).toBe('<p>Bonjour</p>');
     expect(rows.find((r) => r.type === 'add')!.text).toBe('<p>Salut</p>');
+  });
+});
+
+describe('F07 — diffHunks (navigation entre modifications)', () => {
+  it('F07-U-130 — aucun changement → aucun hunk', () => {
+    expect(diffHunks(lineDiff('a\nb\nc', 'a\nb\nc'))).toEqual([]);
+  });
+
+  it('F07-U-131 — changements contigus = UN seul hunk (1er index modifié)', () => {
+    // a / -VIEUX / +NEUF / b → remove+add contigus = 1 hunk démarrant à l'idx 1.
+    const rows = lineDiff('a\nVIEUX\nb', 'a\nNEUF\nb');
+    expect(diffHunks(rows)).toEqual([1]);
+  });
+
+  it('F07-U-132 — changements séparés par du contexte = hunks distincts', () => {
+    const rows = lineDiff('a\nX\nb\nc\nY\nd', 'a\nb\nc\nd');
+    // 2 suppressions (X, Y) séparées par le contexte b/c → 2 hunks.
+    expect(diffHunks(rows).length).toBe(2);
+    // Chaque index pointe bien sur une ligne modifiée.
+    for (const idx of diffHunks(rows)) expect(rows[idx]!.type).not.toBe('context');
   });
 });
