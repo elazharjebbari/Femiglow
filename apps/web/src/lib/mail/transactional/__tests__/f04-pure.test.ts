@@ -170,3 +170,34 @@ describe('F04 — échappement CSV RFC 4180 (CKPT-01)', () => {
     );
   });
 });
+
+// ── F04-S — anti-injection de formule CSV/DDE (sécurité G12) ────────────────
+describe('F04-S — anti-injection de formule CSV (sécurité)', () => {
+  it.each(['=', '+', '-', '@', '\t', '\r'])(
+    'F04-S-001 — neutralise un déclencheur de tête « %s » par un préfixe apostrophe',
+    (lead) => {
+      const out = csvEscape(`${lead}HACK()`);
+      // commence par l'apostrophe de neutralisation, jamais par le déclencheur brut.
+      expect(out.startsWith("'") || out.startsWith('"\'')).toBe(true);
+      expect(out.replace(/^"/, '').startsWith(lead)).toBe(false);
+    },
+  );
+
+  it('F04-S-002 — payload =HYPERLINK (vecteur contact public) devient du texte inerte', () => {
+    expect(csvEscape('=HYPERLINK("https://evil.tld","x")')).toBe(
+      '"\'=HYPERLINK(""https://evil.tld"",""x"")"',
+    );
+  });
+
+  it('F04-S-003 — DDE =cmd|\'/c calc\' neutralisé (préfixe + quoting RFC 4180)', () => {
+    const out = csvEscape("=cmd|'/c calc'!A1");
+    expect(out).toBe("'=cmd|'/c calc'!A1"); // pas de virgule/quote → pas de quoting, juste le préfixe
+    expect(out.startsWith("'=")).toBe(true);
+  });
+
+  it('F04-S-004 — une valeur bénigne (ne commençant pas par un déclencheur) est INCHANGÉE', () => {
+    expect(csvEscape('Bonjour')).toBe('Bonjour');
+    expect(csvEscape('a@b.ma')).toBe('a@b.ma'); // @ en milieu de chaîne ≠ en tête
+    expect(csvEscape('3 - 2 articles')).toBe('3 - 2 articles');
+  });
+});

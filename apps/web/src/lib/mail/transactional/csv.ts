@@ -25,12 +25,27 @@ export const CSV_BOM = '﻿';
 export const CSV_EOL = '\r\n';
 
 /**
+ * Déclencheurs de formule en TÊTE de cellule (CSV/DDE injection, F04-S) : Excel/
+ * LibreOffice/Sheets interprètent une cellule commençant par `= + - @` (ou TAB/CR)
+ * comme une formule. Les colonnes `nom`/`sujet` proviennent de champs PUBLICS
+ * (formulaire de contact) stockés dans l'outbox → un attaquant externe contrôle
+ * le 1er caractère d'une cellule exportée. On neutralise par un préfixe `'`.
+ */
+const CSV_FORMULA_LEAD = /^[=+\-@\t\r]/;
+
+/**
  * Échappe un champ CSV selon RFC 4180 : si le champ contient une virgule, un
  * guillemet ou un retour ligne, on l'entoure de guillemets et on double les
  * guillemets internes. `null`/`undefined` → champ vide.
+ *
+ * Durcissement F04-S (sécurité G12) : neutralise d'abord l'injection de formule
+ * (préfixe `'` si la valeur commence par un déclencheur) AVANT le quoting.
  */
 export function csvEscape(value: unknown): string {
-  const s = value == null ? '' : String(value);
+  let s = value == null ? '' : String(value);
+  if (CSV_FORMULA_LEAD.test(s)) {
+    s = `'${s}`; // l'apostrophe force l'interprétation « texte » du tableur
+  }
   if (/[",\r\n]/.test(s)) {
     return `"${s.replace(/"/g, '""')}"`;
   }
