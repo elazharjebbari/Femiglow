@@ -221,6 +221,19 @@ describeEmailsDb('finalizeCampaign — happy path & préconditions', () => {
     expect(row?.startedAt).not.toBeNull();
   });
 
+  it('F05-S-006 : finalize SANITIZE le corps avant create (pas de <script> chez Listmonk, merge-tag préservé)', async () => {
+    const id = await seedDraft();
+    await finalizeCampaign({
+      id,
+      sendNow: true,
+      bodyHtml: '<p>Bonjour {{ .Subscriber.Name }}</p><script>steal()</script><img src=x onerror=alert(1)>',
+    });
+    const sentBody = (lmCreate.mock.calls[0]![0] as { body: string }).body;
+    expect(sentBody).not.toMatch(/<script/i);
+    expect(sentBody).not.toMatch(/onerror/i);
+    expect(sentBody).toContain('{{ .Subscriber.Name }}'); // personnalisation intacte
+  });
+
   it('CMP-INT-011 : scheduled positionne status=scheduled et laisse startedAt null', async () => {
     lmUpdateStatus.mockResolvedValue({ data: { status: 'scheduled' } });
     const id = await seedDraft({ scheduledFor: new Date(Date.now() + 86_400_000) });

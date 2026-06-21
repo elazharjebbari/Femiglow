@@ -19,6 +19,7 @@ import { db as getDb } from '@/lib/db/client';
 import { emailCampaignLink } from '@/lib/db/schema-emails';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { listmonk, ListmonkConfigError } from '@/lib/mail/listmonk/client';
+import { sanitizeCampaignBody } from '@/lib/mail/campaigns/sanitize-body';
 import { env } from '@/lib/env';
 import { logger } from '@/lib/logging/logger';
 import { logAuditEvent } from '@/lib/audit/log-event';
@@ -357,7 +358,8 @@ export async function finalizeCampaign(input: z.infer<typeof finalizeInput>): Pr
       subject: draft.subject,
       lists: listmonkListIds,
       from_email: env.MAIL_FROM,
-      body: parsed.bodyHtml,
+      // F05-S — corps SANITIZÉ aussi à l'envoi de masse (défense en profondeur).
+      body: sanitizeCampaignBody(parsed.bodyHtml),
       content_type: 'html',
       type: 'regular',
       send_at: parsed.sendNow ? null : draft.scheduledFor?.toISOString() ?? null,
@@ -482,10 +484,10 @@ export async function sendCampaignTest(
   }
 
   const subject = parsed.data.subject ?? draft.subject ?? '';
-  const body =
-    parsed.data.bodyHtml ??
-    (draft.payloadJson as { body?: string } | null)?.body ??
-    '';
+  // F05-S — corps libre SANITIZÉ avant de partir dans une vraie boîte (test-send).
+  const body = sanitizeCampaignBody(
+    parsed.data.bodyHtml ?? (draft.payloadJson as { body?: string } | null)?.body ?? '',
+  );
 
   try {
     // Le destinataire de test doit être un abonné Listmonk connu pour /api/tx.

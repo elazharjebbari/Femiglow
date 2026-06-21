@@ -90,13 +90,18 @@ function installHooks(): void {
   hooksInstalled = true;
 }
 
-export function sanitizeEmailHtml(raw: string): string {
+/**
+ * @param opts.wholeDocument — `true` (défaut) : document complet (templates qui
+ *   incluent `<html>/<head>`). `false` : FRAGMENT (corps de campagne inséré dans
+ *   l'enveloppe du template Listmonk) — on ne réécrit pas le fragment en document.
+ */
+export function sanitizeEmailHtml(raw: string, opts: { wholeDocument?: boolean } = {}): string {
   installHooks();
   return DOMPurify.sanitize(raw, {
     ALLOWED_TAGS,
     ALLOWED_ATTR: ALLOWED_ATTRS,
     ALLOW_DATA_ATTR: false,
-    WHOLE_DOCUMENT: true,
+    WHOLE_DOCUMENT: opts.wholeDocument ?? true,
     FORBID_TAGS,
   });
 }
