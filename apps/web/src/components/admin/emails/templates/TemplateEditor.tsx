@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { EmailTemplateCustomRow, EmailTemplateCustomVersionRow } from '@/lib/db/schema-emails';
 import {
   Banner,
+  Button,
   ConfirmDialog,
   UnsavedChangesGuard,
   useOptionalToast,
@@ -55,6 +56,9 @@ export function TemplateEditor({ template, versions: initialVersions, adminEmail
   const [testRecipient, setTestRecipient] = useState(adminEmail);
   const [testSending, setTestSending] = useState(false);
   const [testFeedback, setTestFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
+
+  // Restauration de version (P3.4-i) : ConfirmDialog socle au lieu de confirm().
+  const [restoreVersion, setRestoreVersion] = useState<EmailTemplateCustomVersionRow | null>(null);
 
   const isDirty = useMemo(
     () =>
@@ -293,6 +297,29 @@ export function TemplateEditor({ template, versions: initialVersions, adminEmail
         onCancel={() => draft.discardDraft()}
       />
 
+      {/* Restauration d'une version antérieure (remplace l'ancien confirm() natif). */}
+      <ConfirmDialog
+        open={restoreVersion !== null}
+        variant="danger"
+        title={
+          restoreVersion ? `Restaurer la version v${restoreVersion.versionNumber} ?` : 'Restaurer'
+        }
+        body={<p>Tes changements en cours dans l’éditeur seront remplacés par cette version.</p>}
+        confirmLabel="Restaurer"
+        cancelLabel="Revenir"
+        onConfirm={() => {
+          const v = restoreVersion;
+          if (v) {
+            setSubject(v.subjectTmpl);
+            setPreheader(v.preheaderTmpl ?? '');
+            setHtmlSource(v.htmlSource);
+            setCustomVars(JSON.stringify(v.customVars ?? {}, null, 2));
+          }
+          setRestoreVersion(null);
+        }}
+        onCancel={() => setRestoreVersion(null)}
+      />
+
       <div className="grid gap-4 md:grid-cols-[1fr_1fr_240px]">
       {/* Left : source editor */}
       <section className="space-y-3 rounded border border-stone-200 bg-white p-4">
@@ -320,7 +347,7 @@ export function TemplateEditor({ template, versions: initialVersions, adminEmail
         </div>
         <div>
           <label className="block text-xs font-medium uppercase tracking-wider text-stone-500">
-            HTML source ({htmlSource.length.toLocaleString()} car.)
+            HTML source ({new Intl.NumberFormat('fr-FR').format(htmlSource.length)} car.)
           </label>
           <textarea
             ref={sourceInsert.ref}
@@ -412,11 +439,11 @@ export function TemplateEditor({ template, versions: initialVersions, adminEmail
             ↻
           </button>
         </div>
-        {previewError && (
-          <div className="rounded bg-red-50 px-3 py-2 text-xs text-red-700">
+        {previewError ? (
+          <Banner tone="danger" className="mt-1">
             {previewError}
-          </div>
-        )}
+          </Banner>
+        ) : null}
         <div>
           <p className="text-xs text-stone-500">Sujet rendu :</p>
           <p className="font-medium text-stone-900">{previewSubject || <i>—</i>}</p>
@@ -486,19 +513,21 @@ export function TemplateEditor({ template, versions: initialVersions, adminEmail
             onChange={(e) => setCommitMessage(e.target.value)}
             className="w-full rounded border border-stone-300 px-2 py-1 text-xs"
           />
-          {saveError && (
-            <div className="mt-2 rounded bg-red-50 px-2 py-1 text-[10px] text-red-700">
+          {saveError ? (
+            <Banner tone="danger" className="mt-2">
               {saveError}
-            </div>
-          )}
-          <button
-            type="button"
+            </Banner>
+          ) : null}
+          <Button
+            variant="primary"
+            className="mt-2 w-full"
+            busy={saving}
+            busyLabel="…"
+            disabled={!isDirty}
             onClick={handleSaveVersion}
-            disabled={saving || !isDirty}
-            className="mt-2 w-full rounded bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-800 disabled:opacity-40"
           >
-            {saving ? '...' : isDirty ? 'Créer une version' : 'Aucun changement'}
-          </button>
+            {isDirty ? 'Créer une version' : 'Aucun changement'}
+          </Button>
           <p data-testid="tpl-draft-status" className="mt-2 text-[10px] text-stone-500">
             {draft.status === 'saved' && draft.savedAt
               ? `✓ Brouillon local enregistré ${formatAge(draft.savedAt)}`
@@ -550,27 +579,13 @@ export function TemplateEditor({ template, versions: initialVersions, adminEmail
               >
                 <button
                   type="button"
-                  onClick={() => {
-                    if (
-                      !confirm(
-                        `Restaurer la version v${v.versionNumber} ? Vos changements en cours seront remplacés.`,
-                      )
-                    )
-                      return;
-                    setSubject(v.subjectTmpl);
-                    setPreheader(v.preheaderTmpl ?? '');
-                    setHtmlSource(v.htmlSource);
-                    setCustomVars(JSON.stringify(v.customVars ?? {}, null, 2));
-                  }}
+                  onClick={() => setRestoreVersion(v)}
                   className="flex-1 text-left text-stone-700 hover:underline"
                 >
                   v{v.versionNumber} {i === 0 && '(actuelle)'}
                 </button>
-                <span className="text-[10px] text-stone-400">
-                  {new Date(v.createdAt).toLocaleDateString('fr-FR', {
-                    day: '2-digit',
-                    month: 'short',
-                  })}
+                <span className="text-[10px] text-stone-500">
+                  {formatAbsolute(new Date(v.createdAt).toISOString())}
                 </span>
               </li>
             ))}

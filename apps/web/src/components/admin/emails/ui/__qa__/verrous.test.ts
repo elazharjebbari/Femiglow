@@ -81,8 +81,8 @@ describe('Verrous cliquet — section emails', () => {
       'src/components/admin/emails/cockpit/KpiHeader.tsx',
       'src/components/admin/emails/cockpit/TransactionalCockpit.tsx',
       'src/components/admin/emails/events/EventsDashboardView.tsx',
-      'src/components/admin/emails/templates/TemplateEditor.tsx',
-      // CampaignWizard : MIGRÉ sur ui/format-datetime (formatAbsolute) — P3.2-c4.
+      // CampaignWizard (P3.2-c4) + TemplateEditor (P3.4-i) : MIGRÉS sur
+      // ui/format-datetime (formatAbsolute) / Intl.NumberFormat.
     ]);
     ratchet(
       'toLocale*String',
@@ -143,7 +143,7 @@ describe('Verrous cliquet — section emails', () => {
       'src/components/admin/emails/cockpit/TransactionalCockpit.tsx',
       'src/components/admin/emails/common/EntityCombobox.tsx',
       'src/components/admin/emails/events/EventsDashboardView.tsx',
-      'src/components/admin/emails/templates/TemplateEditor.tsx',
+      // TemplateEditor : MIGRÉ sur le socle v2 (Banner/Button + INK) — P3.4-i.
       // ui/ConfirmDialog : MIGRÉ sur le socle v2 (Button/Input/Banner) — P3.0-c.
       'src/components/admin/emails/ui/Wizard.tsx',
       'src/components/admin/emails/ui/toast.tsx',

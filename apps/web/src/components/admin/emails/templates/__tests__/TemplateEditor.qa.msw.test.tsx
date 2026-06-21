@@ -15,7 +15,7 @@
  * réel (600 ms) via `findBy*`/`waitFor` qui poll jusqu'à 1–2 s.
  */
 import { describe, it, expect, beforeAll, afterEach, afterAll, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { delay } from 'msw';
 import { server, http, HttpResponse } from '@/test/msw/server';
 import { TemplateEditor } from '@/components/admin/emails/templates/TemplateEditor';
@@ -284,32 +284,34 @@ describe('TemplateEditor — versioning (grille d’échecs 5 points)', () => {
     expect(screen.queryByText(/^v2/)).not.toBeInTheDocument();
   });
 
-  it('TPL-EDI-014 : restauration demande confirmation et remplace la source', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+  it('TPL-EDI-014 : restauration via ConfirmDialog (socle) remplace la source', async () => {
     renderEditor();
-    // v1.htmlSource = « <p>v1</p> » — restaurer remplace la source du textarea.
+    // v1.htmlSource = « <p>v1</p> » — confirmer la restauration remplace la source.
     fireEvent.click(screen.getByRole('button', { name: /^v1/ }));
-    expect(window.confirm).toHaveBeenCalled();
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: /Restaurer/i }));
     const restored = screen
       .getAllByRole('textbox')
       .find((t) => (t as HTMLTextAreaElement).value.includes('<p>v1</p>'));
     expect(restored).toBeTruthy();
   });
 
-  it('TPL-EDI-015 : restauration annulée (confirm=false) ne change rien', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
+  it('TPL-EDI-015 : restauration annulée (Revenir) ne change rien', async () => {
     renderEditor();
-    const sourceBefore = (
+    const before = (
       screen
         .getAllByRole('textbox')
         .find((t) => (t as HTMLTextAreaElement).value.includes('firstName')) as HTMLTextAreaElement
     ).value;
     fireEvent.click(screen.getByRole('button', { name: /^v1/ }));
-    const sourceAfter = (
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: /Revenir/i }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    const after = (
       screen
         .getAllByRole('textbox')
         .find((t) => (t as HTMLTextAreaElement).value.includes('firstName')) as HTMLTextAreaElement
     ).value;
-    expect(sourceAfter).toBe(sourceBefore);
+    expect(after).toBe(before);
   });
 });
