@@ -10,7 +10,7 @@
  */
 import { type NextRequest, NextResponse } from 'next/server';
 import { timingSafeEqual } from 'node:crypto';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 
 import { env } from '@/lib/env';
 import { db as getDb } from '@/lib/db/client';
@@ -24,6 +24,7 @@ import { logger } from '@/lib/logging/logger';
 import {
   isHardBounce,
   isKnownEvent,
+  messageIdMatchForms,
   normalizeStalwartPayload,
   type StalwartWebhookEvent,
 } from '@/lib/mail/webhooks/stalwart-parser';
@@ -137,28 +138,40 @@ async function processStalwartEvent(
     return 'auth-failed-logged';
   }
 
-  // All remaining events should carry a messageId — but Stalwart's exact
-  // payload shape isn't fully documented, so guard against absent fields.
+  // Locate the originating outbox row by Message-ID. CRITICAL : Stalwart reports
+  // the Message-ID WITHOUT angle brackets (`abc@d`) while the app stores it WITH
+  // (`<abc@d>` — nodemailer `info.messageId`). On matche les DEUX formes via
+  // `messageIdMatchForms` ; sans ça le `eq()` strict ne matchait JAMAIS et le
+  // statut `delivered`/`bounced` ne se peuplait pas (« webhook silencieux »).
   const messageId =
     'messageId' in evt && typeof evt.messageId === 'string' ? evt.messageId : null;
+
+  const matched = messageId
+    ? await drizzle
+        .select()
+        .from(emailOutbox)
+        .where(inArray(emailOutbox.smtpMessageId, messageIdMatchForms(messageId)))
+        .limit(1)
+    : [];
+  const outbox = matched.length > 0 && matched[0] ? matched[0] : null;
+
+  // DSN failure notifications portent SOUVENT aucun messageId (juste queueId +
+  // destinataire). Traitées à part : bounce sur la ligne outbox si matchée,
+  // sinon (échec PERMANENT) on supprime le destinataire pour la délivrabilité.
+  if (evt.event === 'delivery.dsn-perm-fail' || evt.event === 'delivery.dsn-temp-fail') {
+    return processDsnFailure(drizzle, evt, outbox);
+  }
+
   if (!messageId) {
     logger.info('mail.webhook.stalwart.no_message_id', { stalwart_event: evt.event });
     return 'no-message-id';
   }
-
-  const found = await drizzle
-    .select()
-    .from(emailOutbox)
-    .where(eq(emailOutbox.smtpMessageId, messageId))
-    .limit(1);
-
-  if (found.length === 0 || !found[0]) {
+  if (!outbox) {
     // May be a message originating from Listmonk (uses its own Message-ID
     // namespace) ; that path is handled via the Listmonk webhook.
     return 'unknown-message-id';
   }
 
-  const outbox = found[0];
   const evtTs = 'ts' in evt && typeof evt.ts === 'string' ? evt.ts : null;
   const ts = evtTs ? new Date(evtTs) : new Date();
   const rawJson = evt as unknown as Record<string, unknown>;
@@ -253,4 +266,88 @@ async function processStalwartEvent(
   }
 
   return status;
+}
+
+/**
+ * Traite un DSN d'échec outbound (`delivery.dsn-perm-fail` / `dsn-temp-fail`).
+ *
+ * Ces events ne portent souvent PAS de messageId (corrélation par id impossible),
+ * mais portent le destinataire. Deux cas :
+ *  - ligne outbox matchée (par messageId, rare) → bounce dessus + email_event ;
+ *  - pas de match → échec PERMANENT : on insère une suppression sur le
+ *    destinataire (idempotent) pour ne plus lui réenvoyer ; échec TEMPORAIRE
+ *    sans match → simplement loggé (Stalwart retentera).
+ */
+async function processDsnFailure(
+  drizzle: NonNullable<ReturnType<typeof getDb>>,
+  evt: StalwartWebhookEvent,
+  outbox: { id: string; toEmail: string } | null,
+): Promise<string> {
+  const isPerm = evt.event === 'delivery.dsn-perm-fail';
+  const evtTs = 'ts' in evt && typeof evt.ts === 'string' ? evt.ts : null;
+  const ts = evtTs ? new Date(evtTs) : new Date();
+  const reason =
+    'reason' in evt && typeof evt.reason === 'string' && evt.reason.length > 0
+      ? evt.reason
+      : 'details' in evt && typeof (evt as Record<string, unknown>).details === 'string'
+        ? ((evt as Record<string, unknown>).details as string)
+        : 'dsn-failure';
+  const rawJson = evt as unknown as Record<string, unknown>;
+
+  if (outbox) {
+    await drizzle
+      .update(emailOutbox)
+      .set({
+        status: isPerm ? 'bounced_permanent' : 'bounced_soft',
+        bouncedAt: ts,
+        bounceReason: reason,
+        bounceType: isPerm ? 'hard' : 'soft',
+        updatedAt: new Date(),
+      })
+      .where(eq(emailOutbox.id, outbox.id));
+    await drizzle.insert(emailEvent).values({
+      outboxId: outbox.id,
+      type: isPerm ? 'bounced_hard' : 'bounced_soft',
+      source: 'stalwart',
+      ts,
+      rawJson,
+    });
+    if (isPerm) {
+      await drizzle
+        .insert(emailSuppression)
+        .values({ email: outbox.toEmail, reason: 'hard_bounce', detail: reason, source: 'stalwart' })
+        .onConflictDoNothing();
+    }
+    return isPerm ? 'dsn-bounced-hard' : 'dsn-bounced-soft';
+  }
+
+  // Pas de ligne outbox (DSN sans messageId) : on extrait le destinataire de
+  // l'event (`rcpt` ou `to`) et on supprime sur échec permanent.
+  const rcpt = extractDsnRecipient(evt);
+  if (isPerm && rcpt) {
+    await drizzle
+      .insert(emailSuppression)
+      .values({ email: rcpt, reason: 'hard_bounce', detail: reason, source: 'stalwart' })
+      .onConflictDoNothing();
+    return 'dsn-suppressed-rcpt';
+  }
+  logger.info('mail.webhook.stalwart.dsn_unmatched', {
+    stalwart_event: evt.event,
+    has_rcpt: Boolean(rcpt),
+  });
+  return 'dsn-unmatched';
+}
+
+/** Extrait le 1er destinataire d'un event DSN (`rcpt` ou `to`, string ou array). */
+function extractDsnRecipient(evt: StalwartWebhookEvent): string | null {
+  const e = evt as Record<string, unknown>;
+  for (const key of ['rcpt', 'to'] as const) {
+    const v = e[key];
+    if (typeof v === 'string' && v.includes('@')) return v;
+    if (Array.isArray(v)) {
+      const first = v.find((x) => typeof x === 'string' && x.includes('@'));
+      if (typeof first === 'string') return first;
+    }
+  }
+  return null;
 }

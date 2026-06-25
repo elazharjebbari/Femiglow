@@ -210,4 +210,63 @@ describe('POST /api/mail/webhook/stalwart', () => {
     );
     expect(hard).toBeUndefined();
   });
+
+  // — DSN failure coverage (delivery.dsn-perm-fail / dsn-temp-fail) —————————
+  it('delivery.dsn-perm-fail WITH matching messageId → bounced_permanent + suppression', async () => {
+    const drizzle = makeFakeDrizzle({
+      selectResult: [{ id: 'outbox-d1', toEmail: 'x@y.z', smtpMessageId: '<dsn-1>', status: 'sent' }],
+    });
+    vi.mocked(getDb).mockReturnValue(drizzle as never);
+    const res = await POST(
+      makeReq(
+        // messageId WITHOUT brackets (comme Stalwart l'envoie) → doit quand même matcher
+        { event: 'delivery.dsn-perm-fail', messageId: 'dsn-1', rcpt: 'x@y.z', reason: 'no MX', ts: '2026-06-24T22:00:00Z' },
+        { 'x-fg-webhook-token': SECRET },
+      ) as never,
+    );
+    expect(res.status).toBe(200);
+    expect(drizzle.calls.update[0]!.set).toMatchObject({
+      status: 'bounced_permanent',
+      bounceType: 'hard',
+    });
+    const suppression = drizzle.calls.insert.find(
+      (i) => (i.values as { reason?: string })?.reason === 'hard_bounce',
+    );
+    expect(suppression).toBeDefined();
+  });
+
+  it('delivery.dsn-perm-fail WITHOUT messageId → suppress recipient, no outbox UPDATE', async () => {
+    const drizzle = makeFakeDrizzle({ selectResult: [] });
+    vi.mocked(getDb).mockReturnValue(drizzle as never);
+    const res = await POST(
+      makeReq(
+        { event: 'delivery.dsn-perm-fail', rcpt: 'nobody@example.test', reason: 'no MX', ts: '2026-06-24T22:00:00Z' },
+        { 'x-fg-webhook-token': SECRET },
+      ) as never,
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.results[0].status).toBe('dsn-suppressed-rcpt');
+    expect(drizzle.calls.update).toHaveLength(0);
+    const suppression = drizzle.calls.insert.find(
+      (i) => (i.values as { email?: string })?.email === 'nobody@example.test',
+    );
+    expect(suppression).toBeDefined();
+  });
+
+  it('delivery.dsn-temp-fail WITHOUT messageId/rcpt → unmatched no-op', async () => {
+    const drizzle = makeFakeDrizzle({ selectResult: [] });
+    vi.mocked(getDb).mockReturnValue(drizzle as never);
+    const res = await POST(
+      makeReq(
+        { event: 'delivery.dsn-temp-fail', reason: 'greylisted', ts: '2026-06-24T22:00:00Z' },
+        { 'x-fg-webhook-token': SECRET },
+      ) as never,
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.results[0].status).toBe('dsn-unmatched');
+    expect(drizzle.calls.update).toHaveLength(0);
+    expect(drizzle.calls.insert).toHaveLength(0);
+  });
 });

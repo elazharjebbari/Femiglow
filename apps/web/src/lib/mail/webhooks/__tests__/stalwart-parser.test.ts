@@ -27,6 +27,8 @@ import {
   isKnownEvent,
   isHardBounce,
   mapStalwartEventToInternal,
+  stripMessageIdBrackets,
+  messageIdMatchForms,
 } from '../stalwart-parser';
 
 const FIXTURES = join(
@@ -364,5 +366,54 @@ describe('stalwart-parser — méta-test de sensibilité des oracles', () => {
     // isBatchEnvelope est false (events pas un tableau) → tombe sur le chemin
     // plat → pas de champ `event` → ok:false.
     expect(normalizeStalwartPayload(mutated).ok).toBe(false); // a basculé
+  });
+});
+
+/**
+ * Fix bracket-mismatch : Stalwart rapporte le Message-ID SANS chevrons alors que
+ * l'app stocke `smtp_message_id` AVEC (nodemailer `info.messageId`). Sans
+ * normalisation, le match outbox échouait toujours → `delivered`/`bounced` jamais
+ * peuplé (cause racine du « webhook silencieux »).
+ */
+describe('stalwart-parser — normalisation Message-ID', () => {
+  it('stripMessageIdBrackets retire les chevrons, idempotent', () => {
+    expect(stripMessageIdBrackets('<abc@d>')).toBe('abc@d');
+    expect(stripMessageIdBrackets('abc@d')).toBe('abc@d');
+    expect(stripMessageIdBrackets('<<abc@d>>')).toBe('abc@d');
+    expect(stripMessageIdBrackets('')).toBe('');
+  });
+
+  it('messageIdMatchForms produit la forme bracketée ET nue', () => {
+    // Cas réel : Stalwart envoie `abc@…` (nu), l'app a stocké `<abc@…>`.
+    expect(messageIdMatchForms('23bf4dc6@femiglow-maroc.com')).toEqual([
+      '<23bf4dc6@femiglow-maroc.com>',
+      '23bf4dc6@femiglow-maroc.com',
+    ]);
+    expect(messageIdMatchForms('<x@y>')).toEqual(['<x@y>', 'x@y']);
+  });
+});
+
+describe('stalwart-parser — events DSN (couverture bounce)', () => {
+  it('reconnaît delivery.dsn-perm-fail / dsn-temp-fail comme known', () => {
+    expect(isKnownEvent({ event: 'delivery.dsn-perm-fail' } as never)).toBe(true);
+    expect(isKnownEvent({ event: 'delivery.dsn-temp-fail' } as never)).toBe(true);
+  });
+
+  it('mappe les DSN vers hard/soft', () => {
+    expect(mapStalwartEventToInternal('delivery.dsn-perm-fail')).toBe('bounced_hard');
+    expect(mapStalwartEventToInternal('delivery.dsn-temp-fail')).toBe('bounced_soft');
+  });
+
+  it('parse un dsn-perm-fail SANS messageId (juste rcpt) — passthrough', () => {
+    const r = normalizeStalwartPayload({
+      event: 'delivery.dsn-perm-fail',
+      rcpt: 'nobody@example.test',
+      reason: 'DNS lookup failed: no MX record found.',
+      ts: '2026-06-24T22:03:04Z',
+    });
+    expect(r.ok).toBe(true);
+    if (!r.ok) throw new Error('unreachable');
+    expect(r.events[0]!.event).toBe('delivery.dsn-perm-fail');
+    expect(isKnownEvent(r.events[0]!)).toBe(true);
   });
 });

@@ -68,6 +68,35 @@ export const queueRescheduledSchema = z
   })
   .passthrough();
 
+// — Outbound permanent failure DSN (e.g. DNS/MX lookup failed, 5xx perm) ——
+// Stalwart emits these for permanent delivery failures. Unlike delivery.*,
+// the DSN events frequently carry NO messageId (only queueId + recipient) —
+// every field is optional so the route can fall back to recipient handling.
+export const deliveryDsnPermFailSchema = z
+  .object({
+    event: z.literal('delivery.dsn-perm-fail'),
+    queueId: z.union([z.string(), z.number()]).optional(),
+    messageId: z.string().optional(),
+    rcpt: z.union([z.string(), z.array(z.string())]).optional(),
+    to: z.union([z.string(), z.array(z.string())]).optional(),
+    reason: z.string().optional(),
+    ts: z.string().optional(),
+  })
+  .passthrough();
+
+// — Outbound temporary failure DSN (will keep retrying) ————————————————
+export const deliveryDsnTempFailSchema = z
+  .object({
+    event: z.literal('delivery.dsn-temp-fail'),
+    queueId: z.union([z.string(), z.number()]).optional(),
+    messageId: z.string().optional(),
+    rcpt: z.union([z.string(), z.array(z.string())]).optional(),
+    to: z.union([z.string(), z.array(z.string())]).optional(),
+    reason: z.string().optional(),
+    ts: z.string().optional(),
+  })
+  .passthrough();
+
 // — Auth failed (security signal) ———————————————————————————————————
 export const authFailedSchema = z
   .object({
@@ -83,6 +112,8 @@ const knownEventSchema = z.discriminatedUnion('event', [
   queueMessageQueuedSchema,
   deliveryDeliveredSchema,
   deliveryFailedSchema,
+  deliveryDsnPermFailSchema,
+  deliveryDsnTempFailSchema,
   queueRescheduledSchema,
   authFailedSchema,
 ]);
@@ -216,6 +247,8 @@ export function isKnownEvent(evt: StalwartWebhookEvent): evt is StalwartKnownEve
     'queue.authenticated-message-queued',
     'delivery.delivered',
     'delivery.failed',
+    'delivery.dsn-perm-fail',
+    'delivery.dsn-temp-fail',
     'queue.rescheduled',
     'auth.failed',
   ];
@@ -224,6 +257,27 @@ export function isKnownEvent(evt: StalwartWebhookEvent): evt is StalwartKnownEve
 
 export function isHardBounce(errorCode: number | undefined): boolean {
   return errorCode != null && errorCode >= 500 && errorCode < 600;
+}
+
+/**
+ * Normalise un Message-ID pour la corrélation outbox ↔ webhook.
+ *
+ * Stalwart rapporte le Message-ID SANS chevrons (`abc@domain`) dans ses events
+ * webhook, alors que l'app stocke `email_outbox.smtp_message_id` AVEC chevrons
+ * (c'est `info.messageId` de nodemailer : `<abc@domain>`). Sans normalisation,
+ * le `eq(smtp_message_id, messageId)` de la route ne matchait JAMAIS → le statut
+ * `delivered`/`bounced` ne se peuplait pas (cause racine du « webhook silencieux »).
+ *
+ * Idempotent : `<abc@d>` → `abc@d`, `abc@d` → `abc@d`.
+ */
+export function stripMessageIdBrackets(id: string): string {
+  return id.replace(/^<+/, '').replace(/>+$/, '');
+}
+
+/** Les deux formes à tester contre `smtp_message_id` (stocké avec chevrons). */
+export function messageIdMatchForms(id: string): string[] {
+  const bare = stripMessageIdBrackets(id);
+  return [`<${bare}>`, bare];
 }
 
 /**
@@ -242,6 +296,10 @@ export function mapStalwartEventToInternal(
       return 'delivered';
     case 'delivery.failed':
       return 'bounced_hard'; // refined to soft via isHardBounce(errorCode) at the call site
+    case 'delivery.dsn-perm-fail':
+      return 'bounced_hard';
+    case 'delivery.dsn-temp-fail':
+      return 'bounced_soft';
     case 'queue.rescheduled':
       return 'retried';
     default:
