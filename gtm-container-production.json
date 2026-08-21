@@ -15,6 +15,33 @@
     },
     "tag": [
       {
+        "tagId": "117",
+        "name": "Conversion Linker",
+        "type": "gclidw",
+        "parameter": [
+          {
+            "type": "BOOLEAN",
+            "key": "enableCrossDomain",
+            "value": "false"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "acceptIncoming",
+            "value": "true"
+          }
+        ],
+        "priority": {
+          "type": "INTEGER",
+          "key": "priority",
+          "value": "100"
+        },
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "firingTriggerId": [
+          "1"
+        ],
+        "parentFolderId": "1"
+      },
+      {
         "tagId": "1",
         "name": "GA4 Cfg",
         "type": "googtag",
@@ -80,7 +107,7 @@
           {
             "type": "TEMPLATE",
             "key": "tagId",
-            "value": "AW-18136327114"
+            "value": "AW-18401598819"
           }
         ],
         "priority": {
@@ -1175,57 +1202,6 @@
         "parentFolderId": "2"
       },
       {
-        "tagId": "37",
-        "name": "Ads Conv — chat_widget_open → chat_widget_open",
-        "type": "awct",
-        "parameter": [
-          {
-            "type": "TEMPLATE",
-            "key": "conversionId",
-            "value": "{{CONST - Google Ads Conversion ID}}"
-          },
-          {
-            "type": "TEMPLATE",
-            "key": "conversionLabel",
-            "value": "{{CONST - Ads Label - chat_engagement}}"
-          },
-          {
-            "type": "TEMPLATE",
-            "key": "conversionCategory",
-            "value": "DEFAULT"
-          },
-          {
-            "type": "TEMPLATE",
-            "key": "orderId",
-            "value": "{{DLV - transaction_id}}"
-          },
-          {
-            "type": "TEMPLATE",
-            "key": "currencyCode",
-            "value": "{{DLV - currency}}"
-          },
-          {
-            "type": "TEMPLATE",
-            "key": "conversionValue",
-            "value": "{{DLV - value}}"
-          },
-          {
-            "type": "BOOLEAN",
-            "key": "enableEnhancedConversions",
-            "value": "true"
-          },
-          {
-            "type": "BOOLEAN",
-            "key": "enhancedConversionsAutomaticMode",
-            "value": "true"
-          }
-        ],
-        "firingTriggerId": [
-          "24"
-        ],
-        "parentFolderId": "2"
-      },
-      {
         "tagId": "38",
         "name": "GA4 Evt — checkout_intent",
         "type": "gaawe",
@@ -1430,57 +1406,6 @@
         "parentFolderId": "2"
       },
       {
-        "tagId": "44",
-        "name": "Ads Conv — contact_submit → contact_submit",
-        "type": "awct",
-        "parameter": [
-          {
-            "type": "TEMPLATE",
-            "key": "conversionId",
-            "value": "{{CONST - Google Ads Conversion ID}}"
-          },
-          {
-            "type": "TEMPLATE",
-            "key": "conversionLabel",
-            "value": "{{CONST - Ads Label - contact}}"
-          },
-          {
-            "type": "TEMPLATE",
-            "key": "conversionCategory",
-            "value": "CONTACT"
-          },
-          {
-            "type": "TEMPLATE",
-            "key": "orderId",
-            "value": "{{DLV - transaction_id}}"
-          },
-          {
-            "type": "TEMPLATE",
-            "key": "currencyCode",
-            "value": "{{DLV - currency}}"
-          },
-          {
-            "type": "TEMPLATE",
-            "key": "conversionValue",
-            "value": "{{DLV - value}}"
-          },
-          {
-            "type": "BOOLEAN",
-            "key": "enableEnhancedConversions",
-            "value": "true"
-          },
-          {
-            "type": "BOOLEAN",
-            "key": "enhancedConversionsAutomaticMode",
-            "value": "true"
-          }
-        ],
-        "firingTriggerId": [
-          "74"
-        ],
-        "parentFolderId": "2"
-      },
-      {
         "tagId": "45",
         "name": "GA4 Evt — cta_impression",
         "type": "gaawe",
@@ -1565,57 +1490,6 @@
         "parentFolderId": "2"
       },
       {
-        "tagId": "49",
-        "name": "Ads Conv — fg_journal_read_100 → fg_journal_read_100",
-        "type": "awct",
-        "parameter": [
-          {
-            "type": "TEMPLATE",
-            "key": "conversionId",
-            "value": "{{CONST - Google Ads Conversion ID}}"
-          },
-          {
-            "type": "TEMPLATE",
-            "key": "conversionLabel",
-            "value": "{{CONST - Ads Label - journal_read}}"
-          },
-          {
-            "type": "TEMPLATE",
-            "key": "conversionCategory",
-            "value": "DEFAULT"
-          },
-          {
-            "type": "TEMPLATE",
-            "key": "orderId",
-            "value": "{{DLV - transaction_id}}"
-          },
-          {
-            "type": "TEMPLATE",
-            "key": "currencyCode",
-            "value": "{{DLV - currency}}"
-          },
-          {
-            "type": "TEMPLATE",
-            "key": "conversionValue",
-            "value": "{{DLV - value}}"
-          },
-          {
-            "type": "BOOLEAN",
-            "key": "enableEnhancedConversions",
-            "value": "true"
-          },
-          {
-            "type": "BOOLEAN",
-            "key": "enhancedConversionsAutomaticMode",
-            "value": "true"
-          }
-        ],
-        "firingTriggerId": [
-          "33"
-        ],
-        "parentFolderId": "2"
-      },
-      {
         "tagId": "50",
         "name": "GA4 Evt — fg_journal_read_75",
         "type": "gaawe",
@@ -1671,57 +1545,6 @@
             "type": "TEMPLATE",
             "key": "measurementIdOverride",
             "value": "{{CONST - GA4 Measurement ID}}"
-          }
-        ],
-        "firingTriggerId": [
-          "37"
-        ],
-        "parentFolderId": "2"
-      },
-      {
-        "tagId": "53",
-        "name": "Ads Conv — file_download → file_download",
-        "type": "awct",
-        "parameter": [
-          {
-            "type": "TEMPLATE",
-            "key": "conversionId",
-            "value": "{{CONST - Google Ads Conversion ID}}"
-          },
-          {
-            "type": "TEMPLATE",
-            "key": "conversionLabel",
-            "value": "{{CONST - Ads Label - download}}"
-          },
-          {
-            "type": "TEMPLATE",
-            "key": "conversionCategory",
-            "value": "DEFAULT"
-          },
-          {
-            "type": "TEMPLATE",
-            "key": "orderId",
-            "value": "{{DLV - transaction_id}}"
-          },
-          {
-            "type": "TEMPLATE",
-            "key": "currencyCode",
-            "value": "{{DLV - currency}}"
-          },
-          {
-            "type": "TEMPLATE",
-            "key": "conversionValue",
-            "value": "{{DLV - value}}"
-          },
-          {
-            "type": "BOOLEAN",
-            "key": "enableEnhancedConversions",
-            "value": "true"
-          },
-          {
-            "type": "BOOLEAN",
-            "key": "enhancedConversionsAutomaticMode",
-            "value": "true"
           }
         ],
         "firingTriggerId": [
@@ -2186,57 +2009,6 @@
         "parentFolderId": "2"
       },
       {
-        "tagId": "70",
-        "name": "Ads Conv — newsletter_submit → newsletter_submit",
-        "type": "awct",
-        "parameter": [
-          {
-            "type": "TEMPLATE",
-            "key": "conversionId",
-            "value": "{{CONST - Google Ads Conversion ID}}"
-          },
-          {
-            "type": "TEMPLATE",
-            "key": "conversionLabel",
-            "value": "{{CONST - Ads Label - newsletter}}"
-          },
-          {
-            "type": "TEMPLATE",
-            "key": "conversionCategory",
-            "value": "SIGNUP"
-          },
-          {
-            "type": "TEMPLATE",
-            "key": "orderId",
-            "value": "{{DLV - transaction_id}}"
-          },
-          {
-            "type": "TEMPLATE",
-            "key": "currencyCode",
-            "value": "{{DLV - currency}}"
-          },
-          {
-            "type": "TEMPLATE",
-            "key": "conversionValue",
-            "value": "{{DLV - value}}"
-          },
-          {
-            "type": "BOOLEAN",
-            "key": "enableEnhancedConversions",
-            "value": "true"
-          },
-          {
-            "type": "BOOLEAN",
-            "key": "enhancedConversionsAutomaticMode",
-            "value": "true"
-          }
-        ],
-        "firingTriggerId": [
-          "49"
-        ],
-        "parentFolderId": "2"
-      },
-      {
         "tagId": "71",
         "name": "GA4 Evt — page_view",
         "type": "gaawe",
@@ -2462,7 +2234,10 @@
         "firingTriggerId": [
           "80"
         ],
-        "parentFolderId": "2"
+        "parentFolderId": "2",
+        "blockingTriggerId": [
+          "79"
+        ]
       },
       {
         "tagId": "77",
@@ -2885,57 +2660,6 @@
         "parentFolderId": "2"
       },
       {
-        "tagId": "90",
-        "name": "Ads Conv — sign_up → sign_up",
-        "type": "awct",
-        "parameter": [
-          {
-            "type": "TEMPLATE",
-            "key": "conversionId",
-            "value": "{{CONST - Google Ads Conversion ID}}"
-          },
-          {
-            "type": "TEMPLATE",
-            "key": "conversionLabel",
-            "value": "{{CONST - Ads Label - sign_up}}"
-          },
-          {
-            "type": "TEMPLATE",
-            "key": "conversionCategory",
-            "value": "SIGNUP"
-          },
-          {
-            "type": "TEMPLATE",
-            "key": "orderId",
-            "value": "{{DLV - transaction_id}}"
-          },
-          {
-            "type": "TEMPLATE",
-            "key": "currencyCode",
-            "value": "{{DLV - currency}}"
-          },
-          {
-            "type": "TEMPLATE",
-            "key": "conversionValue",
-            "value": "{{DLV - value}}"
-          },
-          {
-            "type": "BOOLEAN",
-            "key": "enableEnhancedConversions",
-            "value": "true"
-          },
-          {
-            "type": "BOOLEAN",
-            "key": "enhancedConversionsAutomaticMode",
-            "value": "true"
-          }
-        ],
-        "firingTriggerId": [
-          "60"
-        ],
-        "parentFolderId": "2"
-      },
-      {
         "tagId": "91",
         "name": "TikTok Evt — sign_up → CompleteRegistration",
         "type": "html",
@@ -3028,57 +2752,6 @@
             "tagName": "Meta Init",
             "stopOnSetupFailure": false
           }
-        ],
-        "parentFolderId": "2"
-      },
-      {
-        "tagId": "95",
-        "name": "Ads Conv — video_complete → video_complete",
-        "type": "awct",
-        "parameter": [
-          {
-            "type": "TEMPLATE",
-            "key": "conversionId",
-            "value": "{{CONST - Google Ads Conversion ID}}"
-          },
-          {
-            "type": "TEMPLATE",
-            "key": "conversionLabel",
-            "value": "{{CONST - Ads Label - video_complete}}"
-          },
-          {
-            "type": "TEMPLATE",
-            "key": "conversionCategory",
-            "value": "DEFAULT"
-          },
-          {
-            "type": "TEMPLATE",
-            "key": "orderId",
-            "value": "{{DLV - transaction_id}}"
-          },
-          {
-            "type": "TEMPLATE",
-            "key": "currencyCode",
-            "value": "{{DLV - currency}}"
-          },
-          {
-            "type": "TEMPLATE",
-            "key": "conversionValue",
-            "value": "{{DLV - value}}"
-          },
-          {
-            "type": "BOOLEAN",
-            "key": "enableEnhancedConversions",
-            "value": "true"
-          },
-          {
-            "type": "BOOLEAN",
-            "key": "enhancedConversionsAutomaticMode",
-            "value": "true"
-          }
-        ],
-        "firingTriggerId": [
-          "62"
         ],
         "parentFolderId": "2"
       },
@@ -3613,6 +3286,129 @@
             "tagName": "Meta Init",
             "stopOnSetupFailure": false
           }
+        ],
+        "parentFolderId": "2"
+      },
+      {
+        "tagId": "114",
+        "name": "Ads Conv — page_view → page_view (secondaire)",
+        "type": "awct",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "conversionId",
+            "value": "{{CONST - Google Ads Conversion ID}}"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "conversionLabel",
+            "value": "{{CONST - Ads Label - page_view}}"
+          }
+        ],
+        "firingTriggerId": [
+          "50"
+        ],
+        "parentFolderId": "2"
+      },
+      {
+        "tagId": "115",
+        "name": "Ads Conv — generate_lead→Achat",
+        "type": "awct",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "conversionId",
+            "value": "{{CONST - Google Ads Conversion ID}}"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "conversionLabel",
+            "value": "{{CONST - Ads Label - purchase}}"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "conversionCategory",
+            "value": "PURCHASE"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "orderId",
+            "value": "{{DLV - meta_purchase_eid}}"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "currencyCode",
+            "value": "{{DLV - currency}}"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "conversionValue",
+            "value": "{{DLV - value}}"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "enableEnhancedConversions",
+            "value": "true"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "enhancedConversionsAutomaticMode",
+            "value": "true"
+          }
+        ],
+        "firingTriggerId": [
+          "82"
+        ],
+        "parentFolderId": "2"
+      },
+      {
+        "tagId": "116",
+        "name": "Ads Conv — lead_capture→Achat",
+        "type": "awct",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "conversionId",
+            "value": "{{CONST - Google Ads Conversion ID}}"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "conversionLabel",
+            "value": "{{CONST - Ads Label - purchase}}"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "conversionCategory",
+            "value": "PURCHASE"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "orderId",
+            "value": "{{DLV - meta_purchase_eid}}"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "currencyCode",
+            "value": "{{DLV - currency}}"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "conversionValue",
+            "value": "{{DLV - value}}"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "enableEnhancedConversions",
+            "value": "true"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "enhancedConversionsAutomaticMode",
+            "value": "true"
+          }
+        ],
+        "firingTriggerId": [
+          "83"
         ],
         "parentFolderId": "2"
       }
@@ -5735,7 +5531,7 @@
           {
             "type": "TEMPLATE",
             "key": "value",
-            "value": "18136327114"
+            "value": "18401598819"
           }
         ],
         "parentFolderId": "1"
@@ -5981,7 +5777,7 @@
           {
             "type": "TEMPLATE",
             "key": "value",
-            "value": "ZVduCOeh1q0cEMrHichD"
+            "value": "CuuWCIb2yeUcEOO6yMZE"
           }
         ],
         "parentFolderId": "1"
@@ -6017,7 +5813,7 @@
           {
             "type": "TEMPLATE",
             "key": "value",
-            "value": "ZTOlCKWt1q0cEMrHichD"
+            "value": "kmgRCN2V1eUcEOO6yMZE"
           }
         ],
         "parentFolderId": "1"
@@ -6053,7 +5849,7 @@
           {
             "type": "TEMPLATE",
             "key": "value",
-            "value": "2KJSCJScv60cEMrHichD"
+            "value": "ebUoCP-MyuUcEOO6yMZE"
           }
         ],
         "parentFolderId": "1"
@@ -6141,7 +5937,7 @@
           {
             "type": "TEMPLATE",
             "key": "value",
-            "value": "6KMGCKHB1q0cEMrHichD"
+            "value": "s1O3CI3OyuUcEOO6yMZE"
           }
         ],
         "parentFolderId": "1"
@@ -6208,7 +6004,7 @@
           {
             "type": "TEMPLATE",
             "key": "value",
-            "value": "UGxLCMGJv6wcEMrHichD"
+            "value": "tG9FCLK21OUcEOO6yMZE"
           }
         ],
         "parentFolderId": "1"
@@ -6261,6 +6057,19 @@
           }
         ],
         "parentFolderId": "3"
+      },
+      {
+        "variableId": "32",
+        "name": "CONST - Ads Label - page_view",
+        "type": "c",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "value",
+            "value": "SDU7CMrM2OUcEOO6yMZE"
+          }
+        ],
+        "parentFolderId": "1"
       }
     ],
     "folder": [

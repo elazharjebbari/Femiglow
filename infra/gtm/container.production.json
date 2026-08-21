@@ -15,6 +15,33 @@
     },
     "tag": [
       {
+        "tagId": "95",
+        "name": "Conversion Linker",
+        "type": "gclidw",
+        "parameter": [
+          {
+            "type": "BOOLEAN",
+            "key": "enableCrossDomain",
+            "value": "false"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "acceptIncoming",
+            "value": "true"
+          }
+        ],
+        "priority": {
+          "type": "INTEGER",
+          "key": "priority",
+          "value": "100"
+        },
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "firingTriggerId": [
+          "1"
+        ],
+        "parentFolderId": "1"
+      },
+      {
         "tagId": "1",
         "name": "GA4 Cfg",
         "type": "gaawc",
@@ -49,7 +76,7 @@
           {
             "type": "TEMPLATE",
             "key": "tagId",
-            "value": "AW-18136327114"
+            "value": "AW-18401598819"
           }
         ],
         "priority": {
@@ -4199,7 +4226,7 @@
           {
             "type": "TEMPLATE",
             "key": "value",
-            "value": "18136327114"
+            "value": "18401598819"
           }
         ],
         "parentFolderId": "1"
@@ -4363,7 +4390,7 @@
           {
             "type": "TEMPLATE",
             "key": "value",
-            "value": "ZVduCOeh1q0cEMrHichD"
+            "value": "CuuWCIb2yeUcEOO6yMZE"
           }
         ],
         "parentFolderId": "1"
@@ -4445,7 +4472,7 @@
           {
             "type": "TEMPLATE",
             "key": "value",
-            "value": "ZTOlCKWt1q0cEMrHichD"
+            "value": "kmgRCN2V1eUcEOO6yMZE"
           }
         ],
         "parentFolderId": "1"
@@ -4504,7 +4531,7 @@
           {
             "type": "TEMPLATE",
             "key": "value",
-            "value": "6KMGCKHB1q0cEMrHichD"
+            "value": "s1O3CI3OyuUcEOO6yMZE"
           }
         ],
         "parentFolderId": "1"
@@ -4517,7 +4544,7 @@
           {
             "type": "TEMPLATE",
             "key": "value",
-            "value": "UGxLCMGJv6wcEMrHichD"
+            "value": "tG9FCLK21OUcEOO6yMZE"
           }
         ],
         "parentFolderId": "1"
