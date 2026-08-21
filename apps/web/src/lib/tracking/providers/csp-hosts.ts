@@ -11,6 +11,11 @@ import type { TrackingProviderKind } from '@/lib/db/types';
 export interface CspHostMap {
   scriptSrc: readonly string[];
   connectSrc: readonly string[];
+  /** Hosts à whitelist dans `frame-src` (iframes injectées par les balises :
+   * conversion/remarketing Google Ads via doubleclick, GTM, Meta). Sans ça,
+   * `frame-src` retombe sur sa liste explicite et bloque ces iframes →
+   * GTM « Qualité du conteneur » signale un CSP incomplet. */
+  frameSrc?: readonly string[];
 }
 
 /**
@@ -44,6 +49,20 @@ const GOOGLE_COMMON_CONNECT = [
   'https://tagassistant.google.com',
 ] as const;
 
+/**
+ * Hôtes `frame-src` communs Google — iframes injectées par le gtag / GTM :
+ *  - `td.doubleclick.net` + `*.doubleclick.net` : iframe conversion & remarketing
+ *    Google Ads (bid.g.doubleclick.net inclus).
+ *  - `www.googletagmanager.com` : iframe GTM (noscript + certaines balises).
+ *  - `www.google.com` : iframe de certaines conversions.
+ */
+const GOOGLE_COMMON_FRAME = [
+  'https://td.doubleclick.net',
+  'https://*.doubleclick.net',
+  'https://www.googletagmanager.com',
+  'https://www.google.com',
+] as const;
+
 export const TRACKING_CSP_HOSTS: Readonly<Record<TrackingProviderKind, CspHostMap>> = {
   meta: {
     scriptSrc: [
@@ -61,10 +80,12 @@ export const TRACKING_CSP_HOSTS: Readonly<Record<TrackingProviderKind, CspHostMa
       // Endpoints Meta business
       'https://business.facebook.com',
     ],
+    frameSrc: ['https://www.facebook.com', 'https://*.facebook.com'],
   },
   google_ga4: {
     scriptSrc: [...GOOGLE_COMMON_SCRIPT],
     connectSrc: [...GOOGLE_COMMON_CONNECT],
+    frameSrc: [...GOOGLE_COMMON_FRAME],
   },
   google_ads: {
     scriptSrc: [
@@ -90,6 +111,7 @@ export const TRACKING_CSP_HOSTS: Readonly<Record<TrackingProviderKind, CspHostMa
       'https://adservice.google.fr',
       'https://adservice.google.ma',
     ],
+    frameSrc: [...GOOGLE_COMMON_FRAME],
   },
   tiktok: {
     scriptSrc: [
@@ -133,6 +155,7 @@ export const TRACKING_CSP_HOSTS: Readonly<Record<TrackingProviderKind, CspHostMa
       'https://*.serverside.gtm.com',
     ],
     connectSrc: [...GOOGLE_COMMON_CONNECT],
+    frameSrc: [...GOOGLE_COMMON_FRAME],
   },
   custom: {
     scriptSrc: [],

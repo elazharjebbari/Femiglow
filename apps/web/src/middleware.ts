@@ -30,6 +30,7 @@ function buildCsp(
   const connectHosts = [...trackingExtensions.connectSrc, ...chatExtensions.connectSrc]
     .filter(Boolean)
     .join(' ');
+  const frameHosts = trackingExtensions.frameSrc.filter(Boolean).join(' ');
   // Pourquoi `'unsafe-inline'` au lieu de `'nonce-X' 'strict-dynamic'` :
   // Next.js 14 n'injecte pas automatiquement le nonce sur ses propres balises
   // <script> (RSC payload, hydratation) malgré le `x-nonce` posé sur la
@@ -68,7 +69,10 @@ function buildCsp(
     // pour /admin/emails/listmonk. Si LISTMONK_PUBLIC_URL n'est pas
     // configuré, l'iframe retombe sur same-origin via le proxy
     // /api/listmonk/* (couvert par `'self'`).
-    "frame-src 'self' https://www.youtube-nocookie.com https://listmonk.femiglow-maroc.com",
+    // Frames tierces des balises (conversion/remarketing Google Ads via
+    // doubleclick, GTM, Meta) — sinon GTM « Qualité du conteneur » signale
+    // un CSP bloquant la mesure. Cf. lib/tracking/providers/csp-hosts.ts.
+    `frame-src 'self' https://www.youtube-nocookie.com https://listmonk.femiglow-maroc.com ${frameHosts}`.trim(),
     // Live preview admin : on tolère le framing same-origin pour la
     // page `/admin/components/[key]/preview` (servie en iframe). Partout
     // ailleurs on garde 'none' (durci par défaut).
