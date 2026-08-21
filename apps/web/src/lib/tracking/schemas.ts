@@ -87,6 +87,17 @@ export const eventSchemas: Record<string, z.ZodTypeAny> = {
     .object({ video_percent: z.number(), video_title: z.string().optional() })
     .strict(),
   video_complete: z.object({ video_title: z.string().optional() }).strict(),
+  // Stories vidéo shoppables (docs/stories-video-2026-08-21/). `passthrough` :
+  // les params varient (entry, reason…) mais `story_id` est toujours présent.
+  // `story_cta_click` est normalisé vers `cta_click` à l'ingestion (comme
+  // `pack_cta_click`) pour alimenter le funnel CTA + Google Ads.
+  story_open: z.object({ story_id: z.string().min(1) }).passthrough(),
+  story_view: z.object({ story_id: z.string().min(1) }).passthrough(),
+  story_complete: z.object({ story_id: z.string().min(1) }).passthrough(),
+  story_next: z.object({ story_id: z.string().min(1) }).passthrough(),
+  story_prev: z.object({ story_id: z.string().min(1) }).passthrough(),
+  story_pause: z.object({ story_id: z.string().min(1) }).passthrough(),
+  story_close: z.object({ story_id: z.string().min(1) }).passthrough(),
   file_download: z
     .object({ file_name: z.string().optional(), file_extension: z.string().optional() })
     .strict(),

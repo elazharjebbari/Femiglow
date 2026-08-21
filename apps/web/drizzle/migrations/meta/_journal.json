@@ -589,6 +589,13 @@
       "when": 1781964585504,
       "tag": "0083_tearful_madame_masque",
       "breakpoints": true
+    },
+    {
+      "idx": 84,
+      "version": "7",
+      "when": 1787349005590,
+      "tag": "0084_tan_jackpot",
+      "breakpoints": true
     }
   ]
 }

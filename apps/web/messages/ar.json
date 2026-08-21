@@ -591,6 +591,22 @@
           "fini-brillant": "لمسة لامعة",
           "halal": "حلال"
         }
+      },
+      "stories": {
+        "sectionLabel": "قصص FemiGlow",
+        "heading": "اكتشفي بالفيديو",
+        "openAria": "افتحي القصة: {title}",
+        "scrollHint": "اسحبي لرؤية المزيد",
+        "prevSegment": "المقطع السابق",
+        "nextSegment": "المقطع التالي",
+        "close": "إغلاق",
+        "mute": "كتم الصوت",
+        "unmute": "تشغيل الصوت",
+        "pause": "إيقاف مؤقت",
+        "play": "تشغيل",
+        "segmentProgress": "المقطع {index} من {total}",
+        "defaultCta": "اطلبي",
+        "scrollMore": "عرض المزيد من القصص"
       }
     },
     "maison": {

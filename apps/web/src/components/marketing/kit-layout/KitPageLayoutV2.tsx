@@ -41,6 +41,7 @@ import { getTranslations } from 'next-intl/server';
 import { FAQContextuelle } from '@/components/sections';
 import { VideoPlayer4GestesKitBound } from '@/components/sections/VideoPlayer4GestesKitBound';
 import { HeroProduitBound } from '@/components/sections/HeroProduitBound';
+import { StoriesVideoBound } from '@/components/sections/StoriesVideoBound';
 import { CompositionRevealBound } from '@/components/sections/CompositionRevealBound';
 import { IngredientsDetailsBound } from '@/components/sections/IngredientsDetailsBound';
 import { resolveKitComposition } from '@/lib/kit/composition/resolver';
@@ -137,6 +138,11 @@ export async function KitPageLayoutV2({
             : (content.handsTestimonials?.length ?? 0)
         }
       />
+
+      {/* — 1bis. STORIES vidéo shoppables (preuve + démo précoce) — flag OFF
+        par défaut. Rail léger (posters), viewer overlay code-splitté (0 coût
+        de layout). Voir docs/stories-video-2026-08-21/. */}
+      <StoriesVideoBound locale={locale} />
 
       {/* — 2. PREUVE 1 : Composition (qualité formule) — §4.3 */}
       <CompositionRevealBound

@@ -53,6 +53,8 @@ const CTA_CLICK_ALIASES = new Set([
   'composition_post_cta_click',
   'pack_steps_cta_click',
   'steps_cta_click',
+  // Stories vidéo — le CTA d'une story alimente le funnel CTA + Google Ads.
+  'story_cta_click',
 ]);
 function normalizeEventName(name: string): string {
   return CTA_CLICK_ALIASES.has(name) ? 'cta_click' : name;
