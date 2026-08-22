@@ -38,9 +38,11 @@ export async function StoriesVideoBound({
   const strings: StoriesStrings = {
     sectionLabel: t('sectionLabel'),
     heading: t('heading'),
+    // openAria/segmentProgress utilisent des placeholders NON-ICU (%title%,
+    // %index%, %total%) résolus côté composant via .replace() — next-intl les
+    // laisse intacts (pas de FORMATTING_ERROR).
     openAria: t('openAria'),
-    // `{count}` est un argument ICU → il faut le fournir à next-intl (sinon la
-    // clé brute est renvoyée). Résolu ici avec le nombre de stories.
+    // `{count}` est un argument ICU fourni ici (nombre de stories).
     countLabel: t('countLabel', { count: feed.stories.length }),
     scrollHint: t('scrollHint'),
     scrollMore: t('scrollMore'),
