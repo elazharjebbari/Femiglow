@@ -51,7 +51,8 @@ export function StoriesVideo({ feed, strings, variant = 'section' }: StoriesVide
   if (feed.stories.length === 0) return null;
 
   const inline = variant === 'inline';
-  const countText = strings.countLabel.replace('{count}', String(feed.stories.length));
+  // countLabel est déjà résolu (« N vidéos ») par le Bound via next-intl.
+  const countText = strings.countLabel;
   const rail = (
     <>
       <StoriesRail

@@ -39,7 +39,9 @@ export async function StoriesVideoBound({
     sectionLabel: t('sectionLabel'),
     heading: t('heading'),
     openAria: t('openAria'),
-    countLabel: t('countLabel'),
+    // `{count}` est un argument ICU → il faut le fournir à next-intl (sinon la
+    // clé brute est renvoyée). Résolu ici avec le nombre de stories.
+    countLabel: t('countLabel', { count: feed.stories.length }),
     scrollHint: t('scrollHint'),
     scrollMore: t('scrollMore'),
     prevSegment: t('prevSegment'),
