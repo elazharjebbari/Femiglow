@@ -606,7 +606,8 @@
         "play": "تشغيل",
         "segmentProgress": "المقطع {index} من {total}",
         "defaultCta": "اطلبي",
-        "scrollMore": "عرض المزيد من القصص"
+        "scrollMore": "عرض المزيد من القصص",
+        "countLabel": "{count} فيديوهات"
       }
     },
     "maison": {

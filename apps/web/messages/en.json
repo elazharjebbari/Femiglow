@@ -606,7 +606,8 @@
         "play": "Play",
         "segmentProgress": "Segment {index} of {total}",
         "defaultCta": "Order",
-        "scrollMore": "See more stories"
+        "scrollMore": "See more stories",
+        "countLabel": "{count} videos"
       }
     },
     "maison": {

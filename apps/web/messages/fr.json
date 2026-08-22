@@ -611,7 +611,8 @@
         "play": "Lecture",
         "segmentProgress": "Segment {index} sur {total}",
         "defaultCta": "Commander",
-        "scrollMore": "Voir plus de stories"
+        "scrollMore": "Voir plus de stories",
+        "countLabel": "{count} vidéos"
       }
     },
     "maison": {

@@ -48,6 +48,8 @@ export interface StoriesStrings {
   sectionLabel: string;
   /** Titre visible optionnel au-dessus du rail. */
   heading?: string;
+  /** Gabarit du compteur de vidéos (« {count} vidéos ») — signale qu'il y en a plusieurs. */
+  countLabel: string;
   /** Gabarit `Ouvrir la story : {title}`. */
   openAria: string;
   /** Affordance de défilement (« Faites glisser pour voir plus »). */

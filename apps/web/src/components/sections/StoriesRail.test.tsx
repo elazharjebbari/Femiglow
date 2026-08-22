@@ -8,6 +8,7 @@ const STRINGS: StoriesStrings = {
   sectionLabel: 'Stories',
   heading: 'Découvrez',
   openAria: 'Ouvrir : {title}',
+  countLabel: '{count} vidéos',
   scrollHint: 'Faites glisser',
   scrollMore: 'Voir plus de stories',
   prevSegment: 'Précédent',

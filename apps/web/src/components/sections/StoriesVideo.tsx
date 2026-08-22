@@ -51,6 +51,7 @@ export function StoriesVideo({ feed, strings, variant = 'section' }: StoriesVide
   if (feed.stories.length === 0) return null;
 
   const inline = variant === 'inline';
+  const countText = strings.countLabel.replace('{count}', String(feed.stories.length));
   const rail = (
     <>
       <StoriesRail
@@ -75,11 +76,16 @@ export function StoriesVideo({ feed, strings, variant = 'section' }: StoriesVide
     // Compact, aligné au conteneur du hero (hérite son padding). Kicker discret.
     return (
       <div aria-label={strings.sectionLabel} data-testid="stories-video" className="w-full">
-        {strings.heading ? (
-          <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.16em] text-encre/45">
-            {strings.heading}
-          </p>
-        ) : null}
+        <div className="mb-2 flex items-center gap-2">
+          {strings.heading ? (
+            <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-encre/45">
+              {strings.heading}
+            </p>
+          ) : null}
+          <span className="rounded-full bg-sauge-dark/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sauge-dark">
+            {countText}
+          </span>
+        </div>
         {rail}
       </div>
     );
@@ -91,9 +97,14 @@ export function StoriesVideo({ feed, strings, variant = 'section' }: StoriesVide
       data-testid="stories-video"
       className="mx-auto w-full max-w-5xl px-4 py-6 sm:py-8"
     >
-      {strings.heading ? (
-        <h2 className="mb-3 font-display text-lg text-encre sm:text-xl">{strings.heading}</h2>
-      ) : null}
+      <div className="mb-3 flex items-baseline gap-2.5">
+        {strings.heading ? (
+          <h2 className="font-display text-lg text-encre sm:text-xl">{strings.heading}</h2>
+        ) : null}
+        <span className="rounded-full bg-sauge-dark/10 px-2.5 py-1 text-[11px] font-semibold text-sauge-dark">
+          {countText}
+        </span>
+      </div>
       {rail}
     </section>
   );

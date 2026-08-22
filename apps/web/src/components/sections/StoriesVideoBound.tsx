@@ -39,6 +39,7 @@ export async function StoriesVideoBound({
     sectionLabel: t('sectionLabel'),
     heading: t('heading'),
     openAria: t('openAria'),
+    countLabel: t('countLabel'),
     scrollHint: t('scrollHint'),
     scrollMore: t('scrollMore'),
     prevSegment: t('prevSegment'),
