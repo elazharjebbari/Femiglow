@@ -83,10 +83,10 @@ describe('StoryViewer', () => {
 
   it('avance de segment (story_next) puis émet story_complete UNE fois en fin de story', () => {
     render(<StoryViewer stories={STORIES} strings={STRINGS} initialIndex={0} onClose={vi.fn()} onStorySeen={vi.fn()} />);
-    const nextZone = screen.getByLabelText('Suivant');
-    fireEvent.click(nextZone); // seg_a1 → seg_a2
+    // 2 contrôles « Suivant » (zone tap invisible + flèche visible) → on prend le 1er.
+    fireEvent.click(screen.getAllByLabelText('Suivant')[0]!); // seg_a1 → seg_a2
     expect(names()).toContain('story_next');
-    fireEvent.click(screen.getByLabelText('Suivant')); // seg_a2 (dernier) → story_complete + story B
+    fireEvent.click(screen.getAllByLabelText('Suivant')[0]!); // seg_a2 (dernier) → story_complete + story B
     const completes = names().filter((n) => n === 'story_complete');
     expect(completes).toHaveLength(1);
     expect(call('story_complete')?.[1]).toMatchObject({ story_id: 'sty_a' });

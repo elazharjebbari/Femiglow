@@ -37,9 +37,12 @@ const STORIES = [1, 2, 3].map(makeStory);
 
 // jsdom ne calcule pas le layout (scrollWidth/clientWidth = 0). On simule un
 // rail débordant → l'affordance de scroll (indice + fade + flèche) s'affiche.
+// + stub media (les bulles montent une couverture <video> quand inView).
 beforeAll(() => {
   Object.defineProperty(HTMLElement.prototype, 'scrollWidth', { configurable: true, value: 1000 });
   Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, value: 300 });
+  window.HTMLMediaElement.prototype.play = vi.fn().mockResolvedValue(undefined);
+  window.HTMLMediaElement.prototype.pause = vi.fn();
 });
 
 afterEach(cleanup);
@@ -79,7 +82,7 @@ describe('StoriesRail', () => {
     );
     const seenRing = screen.getByTestId('story-bubble-story-1').querySelector('span');
     const unseenRing = screen.getByTestId('story-bubble-story-2').querySelector('span');
-    expect(seenRing?.className).toContain('bg-encre/15');
+    expect(seenRing?.className).toContain('bg-encre/20');
     expect(unseenRing?.className).toContain('bg-gradient-to-tr');
   });
 });

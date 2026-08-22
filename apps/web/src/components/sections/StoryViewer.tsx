@@ -6,7 +6,7 @@ import { createPortal } from 'react-dom';
 import { useReducedMotion } from '@/lib/media/hooks/useReducedMotion';
 import { useTracking } from '@/lib/tracking/use-tracking';
 import { cn } from '@/lib/utils/cn';
-import type { Story, StoriesStrings } from '@/lib/stories/types';
+import type { Story, StoriesStrings, StorySegment } from '@/lib/stories/types';
 
 interface StoryViewerProps {
   stories: Story[];
@@ -22,13 +22,32 @@ const MOVE_CANCEL_PX = 10;
 const WATCHDOG_BUFFER_MS = 4000;
 const DEFAULT_TARGET = '#commander-femiglow';
 
+function Chevron({ dir }: { dir: 'prev' | 'next' }) {
+  // Base « › » (pointe à droite). next : droite en LTR, gauche en RTL.
+  // prev : gauche en LTR, droite en RTL. Rotations non ambiguës (0 vs 180).
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={cn('h-6 w-6', dir === 'prev' ? 'rotate-180 rtl:rotate-0' : 'rtl:rotate-180')}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M9 6l6 6-6 6" />
+    </svg>
+  );
+}
+
 /**
- * Viewer plein écran (overlay portal). Monté uniquement à l'ouverture d'une
- * bulle (import dynamique côté orchestrateur). Voir docs/stories-video-2026-08-21/.
- * Durci suite à la revue adversariale : focus-trap + restauration, CTA de repli
- * actif, reset pause à la nav, anti-conflit long-press/swipe, onError + watchdog
- * d'auto-advance, reduced-motion, préchauffe story suivante, story_complete
- * dédupliqué.
+ * Viewer plein écran (overlay portal, z très haut → recouvre le menu du site).
+ * Monté uniquement à l'ouverture d'une bulle. Voir docs/stories-video-2026-08-21/.
+ * Durci (revue adversariale) : focus-trap + restore, CTA repli actif, reset pause
+ * nav, anti-conflit long-press/swipe, onError + watchdog, reduced-motion, préchauffe
+ * de la vidéo suivante, story_complete dédupliqué. Contrôles visibles : flèches
+ * prev/next + bouton quitter proéminent.
  */
 export function StoryViewer({
   stories,
@@ -61,25 +80,23 @@ export function StoryViewer({
   const segment = story?.segments[segmentIndex];
   const nextSegment = story?.segments[segmentIndex + 1];
   const nextStoryFirst = stories[storyIndex + 1]?.segments[0];
+  // Vidéo à préchauffer : segment suivant intra-story, sinon 1ᵉʳ de la story suivante.
+  const preloadNext: StorySegment | undefined = nextSegment ?? nextStoryFirst;
 
   const isRtl = () => typeof document !== 'undefined' && document.documentElement.dir === 'rtl';
 
-  // CTA effectif (repli si le segment n'en définit pas) — utilisé au rendu ET
-  // au clic pour éviter tout bouton mort.
   const activeCta = useMemo(
     () => segment?.cta ?? { label: strings.defaultCta, target: DEFAULT_TARGET },
     [segment?.cta, strings.defaultCta],
   );
 
-  // Montage : portal + verrou de scroll + focus initial + restauration du focus
-  // sur la bulle déclencheuse à la fermeture + nettoyage du timer long-press.
   useEffect(() => {
     setMounted(true);
     const trigger = document.activeElement as HTMLElement | null;
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const focusTimer = window.setTimeout(() => overlayRef.current?.focus(), 0);
-    const lp = longPressRef; // ref object stable ; on veut le timer COURANT au démontage.
+    const lp = longPressRef;
     return () => {
       document.body.style.overflow = prevOverflow;
       clearTimeout(focusTimer);
@@ -107,8 +124,6 @@ export function StoryViewer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [story?.id]);
 
-  // Changement de segment/story : émet story_view, remet la progression à 0 ET
-  // resynchronise l'état pause avec la nouvelle vidéo (autoPlay ou reduced).
   useEffect(() => {
     if (story && segment) {
       emit('story_view', { story_id: story.id, segment_id: segment.id, segment_index: segmentIndex });
@@ -125,8 +140,6 @@ export function StoryViewer({
     }
   }, [storyIndex]);
 
-  // Avance de story SANS émettre story_complete (le complete est géré par next()
-  // à la vraie fin) → pas de sur-comptage sur swipe latéral.
   const goNextStory = useCallback(() => {
     if (storyIndex < stories.length - 1) {
       setStoryIndex((i) => i + 1);
@@ -142,7 +155,6 @@ export function StoryViewer({
       emit('story_next', { story_id: story.id, segment_index: segmentIndex + 1 });
       setSegmentIndex((i) => i + 1);
     } else {
-      // Vraie fin de story → story_complete (dédupliqué).
       if (!completedRef.current.has(story.id)) {
         completedRef.current.add(story.id);
         emit('story_complete', { story_id: story.id });
@@ -174,7 +186,6 @@ export function StoryViewer({
     }
   }, [emit, story, segment]);
 
-  // Clavier : focus-trap (Tab) + navigation + pause + mute + fermeture.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const rtl = isRtl();
@@ -213,8 +224,6 @@ export function StoryViewer({
     return () => window.removeEventListener('keydown', onKey);
   }, [next, prev, togglePause, closeViewer]);
 
-  // Watchdog d'auto-advance : si 'ended' ne se déclenche jamais (source 404 /
-  // codec / stall), on avance quand même. Désarmé en pause / reduced-motion.
   useEffect(() => {
     if (!segment || paused || reduce) return;
     const ms = (segment.durationMs > 0 ? segment.durationMs : 8000) + WATCHDOG_BUFFER_MS;
@@ -223,7 +232,6 @@ export function StoryViewer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [segment?.id, paused, reduce]);
 
-  // Long-press = pause tant que maintenu (annulé si le pointeur bouge → swipe).
   const onPressStart = useCallback(
     (e: React.PointerEvent) => {
       longPressRef.current.fired = false;
@@ -307,6 +315,9 @@ export function StoryViewer({
 
   if (!mounted || !story || !segment) return null;
 
+  const iconBtn =
+    'flex items-center justify-center rounded-full text-white outline-none transition hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white';
+
   return createPortal(
     <div
       ref={overlayRef}
@@ -315,10 +326,10 @@ export function StoryViewer({
       aria-label={story.title}
       tabIndex={-1}
       data-testid="story-viewer"
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black outline-none"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 outline-none"
     >
       <div
-        className="relative h-full w-full max-w-[430px] overflow-hidden bg-black sm:h-[92vh] sm:rounded-2xl"
+        className="relative h-full w-full max-w-[440px] overflow-hidden bg-black sm:h-[94vh] sm:rounded-2xl"
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
         onPointerDown={onPressStart}
@@ -347,20 +358,36 @@ export function StoryViewer({
           ))}
         </video>
 
-        {/* Préchargement des posters à venir : segment suivant intra-story ET
-          1ᵉʳ segment de la story suivante (la vraie transition). */}
-        {[nextSegment?.poster, nextStoryFirst?.poster].filter(Boolean).map((src) => (
+        {/* Préchauffe de la vidéo suivante (buffering anticipé → transition rapide). */}
+        {preloadNext ? (
+          <video
+            key={`preload-${preloadNext.id}`}
+            muted
+            preload="auto"
+            playsInline
+            aria-hidden="true"
+            tabIndex={-1}
+            className="pointer-events-none absolute h-px w-px opacity-0"
+          >
+            {preloadNext.sources.map((s) => (
+              <source key={s.url} src={s.url} type={s.mime} />
+            ))}
+          </video>
+        ) : null}
+        {/* Poster suivant préchargé aussi. */}
+        {preloadNext ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img key={src} src={src as string} alt="" aria-hidden="true" className="hidden" />
-        ))}
+          <img src={preloadNext.poster} alt="" aria-hidden="true" className="hidden" />
+        ) : null}
 
+        {/* Voiles pour lisibilité. */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/60 to-transparent"
+          className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/70 to-transparent"
         />
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/70 to-transparent"
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-black/80 to-transparent"
         />
 
         {/* Barres de progression segmentées. */}
@@ -388,18 +415,18 @@ export function StoryViewer({
           ))}
         </div>
 
-        {/* Header : titre + play/pause + mute + close. */}
-        <div className="absolute inset-x-3 top-7 z-20 flex items-center justify-between">
-          <span className="max-w-[52%] truncate text-sm font-medium text-white drop-shadow">
+        {/* Header : titre + play/pause + mute + QUITTER (proéminent). */}
+        <div className="absolute inset-x-3 top-7 z-30 flex items-center justify-between">
+          <span className="max-w-[48%] truncate text-sm font-medium text-white drop-shadow">
             {story.title}
           </span>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             <button
               type="button"
               onClick={togglePause}
               aria-label={paused ? strings.play : strings.pause}
               data-testid="story-playpause"
-              className="flex h-9 w-9 items-center justify-center rounded-full text-white/90 outline-none hover:bg-white/15 focus-visible:ring-2 focus-visible:ring-white"
+              className={cn(iconBtn, 'h-9 w-9 text-white/90')}
             >
               <span aria-hidden="true">{paused ? '▶' : '❚❚'}</span>
             </button>
@@ -407,7 +434,7 @@ export function StoryViewer({
               type="button"
               onClick={() => setMuted((m) => !m)}
               aria-label={muted ? strings.unmute : strings.mute}
-              className="flex h-9 w-9 items-center justify-center rounded-full text-white/90 outline-none hover:bg-white/15 focus-visible:ring-2 focus-visible:ring-white"
+              className={cn(iconBtn, 'h-9 w-9 text-white/90')}
             >
               <span aria-hidden="true">{muted ? '🔇' : '🔊'}</span>
             </button>
@@ -416,40 +443,66 @@ export function StoryViewer({
               onClick={() => closeViewer('button')}
               aria-label={strings.close}
               data-testid="story-close"
-              className="flex h-9 w-9 items-center justify-center rounded-full text-white outline-none hover:bg-white/15 focus-visible:ring-2 focus-visible:ring-white"
+              className={cn(iconBtn, 'h-11 w-11 bg-white/15 text-white ring-1 ring-white/25')}
             >
-              <span aria-hidden="true" className="text-xl leading-none">
-                ✕
-              </span>
+              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
             </button>
           </div>
         </div>
 
-        {/* Zones de tap précédent / suivant (miroir RTL via inset logique). */}
+        {/* Zones de tap invisibles (nav rapide façon stories). */}
         <button
           type="button"
           onClick={guardedTap(prev)}
           aria-label={strings.prevSegment}
-          className="absolute inset-y-0 start-0 z-10 w-[30%] cursor-default outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/70"
+          tabIndex={-1}
+          className="absolute inset-y-0 start-0 z-10 w-[32%] cursor-default outline-none"
         />
         <button
           type="button"
           onClick={guardedTap(next)}
           aria-label={strings.nextSegment}
-          className="absolute inset-y-0 end-0 z-10 w-[70%] cursor-default outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/70"
+          tabIndex={-1}
+          className="absolute inset-y-0 end-0 z-10 w-[68%] cursor-default outline-none"
         />
 
-        {paused && (
+        {/* Flèches visibles minimalistes et élégantes. */}
+        <button
+          type="button"
+          onClick={guardedTap(prev)}
+          aria-label={strings.prevSegment}
+          className={cn(
+            iconBtn,
+            'absolute start-2 top-1/2 z-30 h-11 w-11 -translate-y-1/2 bg-white/10 backdrop-blur-sm hover:bg-white/25',
+          )}
+        >
+          <Chevron dir="prev" />
+        </button>
+        <button
+          type="button"
+          onClick={guardedTap(next)}
+          aria-label={strings.nextSegment}
+          className={cn(
+            iconBtn,
+            'absolute end-2 top-1/2 z-30 h-11 w-11 -translate-y-1/2 bg-white/10 backdrop-blur-sm hover:bg-white/25',
+          )}
+        >
+          <Chevron dir="next" />
+        </button>
+
+        {paused ? (
           <div
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center"
           >
-            <span className="text-5xl text-white/80">▶</span>
+            <span className="text-5xl text-white/70">▶</span>
           </div>
-        )}
+        ) : null}
 
         {/* Footer CTA. */}
-        <div className="absolute inset-x-4 bottom-4 z-20 flex flex-col gap-2">
+        <div className="absolute inset-x-4 bottom-4 z-30 flex flex-col gap-2">
           {segment.caption ? (
             <p className="text-center text-sm text-white/90 drop-shadow">{segment.caption}</p>
           ) : null}

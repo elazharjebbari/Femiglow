@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Image } from '@/components/ui/Image';
+import { useMediaInView } from '@/lib/media/hooks/useMediaInView';
+import { useReducedMotion } from '@/lib/media/hooks/useReducedMotion';
 import { cn } from '@/lib/utils/cn';
 import type { Story, StoriesStrings } from '@/lib/stories/types';
 
@@ -14,13 +16,130 @@ interface StoriesRailProps {
 }
 
 /**
- * Rail de bulles — TOUJOURS sur une ligne, défilable horizontalement, avec
- * une affordance de scroll explicite :
- *  - la bulle suivante « dépasse » (peek) grâce aux largeurs fixes + overflow ;
- *  - un dégradé de bord + un chevron apparaissent côté « suite » quand il reste
- *    du contenu (masqués si tout tient à l'écran) ;
- *  - la scrollbar est masquée pour un rendu propre.
- * Direction lue au runtime (RTL arabe) : bords/chevron/scroll miroir.
+ * Une bulle = poster + mini-couverture vidéo (muette, en boucle) qui se lance
+ * quand la bulle entre dans le viewport → on COMPREND que ce sont des vidéos.
+ * Hors-vue / reduced-motion : poster + pastille « play ». La vidéo n'est montée
+ * que côté client au scroll (SSR = posters only, payload léger).
+ */
+function StoryBubble({
+  story,
+  index,
+  seen,
+  strings,
+  onOpen,
+}: {
+  story: Story;
+  index: number;
+  seen: boolean;
+  strings: StoriesStrings;
+  onOpen: (index: number) => void;
+}) {
+  const reduced = useReducedMotion();
+  const { ref, inView } = useMediaInView<HTMLSpanElement>({
+    rootMargin: '150px',
+    threshold: 0.25,
+    once: false,
+  });
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const cover = story.segments[0];
+  const showCover = inView && !reduced && Boolean(cover);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (showCover) void v.play().catch(() => {});
+    else v.pause();
+  }, [showCover]);
+
+  return (
+    <li className="shrink-0 snap-start">
+      <button
+        type="button"
+        onClick={() => onOpen(index)}
+        aria-label={strings.openAria.replace('{title}', story.title)}
+        data-testid={`story-bubble-${story.slug}`}
+        className="group flex w-[84px] flex-col items-center gap-1.5 outline-none"
+      >
+        <span
+          ref={ref}
+          className={cn(
+            'relative block rounded-full p-[3px] transition-transform group-hover:scale-105',
+            'group-focus-visible:ring-2 group-focus-visible:ring-encre group-focus-visible:ring-offset-2',
+            seen
+              ? 'bg-encre/20'
+              : 'bg-gradient-to-tr from-champagne via-terracotta to-sauge-dark',
+          )}
+        >
+          <span className="block rounded-full bg-creme p-[2px]">
+            <span className="relative block h-[74px] w-[74px] overflow-hidden rounded-full bg-encre/5">
+              <Image
+                src={story.bubblePoster}
+                alt=""
+                width={180}
+                height={180}
+                ratio="1:1"
+                sizes="84px"
+                loading={index < 4 ? 'eager' : 'lazy'}
+              />
+              {showCover ? (
+                <video
+                  ref={videoRef}
+                  muted
+                  loop
+                  playsInline
+                  autoPlay
+                  preload="metadata"
+                  aria-hidden="true"
+                  className="absolute inset-0 h-full w-full object-cover"
+                >
+                  {cover!.sources.map((s) => (
+                    <source key={s.url} src={s.url} type={s.mime} />
+                  ))}
+                </video>
+              ) : (
+                // pastille « play » quand la couverture ne tourne pas → signale la vidéo.
+                <span
+                  aria-hidden="true"
+                  className="absolute inset-0 flex items-center justify-center"
+                >
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-black/35 pl-0.5 text-[10px] text-white backdrop-blur-[1px]">
+                    ▶
+                  </span>
+                </span>
+              )}
+              {seen ? (
+                <span aria-hidden="true" className="absolute inset-0 bg-encre/30" />
+              ) : null}
+            </span>
+          </span>
+
+          {/* badge « déjà vu » — coche discrète en surimpression. */}
+          {seen ? (
+            <span
+              aria-hidden="true"
+              className="absolute -bottom-0.5 -end-0.5 flex h-5 w-5 items-center justify-center rounded-full border-2 border-creme bg-sauge-dark text-[10px] font-bold text-creme"
+            >
+              ✓
+            </span>
+          ) : null}
+        </span>
+        <span
+          className={cn(
+            'line-clamp-2 max-w-[86px] text-center text-[11px] leading-tight',
+            seen ? 'text-encre/50' : 'text-encre/80',
+          )}
+        >
+          {story.title}
+        </span>
+      </button>
+    </li>
+  );
+}
+
+/**
+ * Rail de bulles — TOUJOURS sur une ligne, défilable horizontalement, avec une
+ * affordance de scroll explicite (peek + dégradé de bord + chevron + indice),
+ * miroir en RTL. Voir docs/stories-video-2026-08-21/.
  */
 export function StoriesRail({ stories, strings, seenIds, onOpen }: StoriesRailProps) {
   const scrollRef = useRef<HTMLUListElement | null>(null);
@@ -31,7 +150,6 @@ export function StoriesRail({ stories, strings, seenIds, onOpen }: StoriesRailPr
     const el = scrollRef.current;
     if (!el) return;
     const max = el.scrollWidth - el.clientWidth;
-    // scrollLeft peut être négatif en RTL (navigateurs modernes) → abs.
     const cur = Math.abs(el.scrollLeft);
     setAtStart(cur <= 4);
     setAtEnd(cur >= max - 4);
@@ -49,7 +167,6 @@ export function StoriesRail({ stories, strings, seenIds, onOpen }: StoriesRailPr
   const scrollForward = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
-    // Direction lue à l'instant du clic → robuste au switch de langue à chaud.
     const rtl = getComputedStyle(el).direction === 'rtl';
     const amount = Math.round(el.clientWidth * 0.8);
     el.scrollBy({ left: rtl ? -amount : amount, behavior: 'smooth' });
@@ -71,49 +188,18 @@ export function StoriesRail({ stories, strings, seenIds, onOpen }: StoriesRailPr
           'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-encre',
         )}
       >
-        {stories.map((story, index) => {
-          const seen = seenIds.has(story.id);
-          return (
-            <li key={story.id} className="shrink-0 snap-start">
-              <button
-                type="button"
-                onClick={() => onOpen(index)}
-                aria-label={strings.openAria.replace('{title}', story.title)}
-                data-testid={`story-bubble-${story.slug}`}
-                className="group flex w-[76px] flex-col items-center gap-1.5 outline-none"
-              >
-                <span
-                  className={cn(
-                    'relative block rounded-full p-[3px] transition-transform group-hover:scale-105 group-focus-visible:ring-2 group-focus-visible:ring-encre group-focus-visible:ring-offset-2',
-                    seen
-                      ? 'bg-encre/15'
-                      : 'bg-gradient-to-tr from-champagne via-terracotta to-sauge-dark',
-                  )}
-                >
-                  <span className="block rounded-full bg-creme p-[2px]">
-                    <span className="block h-[68px] w-[68px] overflow-hidden rounded-full bg-encre/5">
-                      <Image
-                        src={story.bubblePoster}
-                        alt=""
-                        width={160}
-                        height={160}
-                        ratio="1:1"
-                        sizes="76px"
-                        loading={index < 4 ? 'eager' : 'lazy'}
-                      />
-                    </span>
-                  </span>
-                </span>
-                <span className="line-clamp-2 max-w-[80px] text-center text-[11px] leading-tight text-encre/80">
-                  {story.title}
-                </span>
-              </button>
-            </li>
-          );
-        })}
+        {stories.map((story, index) => (
+          <StoryBubble
+            key={story.id}
+            story={story}
+            index={index}
+            seen={seenIds.has(story.id)}
+            strings={strings}
+            onOpen={onOpen}
+          />
+        ))}
       </ul>
 
-      {/* Dégradé de bord côté « début » (visible dès qu'on a défilé). */}
       <div
         aria-hidden="true"
         className={cn(
@@ -122,8 +208,6 @@ export function StoriesRail({ stories, strings, seenIds, onOpen }: StoriesRailPr
           atStart ? 'opacity-0' : 'opacity-100',
         )}
       />
-
-      {/* Dégradé + chevron côté « suite » (la où il reste des vidéos). */}
       <div
         aria-hidden="true"
         className={cn(
@@ -138,7 +222,7 @@ export function StoriesRail({ stories, strings, seenIds, onOpen }: StoriesRailPr
         aria-label={strings.scrollMore}
         tabIndex={-1}
         className={cn(
-          'absolute end-1 top-[30px] hidden h-8 w-8 items-center justify-center rounded-full bg-creme/90 text-encre shadow-md ring-1 ring-encre/10 transition-opacity duration-200 hover:bg-creme md:flex',
+          'absolute end-1 top-[32px] hidden h-8 w-8 items-center justify-center rounded-full bg-creme/95 text-encre shadow-md ring-1 ring-encre/10 transition-opacity duration-200 hover:bg-creme md:flex',
           atEnd ? 'pointer-events-none opacity-0' : 'opacity-100',
         )}
       >
@@ -150,12 +234,11 @@ export function StoriesRail({ stories, strings, seenIds, onOpen }: StoriesRailPr
         </span>
       </button>
 
-      {/* Indice textuel discret, seulement s'il reste du contenu. */}
-      {!atEnd && (
+      {!atEnd ? (
         <p className="mt-1 select-none text-center text-[10px] uppercase tracking-[0.16em] text-encre/40 motion-safe:animate-pulse">
           {strings.scrollHint}
         </p>
-      )}
+      ) : null}
     </div>
   );
 }
