@@ -132,7 +132,11 @@ export function HeroProduit({
         eventIdSeed={eventIdSeed}
       />
       <Container width="page">
-        <div className="grid gap-8 lg:grid-cols-2 lg:gap-16">
+        {/* `grid-cols-1` (= minmax(0,1fr)) est CRITIQUE : sans lui, la colonne
+          mobile implicite est `auto` et grandit pour contenir le rail stories
+          (large min-content) → scroll horizontal. minmax(0,1fr) borne la
+          colonne et laisse les scroll-containers internes défiler. */}
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-16">
           {/* Colonne gauche — Galerie */}
           <div className="-mx-4 lg:mx-0">
             <HeroGallery
@@ -144,7 +148,7 @@ export function HeroProduit({
           {/* MOBILE : bloc « découverte vidéos » sous les images, avant le titre.
             Sur desktop (lg+) ce bloc est masqué ici — il reste après le hero
             dans la page (disposition desktop inchangée). */}
-          {storiesSlot ? <div className="lg:hidden">{storiesSlot}</div> : null}
+          {storiesSlot ? <div className="min-w-0 lg:hidden">{storiesSlot}</div> : null}
 
           {/* Colonne droite — Contenu */}
           <div className="space-y-5 lg:pt-4">
