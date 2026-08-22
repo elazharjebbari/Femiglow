@@ -3306,7 +3306,7 @@
           }
         ],
         "firingTriggerId": [
-          "50"
+          "1"
         ],
         "parentFolderId": "2"
       },
@@ -3607,6 +3607,27 @@
         ],
         "firingTriggerId": [
           "87"
+        ],
+        "parentFolderId": "2"
+      },
+      {
+        "tagId": "122",
+        "name": "Ads Conv — view_item → view_item",
+        "type": "awct",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "conversionId",
+            "value": "{{CONST - Google Ads Conversion ID}}"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "conversionLabel",
+            "value": "{{CONST - Ads Label - view_item}}"
+          }
+        ],
+        "firingTriggerId": [
+          "68"
         ],
         "parentFolderId": "2"
       }
@@ -6429,6 +6450,18 @@
           }
         ],
         "parentFolderId": "3"
+      },
+      {
+        "variableId": "36",
+        "name": "CONST - Ads Label - view_item",
+        "type": "c",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "value",
+            "value": "Huo3CIqriOYcEOO6yMZE"
+          }
+        ]
       }
     ],
     "folder": [
