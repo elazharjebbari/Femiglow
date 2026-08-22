@@ -7,7 +7,7 @@ import type { StoriesStrings, Story } from '@/lib/stories/types';
 const STRINGS: StoriesStrings = {
   sectionLabel: 'Stories',
   heading: 'Découvrez',
-  openAria: 'Ouvrir : {title}',
+  openAria: 'Ouvrir : %title%',
   countLabel: '{count} vidéos',
   scrollHint: 'Faites glisser',
   scrollMore: 'Voir plus de stories',
@@ -18,7 +18,7 @@ const STRINGS: StoriesStrings = {
   unmute: 'Son',
   pause: 'Pause',
   play: 'Lecture',
-  segmentProgress: 'Segment {index}/{total}',
+  segmentProgress: 'Segment %index%/%total%',
   defaultCta: 'Commander',
 };
 

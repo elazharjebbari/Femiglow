@@ -595,7 +595,7 @@
       "stories": {
         "sectionLabel": "FemiGlow Stories",
         "heading": "See it in video",
-        "openAria": "Open story: {title}",
+        "openAria": "Open story: %title%",
         "scrollHint": "Swipe to see more",
         "prevSegment": "Previous segment",
         "nextSegment": "Next segment",
@@ -604,7 +604,7 @@
         "unmute": "Unmute",
         "pause": "Pause",
         "play": "Play",
-        "segmentProgress": "Segment {index} of {total}",
+        "segmentProgress": "Segment %index% of %total%",
         "defaultCta": "Order",
         "scrollMore": "See more stories",
         "countLabel": "{count} videos"

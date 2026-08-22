@@ -56,7 +56,7 @@ function StoryBubble({
       <button
         type="button"
         onClick={() => onOpen(index)}
-        aria-label={strings.openAria.replace('{title}', story.title)}
+        aria-label={strings.openAria.replace('%title%', story.title)}
         data-testid={`story-bubble-${story.slug}`}
         className="group flex w-[84px] flex-col items-center gap-1.5 outline-none"
       >

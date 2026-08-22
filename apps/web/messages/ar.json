@@ -595,7 +595,7 @@
       "stories": {
         "sectionLabel": "قصص FemiGlow",
         "heading": "اكتشفي بالفيديو",
-        "openAria": "افتحي القصة: {title}",
+        "openAria": "افتحي القصة: %title%",
         "scrollHint": "اسحبي لرؤية المزيد",
         "prevSegment": "المقطع السابق",
         "nextSegment": "المقطع التالي",
@@ -604,7 +604,7 @@
         "unmute": "تشغيل الصوت",
         "pause": "إيقاف مؤقت",
         "play": "تشغيل",
-        "segmentProgress": "المقطع {index} من {total}",
+        "segmentProgress": "المقطع %index% من %total%",
         "defaultCta": "اطلبي",
         "scrollMore": "عرض المزيد من القصص",
         "countLabel": "{count} فيديوهات"

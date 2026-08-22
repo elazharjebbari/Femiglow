@@ -400,8 +400,8 @@ export function StoryViewer({
               aria-valuemax={100}
               aria-valuenow={i < segmentIndex ? 100 : i === segmentIndex ? Math.round(progress * 100) : 0}
               aria-label={strings.segmentProgress
-                .replace('{index}', String(i + 1))
-                .replace('{total}', String(story.segments.length))}
+                .replace('%index%', String(i + 1))
+                .replace('%total%', String(story.segments.length))}
               className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/30"
             >
               <span

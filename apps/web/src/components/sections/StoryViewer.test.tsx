@@ -16,7 +16,7 @@ import { StoryViewer } from './StoryViewer';
 
 const STRINGS: StoriesStrings = {
   sectionLabel: 'Stories',
-  openAria: 'Ouvrir : {title}',
+  openAria: 'Ouvrir : %title%',
   countLabel: '{count} vidéos',
   scrollHint: 'Glisser',
   scrollMore: 'Voir plus',
@@ -27,7 +27,7 @@ const STRINGS: StoriesStrings = {
   unmute: 'Son',
   pause: 'Pause',
   play: 'Lecture',
-  segmentProgress: 'Segment {index}/{total}',
+  segmentProgress: 'Segment %index%/%total%',
   defaultCta: 'Commander',
 };
 

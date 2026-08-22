@@ -600,7 +600,7 @@
       "stories": {
         "sectionLabel": "Stories FemiGlow",
         "heading": "Découvrez en vidéo",
-        "openAria": "Ouvrir la story : {title}",
+        "openAria": "Ouvrir la story : %title%",
         "scrollHint": "Faites glisser pour voir plus",
         "prevSegment": "Segment précédent",
         "nextSegment": "Segment suivant",
@@ -609,7 +609,7 @@
         "unmute": "Activer le son",
         "pause": "Pause",
         "play": "Lecture",
-        "segmentProgress": "Segment {index} sur {total}",
+        "segmentProgress": "Segment %index% sur %total%",
         "defaultCta": "Commander",
         "scrollMore": "Voir plus de stories",
         "countLabel": "{count} vidéos"
