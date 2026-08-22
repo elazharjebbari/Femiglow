@@ -28,6 +28,16 @@ export interface AdminStory {
   isActive: boolean;
   segments: AdminSegment[];
 }
+export interface StoryMetrics {
+  opens: number;
+  views: number;
+  completes: number;
+  ctaClicks: number;
+  completionRate: number | null;
+  ctr: number | null;
+}
+
+const pct = (v: number | null) => (v === null ? '—' : `${Math.round(v * 100)}%`);
 
 const inputCls = 'mt-1 w-full rounded border border-stone-300 px-2 py-1 text-sm';
 const btn = 'rounded px-2.5 py-1 text-xs font-medium disabled:opacity-50';
@@ -41,7 +51,15 @@ async function api(url: string, method: string, body?: unknown): Promise<Respons
   });
 }
 
-export function StoriesManager({ initialStories }: { initialStories: AdminStory[] }) {
+export function StoriesManager({
+  initialStories,
+  metricsByStory = {},
+  totals,
+}: {
+  initialStories: AdminStory[];
+  metricsByStory?: Record<string, StoryMetrics>;
+  totals?: StoryMetrics;
+}) {
   const [stories, setStories] = useState<AdminStory[]>(initialStories);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -134,6 +152,17 @@ export function StoriesManager({ initialStories }: { initialStories: AdminStory[
         </p>
       </div>
 
+      {totals ? (
+        <div className="flex flex-wrap gap-4 rounded-lg border border-stone-200 bg-white p-4 text-sm">
+          <span className="text-xs uppercase tracking-wide text-stone-400">30 j</span>
+          <span><b>{totals.opens}</b> ouvertures</span>
+          <span><b>{totals.completes}</b> complétions</span>
+          <span>complétion <b>{pct(totals.completionRate)}</b></span>
+          <span><b>{totals.ctaClicks}</b> CTA</span>
+          <span>CTR <b>{pct(totals.ctr)}</b></span>
+        </div>
+      ) : null}
+
       {error ? (
         <p role="alert" className="rounded bg-red-50 px-3 py-2 text-sm text-red-700">
           {error}
@@ -169,7 +198,9 @@ export function StoriesManager({ initialStories }: { initialStories: AdminStory[
 
       {/* Liste */}
       <div className="space-y-4">
-        {stories.map((story, i) => (
+        {stories.map((story, i) => {
+          const m = metricsByStory[story.id];
+          return (
           <div key={story.id} data-testid={`admin-story-${story.slug}`} className="rounded-lg border border-stone-200 bg-white p-4">
             <div className="flex flex-wrap items-center gap-3">
               <input
@@ -191,6 +222,14 @@ export function StoriesManager({ initialStories }: { initialStories: AdminStory[
               <button type="button" disabled={busy || i === stories.length - 1} onClick={() => moveStory(i, 1)} className={`${btn} bg-stone-100`}>↓</button>
               <button type="button" disabled={busy} onClick={() => deleteStory(story.id)} className={`${btn} bg-red-600 text-white`}>Supprimer</button>
             </div>
+
+            {m ? (
+              <p className="mt-1.5 text-xs text-stone-500" data-testid={`admin-story-metrics-${story.slug}`}>
+                {m.opens} ouv · {m.completes} compl · complétion {pct(m.completionRate)} · {m.ctaClicks} CTA · CTR {pct(m.ctr)}
+              </p>
+            ) : (
+              <p className="mt-1.5 text-xs text-stone-400">Aucune donnée (30 j).</p>
+            )}
 
             <div className="mt-2 grid gap-2 sm:grid-cols-2">
               <label className="text-xs text-stone-600">
@@ -228,7 +267,8 @@ export function StoriesManager({ initialStories }: { initialStories: AdminStory[
               </div>
             </div>
           </div>
-        ))}
+          );
+        })}
         {stories.length === 0 ? <p className="text-sm text-stone-500">Aucune story. Crée la première ci-dessus.</p> : null}
       </div>
     </div>

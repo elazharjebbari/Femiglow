@@ -5,6 +5,7 @@ import {
   type AdminStory,
 } from '@/components/admin/stories/StoriesManager';
 import { listStories, type StoryWithSegments } from '@/lib/db/queries/stories';
+import { getStoriesAnalytics } from '@/lib/analytics/queries/stories';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,10 +41,17 @@ function serialize(story: StoryWithSegments): AdminStory {
 
 export default async function AdminStoriesPage() {
   const session = await requireAdmin('/admin/stories');
-  const stories = await listStories();
+  const [stories, analytics] = await Promise.all([listStories(), getStoriesAnalytics()]);
+  const metricsByStory = Object.fromEntries(
+    analytics.rows.map((r) => [r.storyId, r]),
+  );
   return (
     <AdminShell adminEmail={session.email} active="stories">
-      <StoriesManager initialStories={stories.map(serialize)} />
+      <StoriesManager
+        initialStories={stories.map(serialize)}
+        metricsByStory={metricsByStory}
+        totals={analytics.totals}
+      />
     </AdminShell>
   );
 }
