@@ -189,7 +189,7 @@ export async function HeroProduitBound({
       reviewsAnchorHref="#rituals-module-title"
       // MOBILE : bloc stories sous les images du hero, avant le titre.
       // Desktop : masqué ici (le bloc reste après le hero dans la page).
-      storiesSlot={<StoriesVideoBound locale={locale} />}
+      storiesSlot={<StoriesVideoBound locale={locale} variant="inline" />}
     />
   );
 }

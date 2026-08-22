@@ -20,9 +20,15 @@ const StoryViewer = dynamic(
 interface StoriesVideoProps {
   feed: StoryFeed;
   strings: StoriesStrings;
+  /**
+   * `section` (défaut) : bande autonome (titre + padding) — placement après le
+   * hero sur desktop. `inline` : compact, aligné au conteneur parent (pas de
+   * max-w/padding propres, kicker discret) — inséré DANS le hero sur mobile.
+   */
+  variant?: 'section' | 'inline';
 }
 
-export function StoriesVideo({ feed, strings }: StoriesVideoProps) {
+export function StoriesVideo({ feed, strings, variant = 'section' }: StoriesVideoProps) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [seenIds, setSeenIds] = useState<Set<string>>(() => new Set());
 
@@ -44,15 +50,9 @@ export function StoriesVideo({ feed, strings }: StoriesVideoProps) {
 
   if (feed.stories.length === 0) return null;
 
-  return (
-    <section
-      aria-label={strings.sectionLabel}
-      data-testid="stories-video"
-      className="mx-auto w-full max-w-5xl px-4 py-6 sm:py-8"
-    >
-      {strings.heading ? (
-        <h2 className="mb-3 font-display text-lg text-encre sm:text-xl">{strings.heading}</h2>
-      ) : null}
+  const inline = variant === 'inline';
+  const rail = (
+    <>
       <StoriesRail
         stories={feed.stories}
         strings={strings}
@@ -68,6 +68,33 @@ export function StoriesVideo({ feed, strings }: StoriesVideoProps) {
           onStorySeen={onStorySeen}
         />
       ) : null}
+    </>
+  );
+
+  if (inline) {
+    // Compact, aligné au conteneur du hero (hérite son padding). Kicker discret.
+    return (
+      <div aria-label={strings.sectionLabel} data-testid="stories-video" className="w-full">
+        {strings.heading ? (
+          <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.16em] text-encre/45">
+            {strings.heading}
+          </p>
+        ) : null}
+        {rail}
+      </div>
+    );
+  }
+
+  return (
+    <section
+      aria-label={strings.sectionLabel}
+      data-testid="stories-video"
+      className="mx-auto w-full max-w-5xl px-4 py-6 sm:py-8"
+    >
+      {strings.heading ? (
+        <h2 className="mb-3 font-display text-lg text-encre sm:text-xl">{strings.heading}</h2>
+      ) : null}
+      {rail}
     </section>
   );
 }

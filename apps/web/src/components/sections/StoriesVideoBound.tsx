@@ -17,10 +17,13 @@ import type { StoriesStrings } from '@/lib/stories/types';
 
 interface StoriesVideoBoundProps {
   locale?: Locale;
+  /** `section` (défaut, après le hero desktop) ou `inline` (dans le hero mobile). */
+  variant?: 'section' | 'inline';
 }
 
 export async function StoriesVideoBound({
   locale,
+  variant = 'section',
 }: StoriesVideoBoundProps = {}): Promise<JSX.Element | null> {
   if (!STORIES_ENABLED) return null;
   const activeLocale = locale ?? DEFAULT_LOCALE;
@@ -49,5 +52,5 @@ export async function StoriesVideoBound({
     defaultCta: t('defaultCta'),
   };
 
-  return <StoriesVideo feed={feed} strings={strings} />;
+  return <StoriesVideo feed={feed} strings={strings} variant={variant} />;
 }
