@@ -1,5 +1,7 @@
 'use client';
 
+import type { ReactNode } from 'react';
+
 import { Container } from '@/components/ui/Container';
 import { Heading } from '@/components/ui/Heading';
 import { Kicker } from '@/components/ui/Kicker';
@@ -82,6 +84,12 @@ export interface HeroProduitProps {
    * (= nom DB canonique, conservé pour le tracking/cart).
    */
   displayName?: string;
+  /**
+   * Bloc « découverte des vidéos » (StoriesVideoBound) injecté sous les images
+   * du hero, AVANT le titre — MOBILE uniquement (`lg:hidden`). Sur desktop, la
+   * même disposition est conservée : le bloc reste après le hero dans la page.
+   */
+  storiesSlot?: ReactNode;
 }
 
 const SAGE_LIGHT = '#A8B89E';
@@ -98,6 +106,7 @@ export function HeroProduit({
   reviewsAnchorHref,
   strings,
   displayName,
+  storiesSlot,
 }: HeroProduitProps): JSX.Element {
   const promo = computePromo(product.priceCents, product.promoPriceCents);
   const savings = product.promoPriceCents
@@ -131,6 +140,11 @@ export function HeroProduit({
               ariaLabel={`Galerie ${heroName}`}
             />
           </div>
+
+          {/* MOBILE : bloc « découverte vidéos » sous les images, avant le titre.
+            Sur desktop (lg+) ce bloc est masqué ici — il reste après le hero
+            dans la page (disposition desktop inchangée). */}
+          {storiesSlot ? <div className="lg:hidden">{storiesSlot}</div> : null}
 
           {/* Colonne droite — Contenu */}
           <div className="space-y-5 lg:pt-4">

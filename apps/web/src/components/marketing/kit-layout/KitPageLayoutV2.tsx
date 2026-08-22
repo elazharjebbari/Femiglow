@@ -139,10 +139,12 @@ export async function KitPageLayoutV2({
         }
       />
 
-      {/* — 1bis. STORIES vidéo shoppables (preuve + démo précoce) — flag OFF
-        par défaut. Rail léger (posters), viewer overlay code-splitté (0 coût
-        de layout). Voir docs/stories-video-2026-08-21/. */}
-      <StoriesVideoBound locale={locale} />
+      {/* — 1bis. STORIES vidéo shoppables — DESKTOP uniquement ici (après le
+        Hero). Sur mobile, le bloc est rendu DANS le hero (sous les images,
+        avant le titre) via `storiesSlot`. Voir docs/stories-video-2026-08-21/. */}
+      <div className="hidden lg:block">
+        <StoriesVideoBound locale={locale} />
+      </div>
 
       {/* — 2. PREUVE 1 : Composition (qualité formule) — §4.3 */}
       <CompositionRevealBound

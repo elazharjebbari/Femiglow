@@ -121,10 +121,12 @@ export async function KitPageLayoutV1({
             : (content.handsTestimonials?.length ?? 0)
         }
       />
-      {/* Stories vidéo shoppables (flag STORIES_ENABLED, OFF par défaut) —
-        rail léger après le Hero, viewer overlay code-splitté.
-        Cf. docs/stories-video-2026-08-21/. */}
-      <StoriesVideoBound locale={locale} />
+      {/* Stories vidéo — DESKTOP uniquement ici (après le Hero). Sur mobile, le
+        bloc est rendu DANS le hero (sous les images, avant le titre) via
+        `storiesSlot`. Cf. docs/stories-video-2026-08-21/. */}
+      <div className="hidden lg:block">
+        <StoriesVideoBound locale={locale} />
+      </div>
       {/*
         CHA-230 — Funnel commander embarqué (Mode A — wizard_embed) remonté
         immédiatement sous le Hero pour capter l'intention chaude avant que
