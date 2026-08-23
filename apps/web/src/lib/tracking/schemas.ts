@@ -118,6 +118,10 @@ export const eventSchemas: Record<string, z.ZodTypeAny> = {
   remove_from_cart: ecommerceParams,
   view_cart: ecommerceParams,
   begin_checkout: ecommerceParams,
+  // Successeur de `begin_checkout` (émis dès la 1ère frappe du formulaire lead,
+  // cf. use-checkout-intent.ts). Absent ici → l'ingest le rejetait en
+  // `unknown_event` → Meta ne recevait jamais `InitiateCheckout`.
+  checkout_intent: ecommerceParams,
   add_shipping_info: ecommerceParams,
   add_payment_info: ecommerceParams,
   purchase: purchaseParams,
@@ -507,6 +511,7 @@ const eventCategoryByName: Record<string, TrackingEventCategory> = {
   remove_from_cart: 'ecommerce',
   view_cart: 'ecommerce',
   begin_checkout: 'ecommerce',
+  checkout_intent: 'ecommerce',
   add_shipping_info: 'ecommerce',
   add_payment_info: 'ecommerce',
   purchase: 'ecommerce',

@@ -38,6 +38,7 @@ const CONVERSION_EVENTS = new Set([
   'generate_lead',
   'sign_up',
   'begin_checkout',
+  'checkout_intent',
   'lead_capture',
 ]);
 
