@@ -1,5 +1,7 @@
 'use client';
 
+import type { ReactNode } from 'react';
+
 import { Container } from '@/components/ui/Container';
 import { Heading } from '@/components/ui/Heading';
 import { Kicker } from '@/components/ui/Kicker';
@@ -13,6 +15,7 @@ import { SocialProofBadge } from '@/components/commerce/SocialProofBadge';
 import { TrustRow } from '@/components/commerce/TrustRow';
 import { ViewItemTracker } from '@/components/tracking/ViewItemTracker';
 import { HeroGallery } from './hero/HeroGallery';
+import { useWizardStore } from '@/lib/checkout/state/wizard-store';
 import { cn } from '@/lib/utils/cn';
 import { computePromo } from '@/lib/utils/promo';
 import type {
@@ -71,6 +74,15 @@ export interface HeroProduitProps {
     ctaLabel: string;
     /** Libellé économie déjà formaté (montant inclus), ou absent si pas de promo. */
     savingsLabel?: string;
+    /**
+     * Gabarit localisé du libellé économie avec le jeton `{savings}` (ex.
+     * « Économie {savings} MAD »). Utilisé quand un code promo modifie le
+     * montant côté client (199 → 99) : le libellé est alors recalculé sans
+     * perdre la traduction. Absent → repli sur le défaut FR.
+     */
+    savingsLabelTemplate?: string;
+    /** Gabarit « Code {code} appliqué » localisé (jeton `{code}`). */
+    promoAppliedLabelTemplate?: string;
     /** Phase 9bis — libellé avis localisé (« {n} avis » / « {n} تقييم »). */
     reviewsLabel?: string;
     /** Phase 9bis — aria-label complet du badge avis localisé. */
@@ -82,6 +94,12 @@ export interface HeroProduitProps {
    * (= nom DB canonique, conservé pour le tracking/cart).
    */
   displayName?: string;
+  /**
+   * Bloc « découverte des vidéos » (StoriesVideoBound) injecté sous les images
+   * du hero, AVANT le titre — MOBILE uniquement (`lg:hidden`). Sur desktop, la
+   * même disposition est conservée : le bloc reste après le hero dans la page.
+   */
+  storiesSlot?: ReactNode;
 }
 
 const SAGE_LIGHT = '#A8B89E';
@@ -98,17 +116,42 @@ export function HeroProduit({
   reviewsAnchorHref,
   strings,
   displayName,
+  storiesSlot,
 }: HeroProduitProps): JSX.Element {
   const promo = computePromo(product.priceCents, product.promoPriceCents);
-  const savings = product.promoPriceCents
-    ? Math.round((product.priceCents - product.promoPriceCents) / 100)
-    : 0;
+
+  // Code de réduction appliqué côté client (wizard-store) — même circuit que
+  // PriceBlock / récap / sticky CTA : le hero reflète le prix réellement
+  // facturé (ex. GLOW99 : 199 → 99) et l'économie totale vs prix barré.
+  const creditCents = Math.max(0, useWizardStore((s) => s.creditCents));
+  const couponCode = useWizardStore((s) => s.couponCode);
+  const couponKind = useWizardStore((s) => s.couponKind);
+  const effectivePriceCents = Math.max(0, promo.effectivePriceCents - creditCents);
+  const isPromoApplied = couponKind === 'promo' && creditCents > 0 && !!couponCode;
+  const savings =
+    effectivePriceCents < product.priceCents
+      ? Math.round((product.priceCents - effectivePriceCents) / 100)
+      : 0;
 
   // Phase 7E — chaque string retombe sur le défaut FR si non fourni.
   const heroName = displayName ?? product.name;
   const heroKicker = strings?.kicker ?? 'Le rituel';
   const heroCtaLabel = strings?.ctaLabel ?? 'Commander le rituel';
-  const heroSavingsLabel = strings?.savingsLabel ?? `Économie ${savings} MAD`;
+  // Sans crédit : libellé serveur (déjà formaté). Avec crédit : gabarit
+  // localisé recalculé, sinon défaut FR.
+  const heroSavingsLabel =
+    creditCents > 0
+      ? (strings?.savingsLabelTemplate ?? 'Économie {savings} MAD').replace(
+          '{savings}',
+          String(savings),
+        )
+      : (strings?.savingsLabel ?? `Économie ${savings} MAD`);
+  const heroPromoAppliedLabel = isPromoApplied
+    ? (strings?.promoAppliedLabelTemplate ?? 'Code {code} appliqué').replace(
+        '{code}',
+        couponCode ?? '',
+      )
+    : null;
 
   return (
     <section
@@ -123,7 +166,11 @@ export function HeroProduit({
         eventIdSeed={eventIdSeed}
       />
       <Container width="page">
-        <div className="grid gap-8 lg:grid-cols-2 lg:gap-16">
+        {/* `grid-cols-1` (= minmax(0,1fr)) est CRITIQUE : sans lui, la colonne
+          mobile implicite est `auto` et grandit pour contenir le rail stories
+          (large min-content) → scroll horizontal. minmax(0,1fr) borne la
+          colonne et laisse les scroll-containers internes défiler. */}
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-16">
           {/* Colonne gauche — Galerie */}
           <div className="-mx-4 lg:mx-0">
             <HeroGallery
@@ -131,6 +178,11 @@ export function HeroProduit({
               ariaLabel={`Galerie ${heroName}`}
             />
           </div>
+
+          {/* MOBILE : bloc « découverte vidéos » sous les images, avant le titre.
+            Sur desktop (lg+) ce bloc est masqué ici — il reste après le hero
+            dans la page (disposition desktop inchangée). */}
+          {storiesSlot ? <div className="min-w-0 lg:hidden">{storiesSlot}</div> : null}
 
           {/* Colonne droite — Contenu */}
           <div className="space-y-5 lg:pt-4">
@@ -163,7 +215,9 @@ export function HeroProduit({
             <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 pt-2">
               <PriceDisplay
                 priceCents={product.priceCents}
-                promoPriceCents={product.promoPriceCents}
+                promoPriceCents={
+                  effectivePriceCents < product.priceCents ? effectivePriceCents : null
+                }
                 currency={product.currency}
                 size="xl"
                 showSavings={false}
@@ -177,6 +231,24 @@ export function HeroProduit({
                 </span>
               ) : null}
             </div>
+            {heroPromoAppliedLabel ? (
+              <p
+                data-testid="hero-promo-applied"
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-encre"
+              >
+                <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden style={{ color: SAGE_LIGHT }}>
+                  <path
+                    d="M4 8.4l2.6 2.6 5.4-6"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.9"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                {heroPromoAppliedLabel}
+              </p>
+            ) : null}
 
             {/* Trust row AU-DESSUS du CTA — mots positifs collés à la décision */}
             <TrustRow items={fields.trustRow} className="pt-1" />
@@ -194,7 +266,7 @@ export function HeroProduit({
                   fullWidth
                   productId={product.id}
                   productName={product.name}
-                  priceCents={promo.effectivePriceCents}
+                  priceCents={effectivePriceCents}
                   currency={product.currency}
                 >
                   {heroCtaLabel}

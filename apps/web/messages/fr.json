@@ -410,6 +410,7 @@
       "hero": {
         "kicker": "Le rituel",
         "savings": "Économie {savings} MAD",
+        "promo_applied": "Code {code} appliqué",
         "cta_commander": "Commander le rituel",
         "reviews": "{count, plural, one {# avis} other {# avis}}",
         "reviews_aria": "Note {rating} sur 5 basée sur {count, plural, one {# avis} other {# avis}}",
@@ -596,6 +597,23 @@
           "fini-brillant": "fini brillant",
           "halal": "halal"
         }
+      },
+      "stories": {
+        "sectionLabel": "Stories FemiGlow",
+        "heading": "Découvrez en vidéo",
+        "openAria": "Ouvrir la story : %title%",
+        "scrollHint": "Faites glisser pour voir plus",
+        "prevSegment": "Segment précédent",
+        "nextSegment": "Segment suivant",
+        "close": "Fermer",
+        "mute": "Couper le son",
+        "unmute": "Activer le son",
+        "pause": "Pause",
+        "play": "Lecture",
+        "segmentProgress": "Segment %index% sur %total%",
+        "defaultCta": "Commander",
+        "scrollMore": "Voir plus de stories",
+        "countLabel": "{count} vidéos"
       }
     },
     "maison": {

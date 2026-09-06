@@ -17,6 +17,7 @@ import {
 } from '@/components/sections';
 import { VideoPlayer4GestesKitBound } from '@/components/sections/VideoPlayer4GestesKitBound';
 import { HeroProduitBound } from '@/components/sections/HeroProduitBound';
+import { StoriesVideoBound } from '@/components/sections/StoriesVideoBound';
 import { CompositionRevealBound } from '@/components/sections/CompositionRevealBound';
 import { IngredientsDetailsBound } from '@/components/sections/IngredientsDetailsBound';
 import { resolveKitComposition } from '@/lib/kit/composition/resolver';
@@ -120,6 +121,12 @@ export async function KitPageLayoutV1({
             : (content.handsTestimonials?.length ?? 0)
         }
       />
+      {/* Stories vidéo — DESKTOP uniquement ici (après le Hero). Sur mobile, le
+        bloc est rendu DANS le hero (sous les images, avant le titre) via
+        `storiesSlot`. Cf. docs/stories-video-2026-08-21/. */}
+      <div className="hidden lg:block">
+        <StoriesVideoBound locale={locale} />
+      </div>
       {/*
         CHA-230 — Funnel commander embarqué (Mode A — wizard_embed) remonté
         immédiatement sous le Hero pour capter l'intention chaude avant que

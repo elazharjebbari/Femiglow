@@ -7,7 +7,7 @@
  *
  * cf. docs/coupons-qa-2026-06-02/01-data-model/.
  */
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
 import { db, memoryStore, schema } from '@/lib/db/client';
 import { createId } from '@/lib/ids';
 import type { CouponRow } from '@/lib/db/schema';
@@ -150,6 +150,30 @@ async function findByCode(code: string): Promise<CouponDef | null> {
     return rows[0] ? mapRowToDef(rows[0]) : null;
   }
   const row = Array.from(ext().coupons.values()).find((c) => c.code === code);
+  return row ? mapRowToDef(row) : null;
+}
+
+/**
+ * Recherche d'un coupon marketing par code, INSENSIBLE à la casse (la cliente
+ * tape « glow99 », la campagne affiche « GLOW99 »). Espaces périphériques
+ * ignorés. Retourne null si aucun coupon ne porte ce code.
+ */
+export async function findCouponByCode(code: string): Promise<CouponDef | null> {
+  const normalized = code.trim();
+  if (!normalized) return null;
+  const drizzle = db();
+  if (drizzle) {
+    const rows = await drizzle
+      .select()
+      .from(schema.coupons)
+      .where(sql`upper(${schema.coupons.code}) = upper(${normalized})`)
+      .limit(1);
+    return rows[0] ? mapRowToDef(rows[0]) : null;
+  }
+  const upper = normalized.toUpperCase();
+  const row = Array.from(ext().coupons.values()).find(
+    (c) => typeof c.code === 'string' && c.code.toUpperCase() === upper,
+  );
   return row ? mapRowToDef(row) : null;
 }
 

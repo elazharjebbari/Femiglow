@@ -14,7 +14,7 @@ import { expectNoAxeViolations } from '@/test/axe';
  * /admin/components?group=kit (commit 7ee13de9) → retirés du sidebar.
  */
 const EXPECTED_KEYS = [
-  'dashboard', 'leads', 'rituals', 'media', 'components', 'i18n', 'seo',
+  'dashboard', 'leads', 'rituals', 'media', 'stories', 'components', 'i18n', 'seo',
   'legal', 'products', 'content-studio', 'chat', 'emails', 'webhooks',
   'tracking', 'analytics', 'coupons', 'audit', 'settings',
 ];

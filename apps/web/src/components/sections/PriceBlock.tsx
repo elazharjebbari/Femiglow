@@ -131,8 +131,11 @@ export function PriceBlock({
   // est soustrait de TOUS les prix de la page (XXL, badge, note, détail, CTA),
   // en cohérence avec le récap du formulaire et le débit serveur (anti-422).
   const creditCents = Math.max(0, useWizardStore((s) => s.creditCents));
+  const couponCode = useWizardStore((s) => s.couponCode);
+  const couponKind = useWizardStore((s) => s.couponKind);
   const setCoupon = useWizardStore((s) => s.setCoupon);
   const clearCoupon = useWizardStore((s) => s.clearCoupon);
+  const isPromoApplied = couponKind === 'promo' && creditCents > 0 && !!couponCode;
   const effectivePriceAfterCredit = Math.max(0, promo.effectivePriceCents - creditCents);
   const creditApplied = promo.effectivePriceCents - effectivePriceAfterCredit;
   // Badge économie AFFICHÉ : recalculé avec le crédit (économie totale vs barré).
@@ -238,6 +241,29 @@ export function PriceBlock({
           )}
         </p>
 
+        {/* 2bis — Code promo de campagne appliqué (ex. GLOW99 via l'URL de
+            la publicité) : confirmation immédiate sous le prix, sans sticker. */}
+        {isPromoApplied && (
+          <p
+            data-testid="pack-promo-applied"
+            className="mx-auto inline-flex max-w-fit items-center gap-1.5 rounded-full border border-sauge/40 bg-sauge/10 px-3 py-1 text-xs font-medium text-encre"
+          >
+            <svg viewBox="0 0 16 16" width="11" height="11" aria-hidden className="text-sauge">
+              <path
+                d="M4 8.4l2.6 2.6 5.4-6"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.9"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            {isArabic
+              ? `تم تطبيق الرمز ${couponCode} · −${formatMoney(creditApplied)}`
+              : `Code ${couponCode} appliqué · −${formatMoney(creditApplied)}`}
+          </p>
+        )}
+
         {/* 3 — Bandeau économie terracotta. L'unité du bandeau suit la
             devise du `ProductFeed` pour rester cohérente avec le prix XXL
             (ex : « 347 MAD · 64 % » et pas « 347 € · 64 % » sur un
@@ -268,7 +294,12 @@ export function PriceBlock({
               : `${(promo.savingsCents / 100).toFixed(0)} ${savingsUnit} offerts sur votre première commande du pack`
           }
           endsAtLabel={formatCivilDate(welcomeCoupon.endsAt, isArabic)}
-          onCouponValid={(code, cents) => setCoupon(code, cents)}
+          appliedCoupon={
+            couponCode && creditCents > 0
+              ? { code: couponCode, valueCents: creditCents, kind: couponKind ?? 'credit' }
+              : null
+          }
+          onCouponValid={(code, cents, kind) => setCoupon(code, cents, kind)}
           onCouponClear={() => clearCoupon()}
         />
       )}
@@ -280,7 +311,13 @@ export function PriceBlock({
           creditLine={
             creditApplied > 0
               ? {
-                  label: isArabic ? 'رصيد الوفاء' : 'Crédit de fidélité',
+                  label: isPromoApplied
+                    ? isArabic
+                      ? `الرمز ${couponCode}`
+                      : `Code ${couponCode}`
+                    : isArabic
+                      ? 'رصيد الوفاء'
+                      : 'Crédit de fidélité',
                   valueLabel: `−${formatMoney(creditApplied)}`,
                 }
               : null

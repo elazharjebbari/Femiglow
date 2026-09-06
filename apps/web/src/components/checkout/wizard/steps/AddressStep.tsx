@@ -190,6 +190,8 @@ export function AddressStep({ cta }: AddressStepProps) {
   const cartSnapshot = useWizardStore((s) => s.cartSnapshot);
   // Phase 3 — crédit de fidélité
   const couponCode = useWizardStore((s) => s.couponCode);
+  const creditCents = useWizardStore((s) => s.creditCents);
+  const couponKind = useWizardStore((s) => s.couponKind);
   const setCoupon = useWizardStore((s) => s.setCoupon);
   const clearCoupon = useWizardStore((s) => s.clearCoupon);
   const isArabic = useWizardStore((s) => s.formContext?.language === 'ar');
@@ -437,7 +439,9 @@ export function AddressStep({ cta }: AddressStepProps) {
             <InvitationCodeField
               isArabic={isArabic}
               initialCode={couponCode ?? ''}
-              onValid={(code, cents) => setCoupon(code, cents)}
+              initialValueCents={creditCents}
+              initialKind={couponKind ?? 'credit'}
+              onValid={(code, cents, kind) => setCoupon(code, cents, kind)}
               onClear={clearCoupon}
             />
           </div>

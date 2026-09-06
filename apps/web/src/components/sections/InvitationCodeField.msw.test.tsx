@@ -25,7 +25,7 @@ describe('F08 InvitationCodeField', () => {
     fireEvent.change(screen.getByLabelText('Votre code'), { target: { value: 'fg-sauge-7212' } });
     fireEvent.click(screen.getByText('Appliquer'));
     expect(await screen.findByTestId('invitation-code-ok')).toHaveTextContent('Crédit de 20 MAD');
-    expect(onValid).toHaveBeenCalledWith('FG-SAUGE-7212', 2000);
+    expect(onValid).toHaveBeenCalledWith('FG-SAUGE-7212', 2000, 'credit');
   });
 
   it('F08-C002 code inconnu → message KO (role=alert), pas d’onValid', async () => {

@@ -41,6 +41,7 @@ import { getTranslations } from 'next-intl/server';
 import { FAQContextuelle } from '@/components/sections';
 import { VideoPlayer4GestesKitBound } from '@/components/sections/VideoPlayer4GestesKitBound';
 import { HeroProduitBound } from '@/components/sections/HeroProduitBound';
+import { StoriesVideoBound } from '@/components/sections/StoriesVideoBound';
 import { CompositionRevealBound } from '@/components/sections/CompositionRevealBound';
 import { IngredientsDetailsBound } from '@/components/sections/IngredientsDetailsBound';
 import { resolveKitComposition } from '@/lib/kit/composition/resolver';
@@ -137,6 +138,13 @@ export async function KitPageLayoutV2({
             : (content.handsTestimonials?.length ?? 0)
         }
       />
+
+      {/* — 1bis. STORIES vidéo shoppables — DESKTOP uniquement ici (après le
+        Hero). Sur mobile, le bloc est rendu DANS le hero (sous les images,
+        avant le titre) via `storiesSlot`. Voir docs/stories-video-2026-08-21/. */}
+      <div className="hidden lg:block">
+        <StoriesVideoBound locale={locale} />
+      </div>
 
       {/* — 2. PREUVE 1 : Composition (qualité formule) — §4.3 */}
       <CompositionRevealBound

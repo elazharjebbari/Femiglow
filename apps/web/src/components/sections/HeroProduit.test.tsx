@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { HeroProduit, type HeroProduitFields } from './HeroProduit';
+import { useWizardStore } from '@/lib/checkout/state/wizard-store';
 import { ToastProvider } from '@/components/ui/Toast';
 import { mockKitPageContent } from '@/data/mock/kit';
 import { DEFAULT_KIT_REVIEW_STATS } from '@/lib/products/reviews';
@@ -63,6 +64,52 @@ describe('HeroProduit', () => {
     renderHero();
     expect(screen.getByText(/199\s*MAD/)).toBeInTheDocument();
     expect(screen.getByText(/289\s*MAD/)).toBeInTheDocument();
+    expect(screen.queryByTestId('hero-promo-applied')).toBeNull();
+  });
+
+  describe('code promo appliqué (wizard-store)', () => {
+    afterEach(() => useWizardStore.getState().clearCoupon());
+
+    it('prix hero 199 → 99, économie recalculée vs barré, mention du code', () => {
+      useWizardStore.getState().setCoupon('GLOW99', 10000, 'promo');
+      renderHero();
+      expect(screen.getByText(/^99\s*MAD/)).toBeInTheDocument();
+      expect(screen.getByText(/289\s*MAD/)).toBeInTheDocument();
+      expect(screen.queryByText(/^199\s*MAD/)).toBeNull();
+      expect(screen.getByText('Économie 190 MAD')).toBeInTheDocument();
+      expect(screen.getByTestId('hero-promo-applied')).toHaveTextContent('Code GLOW99 appliqué');
+    });
+
+    it('gabarits localisés : économie et mention recalculées dans la langue fournie', () => {
+      useWizardStore.getState().setCoupon('GLOW99', 10000, 'promo');
+      render(
+        <ToastProvider>
+          <HeroProduit
+            product={product}
+            reassurances={reassurances}
+            galleryImages={galleryImages}
+            fields={fields}
+            reviewStats={DEFAULT_KIT_REVIEW_STATS}
+            strings={{
+              kicker: 'The ritual',
+              ctaLabel: 'Order',
+              savingsLabel: 'Save 90 MAD',
+              savingsLabelTemplate: 'Save {savings} MAD',
+              promoAppliedLabelTemplate: 'Code {code} applied',
+            }}
+          />
+        </ToastProvider>,
+      );
+      expect(screen.getByText('Save 190 MAD')).toBeInTheDocument();
+      expect(screen.getByTestId('hero-promo-applied')).toHaveTextContent('Code GLOW99 applied');
+    });
+
+    it('crédit fidélité (kind credit) : prix réduit sans mention « Code … appliqué »', () => {
+      useWizardStore.getState().setCoupon('FG-SAUGE-7212', 2000, 'credit');
+      renderHero();
+      expect(screen.getByText(/^179\s*MAD/)).toBeInTheDocument();
+      expect(screen.queryByTestId('hero-promo-applied')).toBeNull();
+    });
   });
 
   it('rend les 4 chips attributs', () => {

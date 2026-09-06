@@ -44,8 +44,12 @@ const GOOGLE_COMMON_CONNECT = [
   'https://stats.g.doubleclick.net',
   'https://*.g.doubleclick.net',
   // `ad.doubleclick.net` (et autres sous-domaines hors `.g.`) — signalé bloqué
-  // par GTM « Qualité du conteneur ». Le wildcard couvre ad./td./googleads.g./
-  // bid.g. et tout futur sous-domaine doubleclick sur connect-src.
+  // par GTM « Qualité du conteneur » ET le diagnostic Google Ads. Le wildcard
+  // `*.doubleclick.net` couvre déjà ad./td./googleads.g./bid.g. et tout futur
+  // sous-domaine, mais le vérificateur Google fait un match LITTÉRAL et ne
+  // reconnaît pas le wildcard → on liste `ad.doubleclick.net` en explicite pour
+  // clore le diagnostic (redondant mais sans effet de bord).
+  'https://ad.doubleclick.net',
   'https://*.doubleclick.net',
   'https://googleads.g.doubleclick.net',
   'https://www.googletagmanager.com',

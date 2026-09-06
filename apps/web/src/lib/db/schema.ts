@@ -471,6 +471,81 @@ export const mediaUsages = pgTable(
   }),
 );
 
+/**
+ * Stories vidéo shoppables (façon Instagram) — une story = une bulle cliquable
+ * + N segments vidéo. Voir docs/stories-video-2026-08-21/.
+ * P1 : URLs directes (assets `public/` self-hosted, Range géré par Next).
+ * P2 : `bubbleMediaId`/`mediaId` permettent de brancher la média-library.
+ */
+export const mediaStory = pgTable(
+  'media_story',
+  {
+    id: text('id').primaryKey(),
+    slug: text('slug').notNull(),
+    pageGroup: text('page_group').notNull().default('kit'),
+    /** Titre localisé { fr, ar, en }. */
+    titleI18n: jsonb('title_i18n').notNull().default({}),
+    /** Poster de la bulle (image ronde). */
+    bubblePosterUrl: text('bubble_poster_url').notNull(),
+    /** Optionnel : média-library (P2). */
+    bubbleMediaId: text('bubble_media_id').references(() => media.id, {
+      onDelete: 'set null',
+    }),
+    /** Token d'accent optionnel (anneau de bulle). */
+    accent: text('accent'),
+    displayOrder: integer('display_order').notNull().default(0),
+    isActive: boolean('is_active').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    slugUnique: uniqueIndex('media_story_slug_unique').on(t.slug),
+    activeOrderIdx: index('media_story_active_order_idx').on(
+      t.pageGroup,
+      t.isActive,
+      t.displayOrder,
+    ),
+  }),
+);
+
+export const mediaStorySegment = pgTable(
+  'media_story_segment',
+  {
+    id: text('id').primaryKey(),
+    storyId: text('story_id')
+      .notNull()
+      .references(() => mediaStory.id, { onDelete: 'cascade' }),
+    /** Optionnel : média-library (P2). */
+    mediaId: text('media_id').references(() => media.id, { onDelete: 'set null' }),
+    /** Source mp4 (self-hosted `public/` ou CDN). */
+    videoUrl: text('video_url').notNull(),
+    /** Source webm optionnelle (P2). */
+    webmUrl: text('webm_url'),
+    posterUrl: text('poster_url').notNull(),
+    durationMs: integer('duration_ms').notNull().default(0),
+    width: integer('width'),
+    height: integer('height'),
+    captionI18n: jsonb('caption_i18n').notNull().default({}),
+    ctaLabelI18n: jsonb('cta_label_i18n').notNull().default({}),
+    /** Ancre CTA (ex. `#commander-femiglow`). */
+    ctaTarget: text('cta_target'),
+    displayOrder: integer('display_order').notNull().default(0),
+    isActive: boolean('is_active').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    storyOrderIdx: index('media_story_segment_story_order_idx').on(
+      t.storyId,
+      t.isActive,
+      t.displayOrder,
+    ),
+  }),
+);
+
+export type MediaStoryRow = typeof mediaStory.$inferSelect;
+export type MediaStorySegmentRow = typeof mediaStorySegment.$inferSelect;
+
 export const mediaJobs = pgTable(
   'media_jobs',
   {

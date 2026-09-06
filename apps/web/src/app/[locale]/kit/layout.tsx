@@ -8,10 +8,12 @@
  * @see docs/i18n-strategy-2026-05/08-plan-action/phases.md §T2.9
  */
 import dynamic from 'next/dynamic';
+import { Suspense } from 'react';
 import { getTranslations } from 'next-intl/server';
 
 import { CommanderAnchorButton } from '@/components/commerce/CommanderAnchorButton';
 import { StickyCartCTA } from '@/components/commerce/StickyCartCTA';
+import { PromoCodeAutoApply } from '@/components/commerce/PromoCodeAutoApply';
 import { ToastProvider } from '@/components/ui/Toast';
 import { DEFAULT_LOCALE, isLocale } from '@/i18n.config';
 import { buildKitPublicProduct } from '@/lib/products/public';
@@ -47,6 +49,11 @@ export default async function LocaleKitLayout({
 
   return (
     <ToastProvider>
+      {/* Code promo de campagne (?code=GLOW99) + reprise du code mémorisé.
+          useSearchParams ⇒ Suspense obligatoire (page ISR). */}
+      <Suspense fallback={null}>
+        <PromoCodeAutoApply />
+      </Suspense>
       {children}
       <StickyCartCTA
         productName={localizedProductName}

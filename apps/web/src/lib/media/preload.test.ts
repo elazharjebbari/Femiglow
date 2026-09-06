@@ -28,8 +28,7 @@ describe('buildHeroPreload', () => {
   });
 
   it('retourne null si le média n\'est pas une image', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockGetMedia.mockResolvedValue(makeImageMedia({ kind: 'video' } as any));
+    mockGetMedia.mockResolvedValue(makeImageMedia({ kind: 'video' } as never));
     expect(await buildHeroPreload('me_video', 'hero')).toBeNull();
   });
 });

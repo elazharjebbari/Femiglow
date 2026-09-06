@@ -405,6 +405,7 @@
       "hero": {
         "kicker": "The ritual",
         "savings": "Save {savings} MAD",
+        "promo_applied": "Code {code} applied",
         "cta_commander": "Order the ritual",
         "reviews": "{count, plural, one {# review} other {# reviews}}",
         "reviews_aria": "Rated {rating} out of 5 based on {count, plural, one {# review} other {# reviews}}",
@@ -591,6 +592,23 @@
           "fini-brillant": "glossy finish",
           "halal": "halal"
         }
+      },
+      "stories": {
+        "sectionLabel": "FemiGlow Stories",
+        "heading": "See it in video",
+        "openAria": "Open story: %title%",
+        "scrollHint": "Swipe to see more",
+        "prevSegment": "Previous segment",
+        "nextSegment": "Next segment",
+        "close": "Close",
+        "mute": "Mute",
+        "unmute": "Unmute",
+        "pause": "Pause",
+        "play": "Play",
+        "segmentProgress": "Segment %index% of %total%",
+        "defaultCta": "Order",
+        "scrollMore": "See more stories",
+        "countLabel": "{count} videos"
       }
     },
     "maison": {

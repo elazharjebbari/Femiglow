@@ -2,6 +2,7 @@ import 'server-only';
 import type { ComponentProps } from 'react';
 import { getTranslations } from 'next-intl/server';
 import { HeroProduit, type HeroProduitFields } from './HeroProduit';
+import { StoriesVideoBound } from './StoriesVideoBound';
 import { resolveComponentFields } from '@/lib/components/field-resolver';
 import {
   getKitHeroGalleryImages,
@@ -107,6 +108,10 @@ export async function HeroProduitBound({
     kicker: tHero('kicker'),
     ctaLabel: tHero('cta_commander'),
     savingsLabel: savings > 0 ? tHero('savings', { savings }) : undefined,
+    // Gabarits pour recalcul client quand un code promo change le montant
+    // (jeton conservé : on passe un texte, next-intl le substitue tel quel).
+    savingsLabelTemplate: tHero('savings', { savings: '{savings}' }),
+    promoAppliedLabelTemplate: tHero('promo_applied', { code: '{code}' }),
   };
 
   // Fields avec fallback sur defaults solides
@@ -186,6 +191,9 @@ export async function HeroProduitBound({
       // DB courante). Si le module rituels n'est pas rendu (cas test),
       // l'ancre tombe en no-op silencieux côté navigateur.
       reviewsAnchorHref="#rituals-module-title"
+      // MOBILE : bloc stories sous les images du hero, avant le titre.
+      // Desktop : masqué ici (le bloc reste après le hero dans la page).
+      storiesSlot={<StoriesVideoBound locale={locale} variant="inline" />}
     />
   );
 }
