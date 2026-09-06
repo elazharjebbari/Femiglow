@@ -1,6 +1,8 @@
 import dynamic from 'next/dynamic';
+import { Suspense } from 'react';
 import { ToastProvider } from '@/components/ui/Toast';
 import { StickyCartCTA } from '@/components/commerce/StickyCartCTA';
+import { PromoCodeAutoApply } from '@/components/commerce/PromoCodeAutoApply';
 import { CommanderAnchorButton } from '@/components/commerce/CommanderAnchorButton';
 import { buildKitPublicProduct } from '@/lib/products/public';
 
@@ -28,6 +30,11 @@ export default async function KitLayout({
 
   return (
     <ToastProvider>
+      {/* Code promo de campagne (?code=GLOW99) + reprise du code mémorisé.
+          useSearchParams ⇒ Suspense obligatoire (page ISR). */}
+      <Suspense fallback={null}>
+        <PromoCodeAutoApply />
+      </Suspense>
       {children}
       <StickyCartCTA
         productName={product.name}
