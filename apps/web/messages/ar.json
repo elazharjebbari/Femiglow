@@ -405,6 +405,7 @@
       "hero": {
         "kicker": "الكيت",
         "savings": "توفير {savings} درهم",
+        "promo_applied": "تم تطبيق الرمز {code}",
         "cta_commander": "اطلبي الكيت",
         "reviews": "{count, plural, one {تقييم واحد} two {تقييمان} few {# تقييمات} many {# تقييمًا} other {# تقييم}}",
         "reviews_aria": "تقييم {rating} من 5 بناءً على {count, plural, one {تقييم واحد} two {تقييمين} few {# تقييمات} many {# تقييمًا} other {# تقييم}}",

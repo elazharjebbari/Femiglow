@@ -108,6 +108,10 @@ export async function HeroProduitBound({
     kicker: tHero('kicker'),
     ctaLabel: tHero('cta_commander'),
     savingsLabel: savings > 0 ? tHero('savings', { savings }) : undefined,
+    // Gabarits pour recalcul client quand un code promo change le montant
+    // (jeton conservé : on passe un texte, next-intl le substitue tel quel).
+    savingsLabelTemplate: tHero('savings', { savings: '{savings}' }),
+    promoAppliedLabelTemplate: tHero('promo_applied', { code: '{code}' }),
   };
 
   // Fields avec fallback sur defaults solides

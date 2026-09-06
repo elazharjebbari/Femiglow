@@ -405,6 +405,7 @@
       "hero": {
         "kicker": "The ritual",
         "savings": "Save {savings} MAD",
+        "promo_applied": "Code {code} applied",
         "cta_commander": "Order the ritual",
         "reviews": "{count, plural, one {# review} other {# reviews}}",
         "reviews_aria": "Rated {rating} out of 5 based on {count, plural, one {# review} other {# reviews}}",
