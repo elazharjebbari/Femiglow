@@ -22,6 +22,7 @@
  * @see docs/i18n-strategy-2026-05/08-plan-action/phases.md §T2.9
  */
 import type { Metadata } from 'next';
+import { resolveUrlCouponSeed } from '@/lib/coupons/server-url-coupon';
 import { cookies, headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
@@ -60,7 +61,13 @@ const FALLBACK_DESCRIPTION =
 
 interface PageProps {
   params: { locale: string };
-  searchParams?: { layout?: string };
+  searchParams?: {
+    layout?: string;
+    /** Code de campagne (`/kit?code=GLOW99`) — voir resolveUrlCouponSeed. */
+    code?: string;
+    promo?: string;
+    coupon?: string;
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -276,10 +283,16 @@ export default async function KitPage({ params, searchParams }: PageProps) {
   }
 
   // Délégation au layout v1 ou v2 (query param > env var > default).
+  // Code de campagne présent dans l'URL, validé côté serveur pour que le
+  // PREMIER paint porte déjà le prix remisé. Sans `?code=`, aucune requête
+  // n'est émise et le rendu est strictement identique à l'existant.
+  const initialCoupon = await resolveUrlCouponSeed(searchParams);
+
   const qsLayout = searchParams?.layout;
   const effectiveLayout: 'v1' | 'v2' =
     qsLayout === 'v2' ? 'v2' : qsLayout === 'v1' ? 'v1' : KIT_LAYOUT_VERSION;
   const layoutProps = {
+    initialCoupon,
     content,
     journalArticles,
     dbProduct: pricedProduct,

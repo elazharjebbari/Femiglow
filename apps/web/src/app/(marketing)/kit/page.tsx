@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { resolveUrlCouponSeed } from '@/lib/coupons/server-url-coupon';
 import { cookies, headers } from 'next/headers';
 
 import { cms } from '@/lib/cms';
@@ -102,7 +103,13 @@ function isProductSchema(value: unknown): value is Record<string, unknown> {
  *  - Pas de SEO concern : le canonical de la page reste `/kit` (sans qs).
  */
 interface KitPageProps {
-  searchParams?: { layout?: string };
+  searchParams?: {
+    layout?: string;
+    /** Code de campagne (`/kit?code=GLOW99`) — voir resolveUrlCouponSeed. */
+    code?: string;
+    promo?: string;
+    coupon?: string;
+  };
 }
 
 export default async function KitPage({ searchParams }: KitPageProps) {
@@ -199,6 +206,11 @@ export default async function KitPage({ searchParams }: KitPageProps) {
   // NEXT_PUBLIC_KIT_LAYOUT_V2 (rollout prod). La query string n'altère
   // pas le canonical (resolveSeoMetadata fige `/kit`).
   // Référence : `docs/kit-landing-reorder-2026-05/`.
+  // Code de campagne présent dans l'URL, validé côté serveur pour que le
+  // PREMIER paint porte déjà le prix remisé. Sans `?code=`, aucune requête
+  // n'est émise et le rendu est strictement identique à l'existant.
+  const initialCoupon = await resolveUrlCouponSeed(searchParams);
+
   const qsLayout = searchParams?.layout;
   const effectiveLayout: 'v1' | 'v2' =
     qsLayout === 'v2'
@@ -207,6 +219,7 @@ export default async function KitPage({ searchParams }: KitPageProps) {
         ? 'v1'
         : KIT_LAYOUT_VERSION;
   const layoutProps = {
+    initialCoupon,
     content,
     journalArticles,
     dbProduct,

@@ -28,7 +28,10 @@ import { Kicker } from '@/components/ui/Kicker';
 import { Text } from '@/components/ui/Text';
 import { cn } from '@/lib/utils/cn';
 import { useWizardStore } from '@/lib/checkout/state/wizard-store';
-import { useAppliedCoupon } from '@/lib/checkout/state/use-applied-coupon';
+import {
+  useAppliedCoupon,
+  type AppliedCouponSeed,
+} from '@/lib/checkout/state/use-applied-coupon';
 import { computePackSavings, formatSavingsLabel } from '@/lib/kit/pack/savings';
 import type { ProductFeed } from '@/lib/products/feed/types';
 import { useTracking } from '@/lib/tracking/use-tracking';
@@ -52,6 +55,8 @@ export interface PriceBlockProps {
    * « geste d'accueil ». `endsAt` ISO pour la mention de validité civile.
    */
   welcomeCoupon?: { active: boolean; endsAt: string | null };
+  /** Code validé côté serveur pour cette requête (voir KitPageLayoutProps). */
+  initialCoupon?: AppliedCouponSeed;
 }
 
 /**
@@ -96,6 +101,7 @@ export function PriceBlock({
   product,
   hasVisual = false,
   welcomeCoupon,
+  initialCoupon,
 }: PriceBlockProps): JSX.Element {
   const { hero, currency, socialProof } = feed;
   const { emit } = useTracking();
@@ -134,7 +140,7 @@ export function PriceBlock({
   // Prédicat et arithmétique UNIQUES (cf. use-applied-coupon) : le premier
   // rendu client renvoie le même état que le HTML serveur, ce qui évite un
   // mismatch d'hydratation pour une visiteuse revenue avec un code mémorisé.
-  const coupon = useAppliedCoupon();
+  const coupon = useAppliedCoupon({ initial: initialCoupon });
   const creditCents = coupon.creditCents;
   const couponCode = coupon.code;
   const couponKind = coupon.kind;

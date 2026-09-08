@@ -21,6 +21,7 @@
  *  - Pas de superlatif, pas de countdown, pas de badge solde.
  */
 import { Container } from '@/components/ui/Container';
+import type { AppliedCouponSeed } from '@/lib/checkout/state/use-applied-coupon';
 import { Heading } from '@/components/ui/Heading';
 import { Kicker } from '@/components/ui/Kicker';
 import { Text } from '@/components/ui/Text';
@@ -52,6 +53,8 @@ interface ProductFeedSectionProps {
   reviewsCountLabel?: string;
   /** Coupon d'accueil résolu serveur (CPN-14), propagé à `<PriceBlock/>`. */
   welcomeCoupon?: { active: boolean; endsAt: string | null };
+  /** Code validé côté serveur pour cette requête (voir KitPageLayoutProps). */
+  initialCoupon?: AppliedCouponSeed;
   /** Locale arabe → RTL pour l'offre de sauvetage (Phase 2). */
   isArabic?: boolean;
 }
@@ -63,6 +66,7 @@ export function ProductFeedSection({
   resultLabel,
   reviewsCountLabel,
   welcomeCoupon,
+  initialCoupon,
   isArabic = false,
 }: ProductFeedSectionProps) {
   return (
@@ -93,7 +97,7 @@ export function ProductFeedSection({
                 CTA primaire + microcopy + social proof condensé.
                 IO émet pack_section_view + pack_economy_view +
                 pack_social_proof_view. */}
-            <PriceBlock feed={feed} product={product} hasVisual welcomeCoupon={welcomeCoupon} />
+            <PriceBlock feed={feed} product={product} hasVisual welcomeCoupon={welcomeCoupon} initialCoupon={initialCoupon} />
             <RescueOffer isArabic={isArabic} />
           </div>
 

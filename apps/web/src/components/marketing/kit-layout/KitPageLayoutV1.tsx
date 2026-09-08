@@ -43,6 +43,7 @@ export async function KitPageLayoutV1({
   reviewStats,
   ritualSummary,
   locale,
+  initialCoupon,
 }: KitPageLayoutProps) {
   const effectiveLocale = locale ?? DEFAULT_LOCALE;
   // Phase 7E — strings de niveau layout (kicker/title JournalGrid) localisées.
@@ -102,6 +103,7 @@ export async function KitPageLayoutV1({
       <JsonLd data={productJsonLd} />
       <JsonLd data={faqPageSchema(content.faq)} />
       <HeroProduitBound
+        initialCoupon={initialCoupon}
         product={dbProduct}
         reassurances={content.reassurances}
         componentKey="kit-hero-produit"
@@ -163,6 +165,7 @@ export async function KitPageLayoutV1({
         Copy/principes : `lib/products/feed/kit-feed.ts`.
       */}
       <ProductFeedSectionBound
+        initialCoupon={initialCoupon}
         product={dbProduct}
         content={content}
         reviewStats={reviewStats}

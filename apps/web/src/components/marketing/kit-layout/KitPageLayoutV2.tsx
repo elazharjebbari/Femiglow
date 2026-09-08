@@ -66,6 +66,7 @@ export async function KitPageLayoutV2({
   reviewStats,
   ritualSummary,
   locale,
+  initialCoupon,
 }: KitPageLayoutProps) {
   const effectiveLocale = locale ?? DEFAULT_LOCALE;
   // Phase 7E — strings de niveau layout (kicker/title JournalGrid) localisées.
@@ -121,6 +122,7 @@ export async function KitPageLayoutV2({
 
       {/* — 1. HERO — première zone de conversion (CTA → scroll wizard) */}
       <HeroProduitBound
+        initialCoupon={initialCoupon}
         product={dbProduct}
         reassurances={content.reassurances}
         componentKey="kit-hero-produit"
@@ -167,6 +169,7 @@ export async function KitPageLayoutV2({
         dessous matérialise la « 2ème zone de conversion » Kolenda §4.6.
       */}
       <ProductFeedSectionBound
+        initialCoupon={initialCoupon}
         product={dbProduct}
         content={content}
         reviewStats={reviewStats}

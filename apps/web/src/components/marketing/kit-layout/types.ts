@@ -9,6 +9,7 @@ import type { KitPageContent, Article, Product } from '@/lib/schemas';
 import type { ProductReviewStats } from '@/lib/products/reviews';
 import type { RitualSummary } from '@/lib/schemas/rituals';
 import type { Locale } from '@/i18n.config';
+import type { AppliedCouponSeed } from '@/lib/checkout/state/use-applied-coupon';
 
 export interface KitPageLayoutProps {
   /** Contenu CMS structuré (composition, faq, comparatif, testimonials, etc.). */
@@ -34,4 +35,11 @@ export interface KitPageLayoutProps {
    * back-compat avec `(marketing)/kit/page.tsx` (legacy non locale-aware).
    */
   locale?: Locale;
+  /**
+   * Code de campagne présent dans l'URL et validé CÔTÉ SERVEUR pour cette
+   * requête. Permet au premier paint de porter déjà le prix remisé, au lieu
+   * d'afficher le prix catalogue puis de sauter après hydratation.
+   * `undefined` pour toute visiteuse sans `?code=` : rendu inchangé.
+   */
+  initialCoupon?: AppliedCouponSeed;
 }

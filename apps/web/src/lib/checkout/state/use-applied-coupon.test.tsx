@@ -195,3 +195,45 @@ describe('invariance DOM — la visiteuse sans code ne voit RIEN changer', () =>
     expect(screen.getByTestId('capture')).toHaveTextContent('99 MAD'); // puis la remise
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────
+// D. Graine résolue côté serveur (SSR) — /kit?code=GLOW99
+// ─────────────────────────────────────────────────────────────────────────
+
+function Probe({ initial }: { initial?: { code: string; valueCents: number; kind: 'promo' | 'credit' } }) {
+  const coupon = useAppliedCoupon({ initial });
+  return (
+    <span data-testid="probe">
+      {`${coupon.hasDiscount}|${coupon.isPromo}|${coupon.code ?? ''}|${coupon.creditCents}|${
+        applyCouponToPrice(19900, coupon).netCents
+      }`}
+    </span>
+  );
+}
+
+describe('useAppliedCoupon — graine serveur', () => {
+  const SEED = { code: 'GLOW99', valueCents: 10000, kind: 'promo' as const };
+
+  it('INVARIANCE — sans graine ni store, rien n’est appliqué et le prix reste entier', () => {
+    render(<Probe />);
+    expect(screen.getByTestId('probe').textContent).toBe('false|false||0|19900');
+  });
+
+  it('graine seule (première visite publicitaire) : 199 → 99 dès le premier rendu', () => {
+    render(<Probe initial={SEED} />);
+    expect(screen.getByTestId('probe').textContent).toBe('true|true|GLOW99|10000|9900');
+  });
+
+  it('le store fait autorité dès qu’il porte un code re-validé', () => {
+    act(() => {
+      useWizardStore.getState().setCoupon('GLOW99', 5000, 'promo');
+    });
+    render(<Probe initial={SEED} />);
+    expect(screen.getByTestId('probe').textContent).toBe('true|true|GLOW99|5000|14900');
+  });
+
+  it('graine vide ou de montant nul → ignorée', () => {
+    render(<Probe initial={{ code: '', valueCents: 0, kind: 'promo' }} />);
+    expect(screen.getByTestId('probe').textContent).toBe('false|false||0|19900');
+  });
+});

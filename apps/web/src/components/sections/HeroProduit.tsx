@@ -15,7 +15,10 @@ import { SocialProofBadge } from '@/components/commerce/SocialProofBadge';
 import { TrustRow } from '@/components/commerce/TrustRow';
 import { ViewItemTracker } from '@/components/tracking/ViewItemTracker';
 import { HeroGallery } from './hero/HeroGallery';
-import { useAppliedCoupon } from '@/lib/checkout/state/use-applied-coupon';
+import {
+  useAppliedCoupon,
+  type AppliedCouponSeed,
+} from '@/lib/checkout/state/use-applied-coupon';
 import { cn } from '@/lib/utils/cn';
 import { computePromo } from '@/lib/utils/promo';
 import type {
@@ -106,6 +109,8 @@ export interface HeroProduitProps {
    * même disposition est conservée : le bloc reste après le hero dans la page.
    */
   storiesSlot?: ReactNode;
+  /** Code validé côté serveur pour cette requête (voir KitPageLayoutProps). */
+  initialCoupon?: AppliedCouponSeed;
 }
 
 const SAGE_LIGHT = '#A8B89E';
@@ -123,6 +128,7 @@ export function HeroProduit({
   strings,
   displayName,
   storiesSlot,
+  initialCoupon,
 }: HeroProduitProps): JSX.Element {
   const promo = computePromo(product.priceCents, product.promoPriceCents);
 
@@ -131,7 +137,7 @@ export function HeroProduit({
   // facturé (ex. GLOW99 : 199 → 99) et l'économie totale vs prix barré.
   // Prédicat et arithmétique UNIQUES (cf. use-applied-coupon) : parité entre
   // le HTML serveur et le premier rendu client.
-  const coupon = useAppliedCoupon();
+  const coupon = useAppliedCoupon({ initial: initialCoupon });
   const couponCode = coupon.code;
   const effectivePriceCents = Math.max(0, promo.effectivePriceCents - coupon.creditCents);
   const isPromoApplied = coupon.isPromo && coupon.hasDiscount;

@@ -118,6 +118,29 @@ export function applyCouponToPrice(
   return { netCents: gross - discountCents, discountCents };
 }
 
+/**
+ * Graine résolue CÔTÉ SERVEUR depuis `?code=` sur /kit. Elle permet au HTML
+ * envoyé par le serveur de porter DÉJÀ le prix remisé : sans elle, la page se
+ * peint à 199 puis saute à 99 après hydratation et appel réseau — exactement
+ * le moment où une visiteuse venue d'une publicité doute.
+ */
+export interface AppliedCouponSeed {
+  code: string;
+  valueCents: number;
+  kind: CouponKind;
+}
+
+/** Égalité par valeur — sert à savoir s'il y a quelque chose à faire basculer. */
+function sameCoupon(a: AppliedCoupon, b: AppliedCoupon): boolean {
+  return (
+    a.hasDiscount === b.hasDiscount &&
+    a.isPromo === b.isPromo &&
+    a.code === b.code &&
+    a.creditCents === b.creditCents &&
+    a.kind === b.kind
+  );
+}
+
 export interface UseAppliedCouponOptions {
   /**
    * Parité SSR ↔ hydratation (défaut `true`).
@@ -144,11 +167,13 @@ export interface UseAppliedCouponOptions {
    * qu'introduire un clignotement 199 → 99.
    */
   hydrationSafe?: boolean;
-}
-
-/** Le store porte-t-il un coupon effectif à cet instant ? (hors React) */
-function storeHasCouponNow(): boolean {
-  return selectAppliedCoupon(useWizardStore.getState()) !== NO_COUPON;
+  /**
+   * Valeur résolue côté serveur (SSR) pour cette requête. Rendue au premier
+   * paint — serveur ET client — puis le store prend le relais dès qu'il porte
+   * un code. `undefined` pour toute visiteuse sans `?code=` : le hook se
+   * comporte alors exactement comme avant.
+   */
+  initial?: AppliedCouponSeed;
 }
 
 /**
@@ -157,24 +182,46 @@ function storeHasCouponNow(): boolean {
  * store, y compris les frappes clavier du wizard).
  */
 export function useAppliedCoupon(options: UseAppliedCouponOptions = {}): AppliedCoupon {
-  const { hydrationSafe = true } = options;
+  const { hydrationSafe = true, initial } = options;
 
   const creditCents = useWizardStore((s) => s.creditCents);
   const couponCode = useWizardStore((s) => s.couponCode);
   const couponKind = useWizardStore((s) => s.couponKind);
 
-  // `true` dès le premier rendu quand il n'y a rien à masquer : la visiteuse
-  // sans code ne déclenche aucun setState, donc aucun rendu supplémentaire.
-  const [pastFirstPaint, setPastFirstPaint] = useState(
-    () => !hydrationSafe || !storeHasCouponNow(),
+  const seedCode = initial?.code;
+  const seedValue = initial?.valueCents;
+  const seedKind = initial?.kind;
+  const seed = useMemo(
+    () =>
+      seedCode !== undefined && seedValue !== undefined
+        ? selectAppliedCoupon({
+            couponCode: seedCode,
+            creditCents: seedValue,
+            couponKind: seedKind ?? 'promo',
+          })
+        : NO_COUPON,
+    [seedCode, seedValue, seedKind],
   );
+
+  // `true` dès le premier rendu quand la bascule ne changerait RIEN : la
+  // visiteuse sans code — et celle qui arrive avec un code jamais encore
+  // mémorisé — ne déclenche aucun setState, donc aucun rendu supplémentaire.
+  const [pastFirstPaint, setPastFirstPaint] = useState(() => {
+    if (!hydrationSafe) return true;
+    const now = selectAppliedCoupon(useWizardStore.getState());
+    return sameCoupon(seed, now.hasDiscount ? now : seed);
+  });
 
   useEffect(() => {
     if (!pastFirstPaint) setPastFirstPaint(true);
   }, [pastFirstPaint]);
 
   return useMemo(() => {
-    if (!pastFirstPaint) return NO_COUPON;
-    return selectAppliedCoupon({ couponCode, creditCents, couponKind });
-  }, [pastFirstPaint, couponCode, creditCents, couponKind]);
+    // Avant la première peinture : exactement ce qu'a rendu le serveur.
+    if (!pastFirstPaint) return seed;
+    const fromStore = selectAppliedCoupon({ couponCode, creditCents, couponKind });
+    // Le store fait autorité dès qu'il porte un code (il a été re-validé) ;
+    // sinon on garde la graine serveur, déjà validée pour cette requête.
+    return fromStore.hasDiscount ? fromStore : seed;
+  }, [pastFirstPaint, couponCode, creditCents, couponKind, seed]);
 }
