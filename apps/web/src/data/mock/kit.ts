@@ -197,7 +197,7 @@ export const mockKitPageContent: KitPageContent = {
       {
         axis: 'Co\u00fbt annuel',
         vernis: 'Vernis + dissolvant + cures r\u00e9paratrices, env. 1\u202F500 dh.',
-        rituel: 'Un pack FemiGlow \u00e0 199 dh tient quatre \u00e0 cinq mois. Soit environ 500 dh par an.',
+        rituel: 'Un pack FemiGlow tient quatre à cinq mois. Le coût annuel reste bien en deçà de celui du vernis.',
       },
       {
         axis: 'Impact mati\u00e8re',

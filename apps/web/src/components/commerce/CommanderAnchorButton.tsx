@@ -14,6 +14,8 @@
 
 import { useCallback, type ReactNode } from 'react';
 
+import { useAppliedCoupon } from '@/lib/checkout/state/use-applied-coupon';
+
 import { Button, type ButtonSize } from '@/components/ui/Button';
 import { useTracking } from '@/lib/tracking/use-tracking';
 import { cn } from '@/lib/utils/cn';
@@ -51,6 +53,14 @@ interface CommanderAnchorButtonProps {
   productId?: string;
   productName?: string;
   priceCents?: number;
+  /**
+   * Soustrait du prix de tracking le code/crédit appliqué (wizard-store).
+   * Réservé aux call-sites qui passent un prix BRUT calculé côté serveur
+   * (les layouts /kit). Les surfaces qui passent DÉJÀ le prix net
+   * (HeroProduit, PriceBlock) laissent la valeur par défaut `false`, sinon
+   * la remise serait déduite deux fois.
+   */
+  deductCredit?: boolean;
   currency?: string;
   /**
    * Accent visuel — change la palette du CTA selon la section.
@@ -82,6 +92,7 @@ export function CommanderAnchorButton({
   productId,
   productName,
   priceCents,
+  deductCredit = false,
   currency = 'MAD',
   accent,
   source,
@@ -89,6 +100,17 @@ export function CommanderAnchorButton({
   label = 'Commander',
 }: CommanderAnchorButtonProps) {
   const { emit } = useTracking();
+
+  // Prix envoyé au tracking. `deductCredit` n'est activé que sur les
+  // call-sites qui passent un prix BRUT : sans code appliqué, la soustraction
+  // vaut 0 et la valeur est strictement inchangée.
+  const appliedCoupon = useAppliedCoupon();
+  const trackedPriceCents =
+    priceCents === undefined
+      ? undefined
+      : deductCredit
+        ? Math.max(0, priceCents - appliedCoupon.creditCents)
+        : priceCents;
 
   const onClick = useCallback(() => {
     const target = document.getElementById(anchorId);
@@ -111,16 +133,16 @@ export function CommanderAnchorButton({
       }
     }
 
-    if (priceCents !== undefined && productId && productName) {
+    if (trackedPriceCents !== undefined && productId && productName) {
       emit('add_to_cart', {
         currency,
-        value: priceCents / 100,
+        value: trackedPriceCents / 100,
         items: [
           {
             item_id: productId,
             item_name: productName,
             quantity: 1,
-            price: priceCents / 100,
+            price: trackedPriceCents / 100,
           },
         ],
       });
@@ -142,7 +164,7 @@ export function CommanderAnchorButton({
     anchorId,
     currency,
     emit,
-    priceCents,
+    trackedPriceCents,
     productId,
     productName,
     source,

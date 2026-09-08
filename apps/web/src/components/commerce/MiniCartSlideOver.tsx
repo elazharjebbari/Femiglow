@@ -11,7 +11,7 @@ import {
   selectSubtotalCents,
   useCartStore,
 } from '@/lib/stores/cart-store';
-import { useWizardStore } from '@/lib/checkout/state/wizard-store';
+import { useAppliedCoupon } from '@/lib/checkout/state/use-applied-coupon';
 import { formatPrice } from '@/lib/utils/format-price';
 import { cn } from '@/lib/utils/cn';
 
@@ -27,9 +27,11 @@ export function MiniCartSlideOver() {
   const removeItem = useCartStore((s) => s.removeItem);
   // Code promo appliqué sur la page : le mini-panier annonçait le prix
   // catalogue (199) alors que la cliente voyait 99 partout ailleurs.
-  const couponCode = useWizardStore((st) => st.couponCode);
-  const creditCents = useWizardStore((st) => st.creditCents);
-  const discountCents = Math.max(0, Math.min(creditCents, subtotal));
+  // `ssr: false` (chargé en dynamic) : aucune hydratation à faire
+  // correspondre, la garde ne ferait qu'introduire un clignotement.
+  const coupon = useAppliedCoupon({ hydrationSafe: false });
+  const couponCode = coupon.code;
+  const discountCents = Math.max(0, Math.min(coupon.creditCents, subtotal));
   const netSubtotal = subtotal - discountCents;
 
   const titleId = useId();

@@ -28,6 +28,7 @@ import { Kicker } from '@/components/ui/Kicker';
 import { Text } from '@/components/ui/Text';
 import { cn } from '@/lib/utils/cn';
 import { useWizardStore } from '@/lib/checkout/state/wizard-store';
+import { useAppliedCoupon } from '@/lib/checkout/state/use-applied-coupon';
 import { computePackSavings, formatSavingsLabel } from '@/lib/kit/pack/savings';
 import type { ProductFeed } from '@/lib/products/feed/types';
 import { useTracking } from '@/lib/tracking/use-tracking';
@@ -130,12 +131,16 @@ export function PriceBlock({
   // code valide est saisi (champ du « geste d'accueil » ou du wizard), le crédit
   // est soustrait de TOUS les prix de la page (XXL, badge, note, détail, CTA),
   // en cohérence avec le récap du formulaire et le débit serveur (anti-422).
-  const creditCents = Math.max(0, useWizardStore((s) => s.creditCents));
-  const couponCode = useWizardStore((s) => s.couponCode);
-  const couponKind = useWizardStore((s) => s.couponKind);
+  // Prédicat et arithmétique UNIQUES (cf. use-applied-coupon) : le premier
+  // rendu client renvoie le même état que le HTML serveur, ce qui évite un
+  // mismatch d'hydratation pour une visiteuse revenue avec un code mémorisé.
+  const coupon = useAppliedCoupon();
+  const creditCents = coupon.creditCents;
+  const couponCode = coupon.code;
+  const couponKind = coupon.kind;
   const setCoupon = useWizardStore((s) => s.setCoupon);
   const clearCoupon = useWizardStore((s) => s.clearCoupon);
-  const isPromoApplied = couponKind === 'promo' && creditCents > 0 && !!couponCode;
+  const isPromoApplied = coupon.isPromo && coupon.hasDiscount;
   const effectivePriceAfterCredit = Math.max(0, promo.effectivePriceCents - creditCents);
   const creditApplied = promo.effectivePriceCents - effectivePriceAfterCredit;
   // Badge économie AFFICHÉ : recalculé avec le crédit (économie totale vs barré).
@@ -263,6 +268,13 @@ export function PriceBlock({
               : `Code ${couponCode} appliqué · −${formatMoney(creditApplied)}`}
           </p>
         )}
+        {isPromoApplied && (
+          <p data-testid="pack-promo-auto" className="text-xs text-encre/60">
+            {isArabic
+              ? 'تم تطبيق الخصم تلقائياً، لا شيء لإدخاله.'
+              : 'Remise appliquée automatiquement, rien à saisir.'}
+          </p>
+        )}
 
         {/* 3 — Bandeau économie terracotta. L'unité du bandeau suit la
             devise du `ProductFeed` pour rester cohérente avec le prix XXL
@@ -289,9 +301,11 @@ export function PriceBlock({
           isArabic={isArabic}
           finalPriceLabel={formatMoney(effectivePriceAfterCredit)}
           savingsLabel={
+            // Avec un code de campagne, la note annonçait le seul geste
+            // d'accueil (90 MAD) alors que 190 étaient réellement déduits.
             isArabic
-              ? `${(promo.savingsCents / 100).toFixed(0)} ${currencyDisplay} هدية على طلبك الأول`
-              : `${(promo.savingsCents / 100).toFixed(0)} ${savingsUnit} offerts sur votre première commande du pack`
+              ? `${((promo.savingsCents + creditApplied) / 100).toFixed(0)} ${currencyDisplay} هدية على طلبك الأول`
+              : `${((promo.savingsCents + creditApplied) / 100).toFixed(0)} ${savingsUnit} offerts sur votre première commande du pack`
           }
           endsAtLabel={formatCivilDate(welcomeCoupon.endsAt, isArabic)}
           appliedCoupon={

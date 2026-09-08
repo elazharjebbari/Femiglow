@@ -138,6 +138,10 @@ describe('productSchema (Schema.org Product) avec enrichissement', () => {
     expect(schema.offers).toBeDefined();
   });
 
+  // Le snapshot a été mis à jour le 8 sept. 2026 : `offers.price` valait le
+  // prix BARRÉ (289,00) alors que personne ne paie ce montant. Il porte
+  // désormais le prix réellement payable sans code (199,00), conforme aux
+  // règles Merchant et à ce qu'affiche la page.
   it('snapshot du JSON-LD enrichi pour `/kit` (golden test)', () => {
     const enrichment = feedToProductSchemaEnrichment(
       feed,

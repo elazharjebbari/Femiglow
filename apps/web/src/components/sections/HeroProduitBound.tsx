@@ -112,6 +112,7 @@ export async function HeroProduitBound({
     // (jeton conservé : on passe un texte, next-intl le substitue tel quel).
     savingsLabelTemplate: tHero('savings', { savings: '{savings}' }),
     promoAppliedLabelTemplate: tHero('promo_applied', { code: '{code}' }),
+    promoAutoAppliedLabel: tHero('promo_auto_applied'),
   };
 
   // Fields avec fallback sur defaults solides

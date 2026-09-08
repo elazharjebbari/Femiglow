@@ -241,17 +241,18 @@ export async function setCouponStatus(
 export async function incrementUsage(id: string): Promise<void> {
   const drizzle = db();
   if (drizzle) {
-    const rows = await drizzle
-      .select()
-      .from(schema.coupons)
-      .where(eq(schema.coupons.id, id))
-      .limit(1);
-    if (rows[0]) {
-      await drizzle
-        .update(schema.coupons)
-        .set({ usageCount: rows[0].usageCount + 1 } as never)
-        .where(eq(schema.coupons.id, id));
-    }
+    // ATOMIQUE : `usage_count = usage_count + 1` est évalué par Postgres.
+    // L'ancienne version lisait puis réécrivait : deux commandes simultanées
+    // portant le même code lisaient la même valeur et n'en comptaient qu'une,
+    // ce qui rendait le plafond global (`usageCap`) contournable et le
+    // compteur affiché en admin faux.
+    await drizzle
+      .update(schema.coupons)
+      .set({
+        usageCount: sql`${schema.coupons.usageCount} + 1`,
+        updatedAt: sql`now()`,
+      } as never)
+      .where(eq(schema.coupons.id, id));
     return;
   }
   const row = ext().coupons.get(id);

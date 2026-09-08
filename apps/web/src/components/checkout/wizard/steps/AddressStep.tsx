@@ -55,6 +55,7 @@ import { TextField, TextAreaField } from '@/components/forms/Field';
 import { useWizardTranslation } from '@/lib/checkout/i18n/use-wizard-translation';
 import { useAddressMutation } from '@/lib/checkout/state/use-wizard-mutations';
 import { useWizardStore } from '@/lib/checkout/state/wizard-store';
+import { useAppliedCoupon } from '@/lib/checkout/state/use-applied-coupon';
 import type { PublicCity } from '@/lib/checkout/delivery/use-delivery-cities';
 
 import { StockIndicator } from '../StockIndicator';
@@ -189,14 +190,21 @@ export function AddressStep({ cta }: AddressStepProps) {
   const goToStep = useWizardStore((s) => s.goToStep);
   const cartSnapshot = useWizardStore((s) => s.cartSnapshot);
   // Phase 3 — crédit de fidélité
-  const couponCode = useWizardStore((s) => s.couponCode);
-  const creditCents = useWizardStore((s) => s.creditCents);
-  const couponKind = useWizardStore((s) => s.couponKind);
+  // Cette étape n'est jamais dans la première peinture serveur (le wizard
+  // démarre à l'étape « lead » tant qu'il n'est pas hydraté) : pas de parité
+  // d'hydratation à préserver, et la garde masquerait le code à la reprise.
+  const appliedCoupon = useAppliedCoupon({ hydrationSafe: false });
+  const couponCode = appliedCoupon.code;
+  const creditCents = appliedCoupon.creditCents;
+  const couponKind = appliedCoupon.kind;
   const setCoupon = useWizardStore((s) => s.setCoupon);
   const clearCoupon = useWizardStore((s) => s.clearCoupon);
   const isArabic = useWizardStore((s) => s.formContext?.language === 'ar');
   // Disclosure crédit : ouverte d'office si un code a déjà été saisi (reprise).
   const [couponDisclosureOpen, setCouponDisclosureOpen] = useState<boolean>(!!couponCode);
+  // Code de CAMPAGNE (arrivé par l'URL publicitaire) déjà appliqué et chiffré.
+  // Un crédit de fidélité saisi à la main garde le champ ouvert historique.
+  const isCampaignPromo = appliedCoupon.isPromo && appliedCoupon.hasDiscount;
 
   const mutation = useAddressMutation();
   const { freeShipping } = useShippingConfig();
@@ -405,6 +413,31 @@ export function AddressStep({ cta }: AddressStepProps) {
           {...register('notes')}
         />
 
+        {/* Code de campagne DÉJÀ appliqué (arrivée par une publicité) :
+            on confirme, on n'ouvre pas un champ. Un champ ouvert intitulé
+            « J'ai un code » fait douter la cliente qu'un autre code soit
+            requis, et une frappe suffit à annuler sa remise. */}
+        {isCampaignPromo ? (
+          <p
+            data-testid="wizard-promo-applied"
+            className="flex items-center gap-1.5 text-sm text-encre"
+          >
+            <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden className="shrink-0 text-sauge">
+              <path
+                d="M4 8.4l2.6 2.6 5.4-6"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.9"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            {isArabic
+              ? `تم تطبيق الرمز ${couponCode} — خصم ${(creditCents / 100).toFixed(0)} درهم من مجموعك.`
+              : `Code ${couponCode} appliqué — ${(creditCents / 100).toFixed(0)} MAD déduits de votre total.`}
+          </p>
+        ) : (
+        <>
         {/* Phase 3 — crédit de fidélité (optionnel). Porte DISCRÈTE repliée
             par défaut (esprit coupon-doc : zéro friction pour qui n'a pas de
             code) ; s'ouvre sur clic, ou d'office si un code est déjà saisi
@@ -446,6 +479,8 @@ export function AddressStep({ cta }: AddressStepProps) {
             />
           </div>
         </details>
+        </>
+        )}
 
         {networkBanner && (
           <div

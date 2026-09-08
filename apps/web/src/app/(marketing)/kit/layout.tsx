@@ -48,6 +48,7 @@ export default async function KitLayout({
           productId={product.id}
           productName={product.name}
           priceCents={effectivePriceCents}
+          deductCredit
           currency={product.currency}
         >
           Commander

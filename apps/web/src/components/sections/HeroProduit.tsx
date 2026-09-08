@@ -15,7 +15,7 @@ import { SocialProofBadge } from '@/components/commerce/SocialProofBadge';
 import { TrustRow } from '@/components/commerce/TrustRow';
 import { ViewItemTracker } from '@/components/tracking/ViewItemTracker';
 import { HeroGallery } from './hero/HeroGallery';
-import { useWizardStore } from '@/lib/checkout/state/wizard-store';
+import { useAppliedCoupon } from '@/lib/checkout/state/use-applied-coupon';
 import { cn } from '@/lib/utils/cn';
 import { computePromo } from '@/lib/utils/promo';
 import type {
@@ -83,6 +83,12 @@ export interface HeroProduitProps {
     savingsLabelTemplate?: string;
     /** Gabarit « Code {code} appliqué » localisé (jeton `{code}`). */
     promoAppliedLabelTemplate?: string;
+    /**
+     * Phrase rassurante affichée SOUS la mention du code : la cliente venue
+     * d'une publicité doit voir que la remise annoncée est déjà là et qu'elle
+     * n'a rien à saisir. Rendue uniquement quand un code promo est appliqué.
+     */
+    promoAutoAppliedLabel?: string;
     /** Phase 9bis — libellé avis localisé (« {n} avis » / « {n} تقييم »). */
     reviewsLabel?: string;
     /** Phase 9bis — aria-label complet du badge avis localisé. */
@@ -123,11 +129,12 @@ export function HeroProduit({
   // Code de réduction appliqué côté client (wizard-store) — même circuit que
   // PriceBlock / récap / sticky CTA : le hero reflète le prix réellement
   // facturé (ex. GLOW99 : 199 → 99) et l'économie totale vs prix barré.
-  const creditCents = Math.max(0, useWizardStore((s) => s.creditCents));
-  const couponCode = useWizardStore((s) => s.couponCode);
-  const couponKind = useWizardStore((s) => s.couponKind);
-  const effectivePriceCents = Math.max(0, promo.effectivePriceCents - creditCents);
-  const isPromoApplied = couponKind === 'promo' && creditCents > 0 && !!couponCode;
+  // Prédicat et arithmétique UNIQUES (cf. use-applied-coupon) : parité entre
+  // le HTML serveur et le premier rendu client.
+  const coupon = useAppliedCoupon();
+  const couponCode = coupon.code;
+  const effectivePriceCents = Math.max(0, promo.effectivePriceCents - coupon.creditCents);
+  const isPromoApplied = coupon.isPromo && coupon.hasDiscount;
   const savings =
     effectivePriceCents < product.priceCents
       ? Math.round((product.priceCents - effectivePriceCents) / 100)
@@ -140,7 +147,7 @@ export function HeroProduit({
   // Sans crédit : libellé serveur (déjà formaté). Avec crédit : gabarit
   // localisé recalculé, sinon défaut FR.
   const heroSavingsLabel =
-    creditCents > 0
+    coupon.creditCents > 0
       ? (strings?.savingsLabelTemplate ?? 'Économie {savings} MAD').replace(
           '{savings}',
           String(savings),
@@ -151,6 +158,9 @@ export function HeroProduit({
         '{code}',
         couponCode ?? '',
       )
+    : null;
+  const heroPromoAutoLabel = isPromoApplied
+    ? strings?.promoAutoAppliedLabel ?? 'Remise appliquée automatiquement, rien à saisir.'
     : null;
 
   return (
@@ -247,6 +257,14 @@ export function HeroProduit({
                   />
                 </svg>
                 {heroPromoAppliedLabel}
+              </p>
+            ) : null}
+            {heroPromoAutoLabel ? (
+              <p
+                data-testid="hero-promo-auto"
+                className="text-sm text-encre/65"
+              >
+                {heroPromoAutoLabel}
               </p>
             ) : null}
 

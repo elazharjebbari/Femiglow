@@ -86,7 +86,9 @@ export function PromoCodeAutoApply(): null {
     attempted.current = target;
 
     let cancelled = false;
+    let settled = false;
     void redeem(target).then((json) => {
+      settled = true;
       if (cancelled) return;
       if (json === null) {
         // Panne réseau : on ne touche à RIEN. Effacer ici ferait perdre sa
@@ -105,6 +107,10 @@ export function PromoCodeAutoApply(): null {
     });
     return () => {
       cancelled = true;
+      // Démontage AVANT la réponse (React StrictMode monte/démonte/remonte en
+      // développement) : sans ce reset, la seconde exécution voyait `target`
+      // déjà tenté, abandonnait, et la remise n'était JAMAIS appliquée.
+      if (!settled) attempted.current = null;
     };
   }, [hydrated, target, couponCode, setCoupon, clearCoupon]);
 

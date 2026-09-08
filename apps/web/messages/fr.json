@@ -411,6 +411,7 @@
         "kicker": "Le rituel",
         "savings": "Économie {savings} MAD",
         "promo_applied": "Code {code} appliqué",
+        "promo_auto_applied": "Remise appliquée automatiquement, rien à saisir.",
         "cta_commander": "Commander le rituel",
         "reviews": "{count, plural, one {# avis} other {# avis}}",
         "reviews_aria": "Note {rating} sur 5 basée sur {count, plural, one {# avis} other {# avis}}",

@@ -104,6 +104,22 @@ describe('HeroProduit', () => {
       expect(screen.getByTestId('hero-promo-applied')).toHaveTextContent('Code GLOW99 applied');
     });
 
+    it('mention « appliquée automatiquement » présente avec un code promo', () => {
+      useWizardStore.getState().setCoupon('GLOW99', 10000, 'promo');
+      renderHero();
+      expect(screen.getByTestId('hero-promo-auto')).toHaveTextContent(
+        'Remise appliquée automatiquement, rien à saisir.',
+      );
+    });
+
+    it('INVARIANCE — sans code, aucune mention promo et prix catalogue inchangé', () => {
+      renderHero();
+      expect(screen.queryByTestId('hero-promo-applied')).toBeNull();
+      expect(screen.queryByTestId('hero-promo-auto')).toBeNull();
+      expect(screen.getByText(/199\s*MAD/)).toBeInTheDocument();
+      expect(screen.getByText(/289\s*MAD/)).toBeInTheDocument();
+    });
+
     it('crédit fidélité (kind credit) : prix réduit sans mention « Code … appliqué »', () => {
       useWizardStore.getState().setCoupon('FG-SAUGE-7212', 2000, 'credit');
       renderHero();

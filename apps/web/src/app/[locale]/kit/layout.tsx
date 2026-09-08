@@ -68,6 +68,7 @@ export default async function LocaleKitLayout({
           productId={product.id}
           productName={localizedProductName}
           priceCents={effectivePriceCents}
+          deductCredit
           currency={product.currency}
           label={t('commander')}
         />

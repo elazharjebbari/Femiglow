@@ -86,6 +86,7 @@ function seedStore(opts: {
   cart?: CartSnapshot | null;
   couponCode?: string | null;
   creditCents?: number;
+  couponKind?: 'credit' | 'promo';
 } = {}) {
   const { reset, setFormContext, setCartSnapshot, setCoupon } = useWizardStore.getState();
   reset();
@@ -97,7 +98,7 @@ function seedStore(opts: {
     language: opts.language ?? 'fr',
   });
   setCartSnapshot(opts.cart ?? MOCK_CART);
-  if (opts.couponCode) setCoupon(opts.couponCode, opts.creditCents ?? 0);
+  if (opts.couponCode) setCoupon(opts.couponCode, opts.creditCents ?? 0, opts.couponKind ?? 'credit');
 }
 
 // INV-422 — oracle pur (la source du crédit vit dans le store ; l'affichage du total
@@ -230,6 +231,34 @@ describe('F09 — AddressStep coupon disclosure', () => {
     render(<AddressStep />);
     const summary = screen.getByTestId('wizard-coupon-summary');
     expect(summary.textContent ?? '').toContain('لدي رمز وفاء');
+  });
+
+  // ── Code de CAMPAGNE : confirmation en lecture seule, pas de champ ouvert.
+  it('F09-P012 code promo de campagne → confirmation lisible, champ code retiré', () => {
+    seedStore({ couponCode: 'GLOW99', creditCents: 10000, couponKind: 'promo' });
+    render(<AddressStep />);
+    expect(screen.getByTestId('wizard-promo-applied')).toHaveTextContent(
+      'Code GLOW99 appliqué — 100 MAD déduits de votre total.',
+    );
+    expect(screen.queryByTestId('wizard-coupon-field')).toBeNull();
+    expect(screen.queryByLabelText('Votre code')).toBeNull();
+  });
+
+  it('F09-P013 crédit de fidélité → comportement historique conservé (champ ouvert)', () => {
+    seedStore({ couponCode: 'FG-SAUGE-7212', creditCents: 2000, couponKind: 'credit' });
+    render(<AddressStep />);
+    expect(screen.queryByTestId('wizard-promo-applied')).toBeNull();
+    expect(screen.getByTestId('wizard-coupon-field')).toBeInTheDocument();
+  });
+
+  it('F09-P014 INVARIANCE — sans code, la disclosure historique est intacte', () => {
+    render(<AddressStep />);
+    expect(screen.queryByTestId('wizard-promo-applied')).toBeNull();
+    const details = screen.getByTestId('wizard-coupon-field') as HTMLDetailsElement;
+    expect(details.open).toBe(false);
+    expect(screen.getByTestId('wizard-coupon-summary').textContent ?? '').toContain(
+      'J’ai un code de fidélité',
+    );
   });
 
   it('F09-V010 charte : aucun caractère interdit dans la disclosure', () => {

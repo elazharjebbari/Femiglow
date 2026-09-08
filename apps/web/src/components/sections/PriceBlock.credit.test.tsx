@@ -89,6 +89,30 @@ describe('PriceBlock — crédit appliqué (store)', () => {
   });
 });
 
+describe('PriceBlock — code promo de campagne', () => {
+  afterEach(() => useWizardStore.getState().clearCoupon());
+
+  it('mention « appliquée automatiquement » sous la ligne du code', () => {
+    useWizardStore.getState().setCoupon('GLOW99', 500, 'promo');
+    render(<PriceBlock feed={feed()} product={product} />);
+    expect(screen.getByTestId('pack-promo-auto')).toBeInTheDocument();
+    expect(screen.getByTestId('pack-promo-applied')).toHaveTextContent('GLOW99');
+  });
+
+  it('INVARIANCE — sans code, aucune mention promo n’est rendue', () => {
+    render(<PriceBlock feed={feed()} product={product} />);
+    expect(screen.queryByTestId('pack-promo-applied')).toBeNull();
+    expect(screen.queryByTestId('pack-promo-auto')).toBeNull();
+    expect(screen.queryByTestId('pack-value-credit-line')).toBeNull();
+  });
+
+  it('crédit fidélité (kind credit) : pas de mention « appliquée automatiquement »', () => {
+    useWizardStore.getState().setCoupon('FG-X', 500, 'credit');
+    render(<PriceBlock feed={feed()} product={product} />);
+    expect(screen.queryByTestId('pack-promo-auto')).toBeNull();
+  });
+});
+
 describe('PriceBlock — flux d’application du code (note geste d’accueil + MSW)', () => {
   it('saisir un code valide met à jour le store ET le prix XXL + ajoute la ligne', async () => {
     server.use(...redeemHandlers({ byCode: { 'FG-DEMO-1234': { valid: true, valueCents: 500 } } }));
