@@ -71,6 +71,7 @@ export async function HeroProduitBound({
   locale,
   displayName,
   taglineFallback,
+  initialCoupon,
 }: HeroProduitBoundProps): Promise<JSX.Element> {
   const effectiveLocale = locale ?? DEFAULT_LOCALE;
   const productFallback = product.images[0];
@@ -195,6 +196,9 @@ export async function HeroProduitBound({
       // MOBILE : bloc stories sous les images du hero, avant le titre.
       // Desktop : masqué ici (le bloc reste après le hero dans la page).
       storiesSlot={<StoriesVideoBound locale={locale} variant="inline" />}
+      // Code de campagne validé côté serveur : le hero porte le prix remisé
+      // dès le premier paint, sans attendre l'hydratation.
+      initialCoupon={initialCoupon}
     />
   );
 }
