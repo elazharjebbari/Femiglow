@@ -21,7 +21,7 @@ describe('P3 InvitationCodeField', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Appliquer' }));
     await waitFor(() => expect(screen.getByTestId('invitation-code-ok')).toBeInTheDocument());
     expect(screen.getByTestId('invitation-code-ok')).toHaveTextContent('20 MAD');
-    expect(onValid).toHaveBeenCalledWith('FG-ABC234', 2000);
+    expect(onValid).toHaveBeenCalledWith('FG-ABC234', 2000, 'credit');
   });
 
   it('U002 code invalide → message d’erreur sobre, pas de onValid', async () => {

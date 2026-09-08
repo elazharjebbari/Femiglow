@@ -35,7 +35,7 @@ describe('CouponWelcomeNote — câblage code', () => {
     fireEvent.change(screen.getByLabelText('Votre code'), { target: { value: 'fg-demo-1234' } });
     fireEvent.click(screen.getByText('Appliquer'));
     await screen.findByTestId('invitation-code-ok');
-    expect(onValid).toHaveBeenCalledWith('FG-DEMO-1234', 2000);
+    expect(onValid).toHaveBeenCalledWith('FG-DEMO-1234', 2000, 'credit');
   });
 
   it('CWN-C002 ré-édition après validation → onCouponClear', async () => {

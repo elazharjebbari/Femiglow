@@ -245,20 +245,37 @@ export const orderRepo = {
       });
     }
 
-    // Crédit de fidélité (Phase 3) — réduction additionnelle plafonnée sur le
-    // total, cumulable avec le geste d'accueil. Validé (non consommé) ici ; il
-    // sera marqué `redeemed` APRÈS la création de la commande.
+    // Code saisi par la cliente — deux natures, même circuit (réduction
+    // additionnelle plafonnée sur le total, cumulable avec le geste d'accueil) :
+    //  - crédit de fidélité (Phase 3, `coupon_grants`) → marqué `redeemed`
+    //    APRÈS la création de la commande ;
+    //  - code promo marketing (`coupons.mode='code'`, ex. GLOW99 : 199 → 99)
+    //    → usage incrémenté + événement `converted` APRÈS la commande.
+    // Validé (non consommé) ici ; le serveur reste autoritaire sur le montant.
     let creditGrantCode: string | null = null;
     let creditAppliedCents = 0;
+    let promoCoupon: import('@/lib/coupons/types').CouponDef | null = null;
+    let promoAppliedCents = 0;
+    // Code réellement appliqué (normalisé) — persisté sur la commande pour
+    // que l'ops, le back-office et le webhook CRM sachent POURQUOI le total
+    // est inférieur au prix catalogue.
+    let appliedCouponCode: string | null = null;
     if (input.couponCode) {
-      const { validateGrant } = await import('@/lib/db/queries/coupon-grant-repo');
-      const check = await validateGrant(input.couponCode);
-      if (check.valid) {
+      const { resolveRedeemableCode } = await import('@/lib/coupons/promo-code');
+      const check = await resolveRedeemableCode(input.couponCode);
+      if (check.valid && check.kind === 'credit') {
         creditAppliedCents = Math.min(check.valueCents, computedTotal);
         computedTotal -= creditAppliedCents;
-        creditGrantCode = check.grant.code;
+        creditGrantCode = check.grantCode;
+        appliedCouponCode = check.code;
+      } else if (check.valid && check.kind === 'promo') {
+        promoAppliedCents = Math.min(check.valueCents, computedTotal);
+        computedTotal -= promoAppliedCents;
+        promoCoupon = check.coupon;
+        appliedCouponCode = check.code;
       }
     }
+    const discountCents = creditAppliedCents + promoAppliedCents;
 
     if (computedTotal !== input.expectedTotalCents) {
       throw new PriceMismatchError(input.expectedTotalCents, computedTotal);
@@ -296,6 +313,8 @@ export const orderRepo = {
         chatLeadId: input.chatLeadId,
         totalCents: input.expectedTotalCents,
         currency: input.currency,
+        couponCode: appliedCouponCode,
+        discountCents,
         shippingMode: input.shippingMode,
         paymentMethod: input.paymentMethod,
         formId: input.formContext.formId,
@@ -358,6 +377,33 @@ export const orderRepo = {
       try {
         const { redeemGrant } = await import('@/lib/db/queries/coupon-grant-repo');
         await redeemGrant(creditGrantCode, orderId);
+      } catch {
+        /* non bloquant */
+      }
+    }
+
+    // Code promo marketing — compteur d'usage (plafond global) + trace
+    // `converted` pour le reporting par campagne. Best-effort, même logique :
+    // la commande est déjà posée au bon prix.
+    if (promoCoupon) {
+      try {
+        const { incrementUsage } = await import('@/lib/db/queries/coupon-repo');
+        await incrementUsage(promoCoupon.id);
+      } catch {
+        /* non bloquant */
+      }
+      try {
+        const { recordCouponEvent } = await import('@/lib/db/queries/coupon-event-repo');
+        await recordCouponEvent({
+          couponId: promoCoupon.id,
+          phase: 'converted',
+          bucket: 'treatment',
+          orderId,
+          amountCents: promoAppliedCents,
+          visitorKey: couponCtx.visitorKey ?? null,
+          trafficSource: couponCtx.trafficSource ?? null,
+          device: couponCtx.device ?? null,
+        });
       } catch {
         /* non bloquant */
       }

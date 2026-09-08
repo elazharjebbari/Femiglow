@@ -71,6 +71,7 @@ import { routes } from '@/lib/routes';
 import { useTracking } from '@/lib/tracking/use-tracking';
 import { getJourneyPurchaseId, readJourneyPurchaseId } from '@/lib/tracking/lead-purchase-cookie';
 import { buildUserDataForEvent } from '@/lib/tracking/build-user-data';
+import { useWizardStore } from '@/lib/checkout/state/wizard-store';
 
 const stepLabels = ['Informations', 'Livraison', 'Confirmation'] as const;
 
@@ -95,6 +96,12 @@ export function CheckoutFlow({ onLeaveModalChange }: CheckoutFlowProps) {
   const hydrated = useCartHydrated();
   const subtotal = useCartStore(selectSubtotalCents);
   const clearCart = useCartStore((s) => s.clear);
+  // Code promo / crédit appliqué sur la page (wizard-store, partagé avec le
+  // tunnel embarqué de /kit). Sans cette lecture, une cliente arrivée par la
+  // publicité GLOW99 qui passe par « Ajouter au panier » commandait au prix
+  // plein : la commande — et donc la carte CRM/Trello — repartait à 199 MAD.
+  const couponCode = useWizardStore((s) => s.couponCode);
+  const creditCents = useWizardStore((s) => s.creditCents);
   const { emit } = useTracking();
   const { freeShipping } = useShippingConfig();
 
@@ -165,7 +172,13 @@ export function CheckoutFlow({ onLeaveModalChange }: CheckoutFlowProps) {
         : computeShippingCents({ city, mode: shippingMode }),
     [items.length, city],
   );
-  const total = subtotal + shipping;
+  // Remise plafonnée au sous-total (jamais sur la livraison, jamais négative).
+  const promoDiscount = Math.max(0, Math.min(creditCents, subtotal));
+  const total = subtotal + shipping - promoDiscount;
+  // Même invariant anti-422 que le tunnel /kit : le code n'est transmis QUE
+  // s'il est effectivement déduit du total attendu, sinon le serveur déduit
+  // la remise de son côté et les totaux divergent.
+  const orderCouponCode = promoDiscount > 0 ? couponCode ?? undefined : undefined;
 
   // `begin_checkout` migré vers `checkout_intent` (1ère frappe, cf.
   // InfoStep + useCheckoutIntentTrigger). On purge `lead_create.__new__`
@@ -480,6 +493,7 @@ export function CheckoutFlow({ onLeaveModalChange }: CheckoutFlowProps) {
         currency: 'MAD',
         paymentMethod: 'cod',
         shippingMode: 'standard',
+        couponCode: orderCouponCode,
       });
 
       // 3) Tracking purchase. Si un lead a précédé (cookie jpid posé), l'achat
@@ -553,6 +567,8 @@ export function CheckoutFlow({ onLeaveModalChange }: CheckoutFlowProps) {
           subtotalCents={subtotal}
           shippingCents={shipping}
           totalCents={total}
+          discountCents={promoDiscount}
+          couponCode={couponCode}
           catalogShippingCents={catalogShipping}
           freeShipping={freeShipping}
         />
@@ -626,6 +642,8 @@ export function CheckoutFlow({ onLeaveModalChange }: CheckoutFlowProps) {
               subtotalCents={subtotal}
               shippingCents={shipping}
               totalCents={total}
+              discountCents={promoDiscount}
+              couponCode={couponCode}
               catalogShippingCents={catalogShipping}
               freeShipping={freeShipping}
             />

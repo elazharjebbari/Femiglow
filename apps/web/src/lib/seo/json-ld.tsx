@@ -1,3 +1,4 @@
+import { computePromo } from '@/lib/utils/promo';
 import type { Article, FAQItem, Product } from '@/lib/schemas';
 
 const SITE_URL = 'https://femiglow-maroc.com';
@@ -140,7 +141,12 @@ export function productSchema(
       '@type': 'Offer',
       url: `${SITE_URL}${urlPath}`,
       priceCurrency: product.currency,
-      price: (product.priceCents / 100).toFixed(2),
+      // Prix réellement payable sans code : `promoPriceCents` quand la promo
+      // est active, sinon le prix catalogue. Annoncer le prix barré (289)
+      // contredit la page et enfreint les règles Merchant.
+      price: (
+        computePromo(product.priceCents, product.promoPriceCents).effectivePriceCents / 100
+      ).toFixed(2),
       availability: product.inStock
         ? 'https://schema.org/InStock'
         : 'https://schema.org/OutOfStock',

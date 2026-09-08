@@ -187,7 +187,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           attributionStrategy={attributionStrategy}
         >
           <TrackingGlobalListener />
-          {children}
+          {/* Garde-fou anti-scroll horizontal : `overflow-x-clip` confine tout
+            débordement latéral (bleeds `-mx-*`, carousels, rails) SANS créer de
+            scroll-container (position:sticky préservé) ni toucher le scroll
+            vertical (règle CSS : clip sur X laisse Y visible). Les overlays
+            fixes (bannière, chat…) restent hors du wrapper. */}
+          <div className="overflow-x-clip">{children}</div>
           <ConsentBanner
             enabled={bannerEnabled}
             defaultGranted={defaultGranted}

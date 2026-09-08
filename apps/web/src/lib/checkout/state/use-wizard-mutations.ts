@@ -191,6 +191,10 @@ export function useLeadCaptureMutation(): {
   const goToStep = useWizardStore((s) => s.goToStep);
   const formContext = useWizardStore((s) => s.formContext);
   const cartSnapshot = useWizardStore((s) => s.cartSnapshot);
+  // Code promo appliqué au moment de la capture du lead — recopié dans le
+  // panier persisté pour que le webhook `cart.abandoned` annonce le net.
+  const couponCode = useWizardStore((s) => s.couponCode);
+  const creditCents = useWizardStore((s) => s.creditCents);
 
   const execute = useCallback(
     async (input: LeadCaptureMutationInput): Promise<{ leadId: string }> => {
@@ -219,7 +223,19 @@ export function useLeadCaptureMutation(): {
           visitorId,
           sessionId,
           language: 'fr' as const,
-          cartSnapshot: cartSnapshot ?? undefined,
+          // Le panier persisté sur le lead porte la remise en cours : c'est
+          // lui qui alimente le webhook `cart.abandoned` → CRM → Trello.
+          cartSnapshot: cartSnapshot
+            ? {
+                ...cartSnapshot,
+                ...(creditCents > 0
+                  ? {
+                      discountCents: Math.min(creditCents, cartSnapshot.totalCents),
+                      ...(couponCode ? { couponCode } : {}),
+                    }
+                  : {}),
+              }
+            : undefined,
           page: typeof window !== 'undefined' ? window.location.pathname : undefined,
           referrer: typeof document !== 'undefined' ? document.referrer || undefined : undefined,
         };
@@ -324,7 +340,18 @@ export function useLeadCaptureMutation(): {
         throw e;
       }
     },
-    [formContext, cartSnapshot, setLeadId, goToStep, setLoading, setSuccess, setError, emit],
+    [
+      formContext,
+      cartSnapshot,
+      couponCode,
+      creditCents,
+      setLeadId,
+      goToStep,
+      setLoading,
+      setSuccess,
+      setError,
+      emit,
+    ],
   );
 
   return { status: state.status, error: state.error, execute, reset: setIdle };
@@ -520,7 +547,13 @@ export function useAddressMutation(): {
           currency: cartSnapshot.currency,
           paymentMethod: DEFAULT_PAYMENT_METHOD,
           shippingMode: input.shippingMode,
-          couponCode: couponCode ?? undefined,
+          // INVARIANT anti-422 (2/2) : on ne transmet le code QUE si son
+          // montant est effectivement déduit du total attendu ci-dessus.
+          // Sans cette garde, un code mémorisé mais pas encore re-validé
+          // (`creditCents === 0` après rechargement, ou validation réseau en
+          // échec) partait quand même : le serveur déduisait la remise, les
+          // totaux divergeaient et la commande échouait en 422 price_mismatch.
+          couponCode: creditCents > 0 ? couponCode ?? undefined : undefined,
         });
         setOrderId(res.orderId);
         // Phase 3 — mémorise le code de fidélité émis (affiché au ThankYouStep).

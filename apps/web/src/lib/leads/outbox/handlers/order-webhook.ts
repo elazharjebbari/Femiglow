@@ -18,6 +18,9 @@ export interface OrderWebhookEffectPayload {
   orderId: string;
   totalCents: number;
   currency: string;
+  /** Promo appliquée à la commande (code + montant remisé en centimes). */
+  couponCode?: string | null;
+  discountCents?: number;
   items: Array<{ sku: string; name: string; quantity: number; variantKey: string | null }>;
   shippingMode?: 'standard' | 'express' | 'pickup';
   paymentMethod?: 'cod' | 'bank_transfer' | 'card';
@@ -31,7 +34,13 @@ export const orderWebhookHandler: LeadEffectHandler = async (row) => {
     throw new Error(`order_webhook: lead ${row.leadId} introuvable`);
   }
   await dispatchOrderWebhook({
-    order: { id: p.orderId, totalCents: p.totalCents, currency: p.currency },
+    order: {
+      id: p.orderId,
+      totalCents: p.totalCents,
+      currency: p.currency,
+      couponCode: p.couponCode ?? null,
+      discountCents: p.discountCents ?? 0,
+    },
     items: p.items,
     lead,
     shippingMode: p.shippingMode,

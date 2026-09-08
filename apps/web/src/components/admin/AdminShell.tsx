@@ -8,6 +8,7 @@ interface AdminShellProps {
     | 'leads'
     | 'webhooks'
     | 'media'
+    | 'stories'
     | 'tracking'
     | 'analytics'
     | 'components'
@@ -30,6 +31,7 @@ const NAV: Array<{ href: string; key: AdminShellProps['active']; label: string }
   { href: '/admin/leads', key: 'leads', label: 'Leads' },
   { href: '/admin/rituals/queue', key: 'rituals', label: 'Rituels partagés' },
   { href: '/admin/media', key: 'media', label: 'Médias' },
+  { href: '/admin/stories', key: 'stories', label: 'Stories' },
   { href: '/admin/components', key: 'components', label: 'Composants' },
   { href: '/admin/i18n', key: 'i18n', label: 'Traductions / i18n' },
   { href: '/admin/seo', key: 'seo', label: 'SEO' },

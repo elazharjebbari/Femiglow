@@ -48,6 +48,7 @@
     "seed:review-photos:reset": "tsx scripts/seed-review-photos.ts --reset",
     "seed:delivery-cities": "tsx scripts/seed-delivery-cities.ts",
     "seed:coupons": "tsx scripts/seed-coupons.ts",
+    "seed:promo-coupon": "tsx scripts/upsert-promo-coupon.ts",
     "seed:all": "tsx scripts/seed-admin.ts && tsx scripts/seed-seo.ts && tsx scripts/seed-products.ts && tsx scripts/seed-coupons.ts && tsx scripts/seed-delivery-cities.ts",
     "seed:full": "tsx scripts/seed-all.ts",
     "db:provision": "node scripts/_migrate-safe.mjs && tsx scripts/seed-all.ts",

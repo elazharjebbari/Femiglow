@@ -10,7 +10,7 @@
  * cf. docs/coupons-qa-2026-06-02/14-landing-welcome-note/.
  */
 import { cn } from '@/lib/utils/cn';
-import { InvitationCodeField } from './InvitationCodeField';
+import { InvitationCodeField, type InvitationCodeKind } from './InvitationCodeField';
 
 export interface CouponWelcomeNoteProps {
   /** Prix final formaté (ex. « 199 MAD » / « 199 درهم »). */
@@ -26,9 +26,19 @@ export interface CouponWelcomeNoteProps {
    * Code de fidélité validé dans le champ d'invitation → remonte au parent
    * (PriceBlock) qui applique le crédit au store et actualise tous les prix.
    */
-  onCouponValid?: (code: string, valueCents: number) => void;
+  onCouponValid?: (code: string, valueCents: number, kind: InvitationCodeKind) => void;
   /** Code ré-édité/vidé → retire le crédit (re-validation requise). */
   onCouponClear?: () => void;
+  /**
+   * Code déjà appliqué (reprise / URL de campagne) : pré-remplit le champ en
+   * état « appliqué » et ouvre la porte pour que la cliente voie son code.
+   */
+  appliedCoupon?: { code: string; valueCents: number; kind: InvitationCodeKind } | null;
+  /**
+   * Masque la mention « Hors cumul. » : elle est FAUSSE quand un code promo
+   * de campagne se cumule au geste d'accueil (289 → 199 → 99).
+   */
+  hideNonCumulMention?: boolean;
 }
 
 const COPY = {
@@ -55,6 +65,8 @@ export function CouponWelcomeNote({
   className,
   onCouponValid,
   onCouponClear,
+  appliedCoupon = null,
+  hideNonCumulMention = false,
 }: CouponWelcomeNoteProps): JSX.Element {
   const t = isArabic ? COPY.ar : COPY.fr;
   return (
@@ -78,15 +90,15 @@ export function CouponWelcomeNote({
       </p>
       {endsAtLabel ? (
         <p className="mt-1 text-xs text-encre/60">
-          {endsAtLabel} · {t.nonCumul}
+          {hideNonCumulMention ? endsAtLabel : `${endsAtLabel} · ${t.nonCumul}`}
         </p>
-      ) : (
+      ) : hideNonCumulMention ? null : (
         <p className="mt-1 text-xs text-encre/60">{t.nonCumul}</p>
       )}
 
       {/* Porte discrète, repliée par défaut, INERTE en Phase 1 (D-6 : pas de
           champ). Aucune friction : ne s'ouvre que sur action explicite. */}
-      <details className="mt-2 text-xs">
+      <details className="mt-2 text-xs" open={!!appliedCoupon || undefined}>
         <summary
           data-testid="coupon-invitation-disclosure"
           className="cursor-pointer list-none text-encre/55 underline decoration-encre/25 underline-offset-2"
@@ -96,6 +108,9 @@ export function CouponWelcomeNote({
         <div className="mt-1">
           <InvitationCodeField
             isArabic={isArabic}
+            initialCode={appliedCoupon?.code ?? ''}
+            initialValueCents={appliedCoupon?.valueCents ?? 0}
+            initialKind={appliedCoupon?.kind ?? 'credit'}
             onValid={onCouponValid}
             onClear={onCouponClear}
           />

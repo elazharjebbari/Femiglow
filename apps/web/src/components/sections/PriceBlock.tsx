@@ -28,6 +28,10 @@ import { Kicker } from '@/components/ui/Kicker';
 import { Text } from '@/components/ui/Text';
 import { cn } from '@/lib/utils/cn';
 import { useWizardStore } from '@/lib/checkout/state/wizard-store';
+import {
+  useAppliedCoupon,
+  type AppliedCouponSeed,
+} from '@/lib/checkout/state/use-applied-coupon';
 import { computePackSavings, formatSavingsLabel } from '@/lib/kit/pack/savings';
 import type { ProductFeed } from '@/lib/products/feed/types';
 import { useTracking } from '@/lib/tracking/use-tracking';
@@ -51,6 +55,8 @@ export interface PriceBlockProps {
    * « geste d'accueil ». `endsAt` ISO pour la mention de validité civile.
    */
   welcomeCoupon?: { active: boolean; endsAt: string | null };
+  /** Code validé côté serveur pour cette requête (voir KitPageLayoutProps). */
+  initialCoupon?: AppliedCouponSeed;
 }
 
 /**
@@ -95,6 +101,7 @@ export function PriceBlock({
   product,
   hasVisual = false,
   welcomeCoupon,
+  initialCoupon,
 }: PriceBlockProps): JSX.Element {
   const { hero, currency, socialProof } = feed;
   const { emit } = useTracking();
@@ -130,9 +137,16 @@ export function PriceBlock({
   // code valide est saisi (champ du « geste d'accueil » ou du wizard), le crédit
   // est soustrait de TOUS les prix de la page (XXL, badge, note, détail, CTA),
   // en cohérence avec le récap du formulaire et le débit serveur (anti-422).
-  const creditCents = Math.max(0, useWizardStore((s) => s.creditCents));
+  // Prédicat et arithmétique UNIQUES (cf. use-applied-coupon) : le premier
+  // rendu client renvoie le même état que le HTML serveur, ce qui évite un
+  // mismatch d'hydratation pour une visiteuse revenue avec un code mémorisé.
+  const coupon = useAppliedCoupon({ initial: initialCoupon });
+  const creditCents = coupon.creditCents;
+  const couponCode = coupon.code;
+  const couponKind = coupon.kind;
   const setCoupon = useWizardStore((s) => s.setCoupon);
   const clearCoupon = useWizardStore((s) => s.clearCoupon);
+  const isPromoApplied = coupon.isPromo && coupon.hasDiscount;
   const effectivePriceAfterCredit = Math.max(0, promo.effectivePriceCents - creditCents);
   const creditApplied = promo.effectivePriceCents - effectivePriceAfterCredit;
   // Badge économie AFFICHÉ : recalculé avec le crédit (économie totale vs barré).
@@ -238,6 +252,36 @@ export function PriceBlock({
           )}
         </p>
 
+        {/* 2bis — Code promo de campagne appliqué (ex. GLOW99 via l'URL de
+            la publicité) : confirmation immédiate sous le prix, sans sticker. */}
+        {isPromoApplied && (
+          <p
+            data-testid="pack-promo-applied"
+            className="mx-auto inline-flex max-w-fit items-center gap-1.5 rounded-full border border-sauge/40 bg-sauge/10 px-3 py-1 text-xs font-medium text-encre"
+          >
+            <svg viewBox="0 0 16 16" width="11" height="11" aria-hidden className="text-sauge">
+              <path
+                d="M4 8.4l2.6 2.6 5.4-6"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.9"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            {isArabic
+              ? `تم تطبيق الرمز ${couponCode} · −${formatMoney(creditApplied)}`
+              : `Code ${couponCode} appliqué · −${formatMoney(creditApplied)}`}
+          </p>
+        )}
+        {isPromoApplied && (
+          <p data-testid="pack-promo-auto" className="text-xs text-encre/60">
+            {isArabic
+              ? 'تم تطبيق الخصم تلقائياً، لا شيء لإدخاله.'
+              : 'Remise appliquée automatiquement, rien à saisir.'}
+          </p>
+        )}
+
         {/* 3 — Bandeau économie terracotta. L'unité du bandeau suit la
             devise du `ProductFeed` pour rester cohérente avec le prix XXL
             (ex : « 347 MAD · 64 % » et pas « 347 € · 64 % » sur un
@@ -263,12 +307,20 @@ export function PriceBlock({
           isArabic={isArabic}
           finalPriceLabel={formatMoney(effectivePriceAfterCredit)}
           savingsLabel={
+            // Avec un code de campagne, la note annonçait le seul geste
+            // d'accueil (90 MAD) alors que 190 étaient réellement déduits.
             isArabic
-              ? `${(promo.savingsCents / 100).toFixed(0)} ${currencyDisplay} هدية على طلبك الأول`
-              : `${(promo.savingsCents / 100).toFixed(0)} ${savingsUnit} offerts sur votre première commande du pack`
+              ? `${((promo.savingsCents + creditApplied) / 100).toFixed(0)} ${currencyDisplay} هدية على طلبك الأول`
+              : `${((promo.savingsCents + creditApplied) / 100).toFixed(0)} ${savingsUnit} offerts sur votre première commande du pack`
           }
           endsAtLabel={formatCivilDate(welcomeCoupon.endsAt, isArabic)}
-          onCouponValid={(code, cents) => setCoupon(code, cents)}
+          appliedCoupon={
+            couponCode && creditCents > 0
+              ? { code: couponCode, valueCents: creditCents, kind: couponKind ?? 'credit' }
+              : null
+          }
+          hideNonCumulMention={isPromoApplied}
+          onCouponValid={(code, cents, kind) => setCoupon(code, cents, kind)}
           onCouponClear={() => clearCoupon()}
         />
       )}
@@ -280,7 +332,13 @@ export function PriceBlock({
           creditLine={
             creditApplied > 0
               ? {
-                  label: isArabic ? 'رصيد الوفاء' : 'Crédit de fidélité',
+                  label: isPromoApplied
+                    ? isArabic
+                      ? `الرمز ${couponCode}`
+                      : `Code ${couponCode}`
+                    : isArabic
+                      ? 'رصيد الوفاء'
+                      : 'Crédit de fidélité',
                   valueLabel: `−${formatMoney(creditApplied)}`,
                 }
               : null
@@ -288,8 +346,11 @@ export function PriceBlock({
         />
       )}
 
-      {/* 5 — perUsageHint microcopy */}
-      {hero.perUsageHint && (
+      {/* 5 — perUsageHint microcopy. Calculée côté serveur sur le prix
+          catalogue : elle devient fausse dès qu'un code promo est appliqué
+          (« ≈ 4,23 MAD par soin » sous un prix XXL à 99 MAD). Mieux vaut
+          l'omettre qu'afficher un chiffre erroné. */}
+      {hero.perUsageHint && !isPromoApplied && (
         <p
           data-testid="pack-per-usage-hint"
           className="text-center text-xs italic text-encre/65"

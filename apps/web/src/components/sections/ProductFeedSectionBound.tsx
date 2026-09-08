@@ -9,6 +9,7 @@
  * Merchant XML / JSON-LD pour Google Shopping).
  */
 import { getTranslations } from 'next-intl/server';
+import type { AppliedCouponSeed } from '@/lib/checkout/state/use-applied-coupon';
 
 import { ProductFeedSection } from './ProductFeedSection';
 import { resolveKitPack } from '@/lib/kit/pack/resolver';
@@ -21,6 +22,8 @@ import type { ProductReviewStats } from '@/lib/products/reviews';
 import type { KitPageContent, Product } from '@/lib/schemas';
 
 interface ProductFeedSectionBoundProps {
+  /** Code validé côté serveur pour cette requête. */
+  initialCoupon?: AppliedCouponSeed;
   product: Product;
   content: KitPageContent;
   /**
@@ -43,6 +46,7 @@ export async function ProductFeedSectionBound({
   reviewStats,
   anchorId,
   locale,
+  initialCoupon,
 }: ProductFeedSectionBoundProps) {
   const { feed } = resolveKitPack(product, content, reviewStats);
   const effectiveLocale = locale ?? DEFAULT_LOCALE;
@@ -66,6 +70,7 @@ export async function ProductFeedSectionBound({
         product={product}
         anchorId={anchorId}
         welcomeCoupon={welcomeCoupon}
+        initialCoupon={initialCoupon}
         isArabic={false}
       />
     );
@@ -88,6 +93,7 @@ export async function ProductFeedSectionBound({
       product={product}
       anchorId={anchorId}
       welcomeCoupon={welcomeCoupon}
+        initialCoupon={initialCoupon}
       isArabic={effectiveLocale === 'ar'}
       resultLabel={t('steps.result_label')}
       reviewsCountLabel={t('social_proof.reviews_count', {
