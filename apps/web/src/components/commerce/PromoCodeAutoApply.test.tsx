@@ -90,17 +90,57 @@ describe('PromoCodeAutoApply', () => {
     expect(state().couponKind).toBeNull();
   });
 
-  it('code déjà appliqué avec montant → aucun appel réseau', async () => {
+  it('code déjà appliqué → RE-VALIDÉ au montage (un code expiré ne doit pas survivre)', async () => {
+    // `creditCents` est désormais persisté : sans re-validation, un code
+    // expiré entre deux visites resterait affiché et la commande partirait
+    // avec un total que le serveur refuse (422 price_mismatch).
     const calls: string[] = [];
     server.events.on('request:start', ({ request }) => {
       if (request.url.includes('/api/coupons/redeem')) calls.push(request.url);
     });
+    server.use(
+      ...redeemHandlers({
+        byCode: { GLOW99: { valid: true, valueCents: 10000, kind: 'promo' } as never },
+      }),
+    );
     useWizardStore.setState({ couponCode: 'GLOW99', creditCents: 10000, couponKind: 'promo' });
     search = 'code=GLOW99';
     render(<PromoCodeAutoApply />);
-    await new Promise((r) => setTimeout(r, 50));
-    expect(calls.length).toBe(0);
+    await waitFor(() => expect(calls.length).toBe(1));
     expect(state().creditCents).toBe(10000);
+  });
+
+  it('code mémorisé devenu invalide → remise retirée (pas de prix fantôme)', async () => {
+    server.use(...redeemHandlers({ byCode: {} }));
+    useWizardStore.setState({ couponCode: 'GLOW99', creditCents: 10000, couponKind: 'promo' });
+    render(<PromoCodeAutoApply />);
+    await waitFor(() => expect(state().couponCode).toBeNull());
+    expect(state().creditCents).toBe(0);
+  });
+
+  it.each([['network' as const], [500], [503]])(
+    'panne %s → la remise déjà appliquée est CONSERVÉE',
+    async (mode) => {
+      // Régression : une panne effaçait le code et la cliente payait le prix
+      // plein alors qu'elle avait vu la remise s'appliquer.
+      server.use(...redeemHandlers({ fail: mode }));
+      useWizardStore.setState({ couponCode: 'GLOW99', creditCents: 10000, couponKind: 'promo' });
+      render(<PromoCodeAutoApply />);
+      await new Promise((r) => setTimeout(r, 80));
+      expect(state().couponCode).toBe('GLOW99');
+      expect(state().creditCents).toBe(10000);
+    },
+  );
+
+  it('montant serveur différent du montant mémorisé → le serveur fait autorité', async () => {
+    server.use(
+      ...redeemHandlers({
+        byCode: { GLOW99: { valid: true, valueCents: 5000, kind: 'promo' } as never },
+      }),
+    );
+    useWizardStore.setState({ couponCode: 'GLOW99', creditCents: 10000, couponKind: 'promo' });
+    render(<PromoCodeAutoApply />);
+    await waitFor(() => expect(state().creditCents).toBe(5000));
   });
 
   it('non hydraté → attend l’hydratation avant d’appeler l’API', async () => {

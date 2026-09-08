@@ -87,6 +87,13 @@ export const orders = pgTable(
     chatLeadId: text('chat_lead_id'),
     totalCents: integer('total_cents').notNull(),
     currency: text('currency').notNull(),
+    // Promo — code effectivement appliqué et montant remisé (centimes).
+    // `total_cents` porte déjà le net ; sans ces deux colonnes une commande à
+    // 99 MAD est indiscernable d'une erreur de prix pour l'opérateur, et la
+    // remise n'apparaît nulle part (ni back-office, ni webhook, ni Trello).
+    // `discount_cents = 0` pour toutes les commandes sans code.
+    couponCode: text('coupon_code'),
+    discountCents: integer('discount_cents').notNull().default(0),
     shippingMode: text('shipping_mode').notNull(),
     paymentMethod: text('payment_method').notNull(),
     // CHA-230 — Form context (taxonomie tracking, cohérent avec chat_lead)

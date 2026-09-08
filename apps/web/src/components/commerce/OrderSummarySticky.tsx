@@ -12,6 +12,15 @@ interface OrderSummaryStickyProps {
   subtotalCents: number;
   shippingCents: number;
   totalCents: number;
+  /**
+   * Remise d'un code promo / crédit (centimes). Quand > 0, une ligne
+   * « Code X » apparaît entre le sous-total et la livraison. `totalCents`
+   * est déjà net de cette remise (fourni par l'appelant).
+   */
+  discountCents?: number;
+  /** Code affiché sur la ligne de remise (ex. « GLOW99 »). */
+  couponCode?: string | null;
+
   /** Prix catalogue (avant offre) — sert au strikethrough quand freeShipping=true. */
   catalogShippingCents?: number;
   freeShipping?: boolean;
@@ -22,6 +31,8 @@ export function OrderSummarySticky({
   subtotalCents,
   shippingCents,
   totalCents,
+  discountCents = 0,
+  couponCode = null,
   catalogShippingCents,
   freeShipping = false,
 }: OrderSummaryStickyProps) {
@@ -67,6 +78,17 @@ export function OrderSummarySticky({
               {formatPrice(subtotalCents)}
             </dd>
           </div>
+          {discountCents > 0 && (
+            <div
+              className="flex items-baseline justify-between gap-4"
+              data-testid="order-summary-discount"
+            >
+              <dt className="text-base text-sauge">
+                {couponCode ? `Code ${couponCode}` : 'Remise'}
+              </dt>
+              <dd className="text-base text-sauge">−{formatPrice(discountCents)}</dd>
+            </div>
+          )}
           <div className="flex items-baseline justify-between gap-4">
             <dt className="text-base text-encre/70">Livraison</dt>
             <dd className="text-base text-encre">

@@ -9,6 +9,15 @@ import { cn } from '@/lib/utils/cn';
 interface OrderSummaryAccordionProps {
   items: CartItemData[];
   subtotalCents: number;
+  /**
+   * Remise d'un code promo / crédit (centimes). Quand > 0, une ligne
+   * « Code X » apparaît entre le sous-total et la livraison. `totalCents`
+   * est déjà net de cette remise (fourni par l'appelant).
+   */
+  discountCents?: number;
+  /** Code affiché sur la ligne de remise (ex. « GLOW99 »). */
+  couponCode?: string | null;
+
   shippingCents: number;
   totalCents: number;
   catalogShippingCents?: number;
@@ -18,6 +27,8 @@ interface OrderSummaryAccordionProps {
 export function OrderSummaryAccordion({
   items,
   subtotalCents,
+  discountCents = 0,
+  couponCode = null,
   shippingCents,
   totalCents,
   catalogShippingCents,
@@ -80,6 +91,17 @@ export function OrderSummaryAccordion({
             <dt className="text-sm text-encre/70">Sous-total</dt>
             <dd className="text-sm text-encre">{formatPrice(subtotalCents)}</dd>
           </div>
+          {discountCents > 0 && (
+            <div
+              className="flex items-baseline justify-between gap-4"
+              data-testid="order-summary-discount"
+            >
+              <dt className="text-sm text-sauge">
+                {couponCode ? `Code ${couponCode}` : 'Remise'}
+              </dt>
+              <dd className="text-sm text-sauge">−{formatPrice(discountCents)}</dd>
+            </div>
+          )}
           <div className="flex items-baseline justify-between gap-4">
             <dt className="text-sm text-encre/70">Livraison</dt>
             <dd className="text-sm text-encre">

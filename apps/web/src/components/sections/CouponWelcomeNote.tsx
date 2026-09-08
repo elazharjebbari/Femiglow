@@ -34,6 +34,11 @@ export interface CouponWelcomeNoteProps {
    * état « appliqué » et ouvre la porte pour que la cliente voie son code.
    */
   appliedCoupon?: { code: string; valueCents: number; kind: InvitationCodeKind } | null;
+  /**
+   * Masque la mention « Hors cumul. » : elle est FAUSSE quand un code promo
+   * de campagne se cumule au geste d'accueil (289 → 199 → 99).
+   */
+  hideNonCumulMention?: boolean;
 }
 
 const COPY = {
@@ -61,6 +66,7 @@ export function CouponWelcomeNote({
   onCouponValid,
   onCouponClear,
   appliedCoupon = null,
+  hideNonCumulMention = false,
 }: CouponWelcomeNoteProps): JSX.Element {
   const t = isArabic ? COPY.ar : COPY.fr;
   return (
@@ -84,9 +90,9 @@ export function CouponWelcomeNote({
       </p>
       {endsAtLabel ? (
         <p className="mt-1 text-xs text-encre/60">
-          {endsAtLabel} · {t.nonCumul}
+          {hideNonCumulMention ? endsAtLabel : `${endsAtLabel} · ${t.nonCumul}`}
         </p>
-      ) : (
+      ) : hideNonCumulMention ? null : (
         <p className="mt-1 text-xs text-encre/60">{t.nonCumul}</p>
       )}
 

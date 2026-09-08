@@ -11,6 +11,7 @@ import {
   selectSubtotalCents,
   useCartStore,
 } from '@/lib/stores/cart-store';
+import { useWizardStore } from '@/lib/checkout/state/wizard-store';
 import { formatPrice } from '@/lib/utils/format-price';
 import { cn } from '@/lib/utils/cn';
 
@@ -24,6 +25,12 @@ export function MiniCartSlideOver() {
   const subtotal = useCartStore(selectSubtotalCents);
   const count = useCartStore(selectCartCount);
   const removeItem = useCartStore((s) => s.removeItem);
+  // Code promo appliqué sur la page : le mini-panier annonçait le prix
+  // catalogue (199) alors que la cliente voyait 99 partout ailleurs.
+  const couponCode = useWizardStore((st) => st.couponCode);
+  const creditCents = useWizardStore((st) => st.creditCents);
+  const discountCents = Math.max(0, Math.min(creditCents, subtotal));
+  const netSubtotal = subtotal - discountCents;
 
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -154,14 +161,32 @@ export function MiniCartSlideOver() {
 
         <footer className="space-y-4 border-t border-encre/10 px-6 py-5">
           {count > 0 ? (
-            <div className="flex items-baseline justify-between">
-              <Text size="body" tone="secondary">
-                Sous-total
-              </Text>
-              <p className="font-display text-xl text-encre [font-feature-settings:'tnum','lnum']">
-                {formatPrice(subtotal)}
-              </p>
-            </div>
+            <>
+              {discountCents > 0 && (
+                <div
+                  className="flex items-baseline justify-between"
+                  data-testid="mini-cart-discount"
+                >
+                  <Text size="caption" tone="secondary">
+                    {couponCode ? `Code ${couponCode}` : 'Remise'}
+                  </Text>
+                  <p className="font-body text-sm text-sauge [font-feature-settings:'tnum','lnum']">
+                    −{formatPrice(discountCents)}
+                  </p>
+                </div>
+              )}
+              <div className="flex items-baseline justify-between">
+                <Text size="body" tone="secondary">
+                  Sous-total
+                </Text>
+                <p
+                  className="font-display text-xl text-encre [font-feature-settings:'tnum','lnum']"
+                  data-testid="mini-cart-subtotal"
+                >
+                  {formatPrice(netSubtotal)}
+                </p>
+              </div>
+            </>
           ) : null}
           <Link href={routes.panier} onClick={closeMiniCart} className="block">
             <Button variant="primary" size="lg" fullWidth disabled={count === 0}>

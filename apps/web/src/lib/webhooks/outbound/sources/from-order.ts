@@ -14,8 +14,13 @@ import { composeFullName, normalizePhoneForPayload } from '../payload';
 export interface OrderWebhookContext {
   order: {
     id: string;
+    /** Total NET facturé (remise déjà déduite). */
     totalCents: number;
     currency: string;
+    /** Code promo / crédit fidélité appliqué, si la commande en portait un. */
+    couponCode?: string | null;
+    /** Montant remisé en centimes (0 si aucune remise). */
+    discountCents?: number;
   };
   items: Array<{
     sku: string;
@@ -135,12 +140,27 @@ export async function dispatchOrderWebhook(
   const productVariant = ctx.items.length === 1 ? ctx.items[0]?.variantKey ?? undefined : undefined;
   const quantity = ctx.items.reduce((acc, it) => acc + (it.quantity ?? 0), 0);
   const totalPrice = Math.round(ctx.order.totalCents) / 100;
+  // Promo — la carte CRM/Trello doit montrer le NET *et* d'où vient l'écart
+  // avec le prix catalogue, sinon une commande à 99 MAD passe pour une erreur.
+  const discountCents = Math.max(0, Math.round(ctx.order.discountCents ?? 0));
+  const discountAmount = discountCents > 0 ? discountCents / 100 : undefined;
+  const couponCode = ctx.order.couponCode?.trim().toUpperCase() || undefined;
 
   const sourceChannel = ctx.lead.source ?? ctx.lead.formId ?? 'checkout';
   const noteParts: string[] = [];
   if (ctx.lead.shippingNotes) noteParts.push(ctx.lead.shippingNotes.trim());
   if (ctx.shippingMode) noteParts.push(`shipping:${ctx.shippingMode}`);
   if (ctx.paymentMethod) noteParts.push(`payment:${ctx.paymentMethod}`);
+  // Doublon volontaire dans la note : les intégrations CRM existantes
+  // recopient déjà `note` sur la carte, sans avoir à mapper les champs neufs.
+  if (couponCode) {
+    const currencyLabel = (ctx.order.currency || 'MAD').toUpperCase();
+    noteParts.push(
+      discountAmount != null
+        ? `promo:${couponCode} -${discountAmount} ${currencyLabel}`
+        : `promo:${couponCode}`,
+    );
+  }
 
   const countryCode = (ctx.lead.shippingCountry ?? 'MA').toUpperCase();
   const countryLabel = COUNTRY_LABEL[countryCode] ?? countryCode;
@@ -160,6 +180,8 @@ export async function dispatchOrderWebhook(
       country: countryLabel,
       email: ctx.lead.email ?? undefined,
       total_price: totalPrice,
+      discount_amount: discountAmount,
+      coupon_code: couponCode,
       currency: (ctx.order.currency || 'MAD').toUpperCase(),
       quantity: Math.max(1, quantity),
       product_name: productNames,

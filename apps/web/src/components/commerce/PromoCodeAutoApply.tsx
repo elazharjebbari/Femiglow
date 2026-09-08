@@ -2,15 +2,18 @@
  * `PromoCodeAutoApply` — application automatique d'un code de réduction
  * depuis l'URL de campagne, et reprise du code après rechargement.
  *
- * Deux cas, un seul effet :
  *  1. `/kit?code=GLOW99` (ou `?promo=`, `?coupon=`) — la publicité Meta porte
  *     le code dans son lien ; la cliente ne doit RIEN taper (chaque champ en
  *     plus perd des commandes en COD). On valide le code via
  *     /api/coupons/redeem puis on l'applique au wizard-store → tous les prix
- *     de la page (XXL, récap, sticky CTA, total attendu) passent à 199 → 99.
- *  2. Reprise : `couponCode` est persisté mais pas `creditCents` (le serveur
- *     reste autoritaire). Au rechargement on re-valide le code mémorisé pour
- *     ré-afficher la réduction ; s'il n'est plus valide, on le retire.
+ *     de la page (XXL, hero, récap, sticky CTA, total attendu) passent à 99.
+ *  2. Reprise : le code ET son montant sont persistés, mais on RE-VALIDE
+ *     systématiquement au montage — un code expiré ou arrivé à son plafond
+ *     doit disparaître de l'affichage, sinon la commande partirait avec un
+ *     total attendu que le serveur refuse (422 price_mismatch).
+ *
+ * Le serveur reste la seule autorité sur le montant : il re-valide le code à
+ * la création de la commande.
  *
  * Ne rend rien. Doit être monté sous <Suspense> (useSearchParams, ISR).
  */
@@ -31,6 +34,11 @@ interface RedeemResponse {
   reason?: string;
 }
 
+/**
+ * `null` = la réponse du serveur n'a PAS pu être obtenue (panne réseau, JSON
+ * illisible). À distinguer d'un `{valid:false}` explicite : dans le premier
+ * cas on ne touche pas à la remise déjà affichée.
+ */
 async function redeem(code: string): Promise<RedeemResponse | null> {
   try {
     const res = await fetch('/api/coupons/redeem', {
@@ -38,6 +46,10 @@ async function redeem(code: string): Promise<RedeemResponse | null> {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ code }),
     });
+    // 5xx / 4xx = panne côté serveur, PAS un verdict sur le code. La route
+    // répond 200 même pour un code refusé (`{valid:false, reason}`), donc un
+    // statut non-OK ne doit jamais faire disparaître une remise appliquée.
+    if (!res.ok) return null;
     return (await res.json()) as RedeemResponse;
   } catch {
     return null;
@@ -57,48 +69,44 @@ export function PromoCodeAutoApply(): null {
   const searchParams = useSearchParams();
   const hydrated = useWizardStore((s) => s.hydrated);
   const couponCode = useWizardStore((s) => s.couponCode);
-  const creditCents = useWizardStore((s) => s.creditCents);
   const setCoupon = useWizardStore((s) => s.setCoupon);
   const clearCoupon = useWizardStore((s) => s.clearCoupon);
-  // Un seul essai par combinaison de codes et par montage (évite les boucles
-  // si l'API répond invalide : on ne re-tente pas les mêmes codes en rafale).
+  // Une seule validation par code et par montage (pas de rafale d'appels).
   const attempted = useRef<string | null>(null);
 
   const urlCode = readUrlCode(searchParams);
+  // Code candidat : celui de l'URL de campagne, sinon celui mémorisé.
+  const target = urlCode ?? couponCode;
 
   useEffect(() => {
-    if (!hydrated) return;
-    // Candidats dans l'ordre : code de l'URL (campagne), puis code mémorisé
-    // dont le montant n'est pas encore re-validé (reprise après rechargement).
-    const candidates: string[] = [];
-    if (urlCode && !(urlCode === couponCode && creditCents > 0)) candidates.push(urlCode);
-    if (couponCode && creditCents <= 0 && couponCode !== urlCode) candidates.push(couponCode);
-    if (candidates.length === 0) return;
-    const signature = candidates.join('|');
-    if (attempted.current === signature) return;
-    attempted.current = signature;
+    if (!hydrated || !target) return;
+    // `creditCents` n'entre PAS dans la garde : un code déjà porteur d'un
+    // montant est re-validé quand même, car il a pu expirer entre deux visites.
+    if (attempted.current === target) return;
+    attempted.current = target;
 
     let cancelled = false;
-    void (async () => {
-      for (const candidate of candidates) {
-        const json = await redeem(candidate);
-        if (cancelled) return;
-        if (json?.valid && typeof json.valueCents === 'number' && json.valueCents > 0) {
-          setCoupon(candidate, json.valueCents, json.kind === 'promo' ? 'promo' : 'credit');
-          return;
-        }
-        // Code mémorisé devenu invalide (expiré, plafond atteint) : on le retire
-        // pour ne pas afficher une réduction fantôme. Un code d'URL invalide
-        // est simplement ignoré (on ne touche pas au reste).
-        if (candidate === couponCode && creditCents <= 0) clearCoupon();
+    void redeem(target).then((json) => {
+      if (cancelled) return;
+      if (json === null) {
+        // Panne réseau : on ne touche à RIEN. Effacer ici ferait perdre sa
+        // remise à une cliente qui l'a pourtant vue s'appliquer.
+        return;
       }
-    })();
+      if (json.valid && typeof json.valueCents === 'number' && json.valueCents > 0) {
+        setCoupon(target, json.valueCents, json.kind === 'promo' ? 'promo' : 'credit');
+        return;
+      }
+      // On ne retire la remise QUE sur un verdict explicite `valid:false`.
+      // Une réponse inattendue (corps illisible, champ manquant) est traitée
+      // comme une panne : on laisse la remise en place, le serveur tranchera
+      // de toute façon à la création de la commande.
+      if (json.valid === false && target === couponCode) clearCoupon();
+    });
     return () => {
       cancelled = true;
     };
-    // `creditCents`/`couponCode` volontairement inclus : après `setCoupon` la
-    // garde « déjà appliqué » court-circuite l'effet.
-  }, [hydrated, urlCode, couponCode, creditCents, setCoupon, clearCoupon]);
+  }, [hydrated, target, couponCode, setCoupon, clearCoupon]);
 
   return null;
 }

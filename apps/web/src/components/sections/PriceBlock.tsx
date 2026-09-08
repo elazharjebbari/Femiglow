@@ -299,6 +299,7 @@ export function PriceBlock({
               ? { code: couponCode, valueCents: creditCents, kind: couponKind ?? 'credit' }
               : null
           }
+          hideNonCumulMention={isPromoApplied}
           onCouponValid={(code, cents, kind) => setCoupon(code, cents, kind)}
           onCouponClear={() => clearCoupon()}
         />
@@ -325,8 +326,11 @@ export function PriceBlock({
         />
       )}
 
-      {/* 5 — perUsageHint microcopy */}
-      {hero.perUsageHint && (
+      {/* 5 — perUsageHint microcopy. Calculée côté serveur sur le prix
+          catalogue : elle devient fausse dès qu'un code promo est appliqué
+          (« ≈ 4,23 MAD par soin » sous un prix XXL à 99 MAD). Mieux vaut
+          l'omettre qu'afficher un chiffre erroné. */}
+      {hero.perUsageHint && !isPromoApplied && (
         <p
           data-testid="pack-per-usage-hint"
           className="text-center text-xs italic text-encre/65"

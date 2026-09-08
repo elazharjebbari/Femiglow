@@ -256,6 +256,10 @@ export const orderRepo = {
     let creditAppliedCents = 0;
     let promoCoupon: import('@/lib/coupons/types').CouponDef | null = null;
     let promoAppliedCents = 0;
+    // Code réellement appliqué (normalisé) — persisté sur la commande pour
+    // que l'ops, le back-office et le webhook CRM sachent POURQUOI le total
+    // est inférieur au prix catalogue.
+    let appliedCouponCode: string | null = null;
     if (input.couponCode) {
       const { resolveRedeemableCode } = await import('@/lib/coupons/promo-code');
       const check = await resolveRedeemableCode(input.couponCode);
@@ -263,12 +267,15 @@ export const orderRepo = {
         creditAppliedCents = Math.min(check.valueCents, computedTotal);
         computedTotal -= creditAppliedCents;
         creditGrantCode = check.grantCode;
+        appliedCouponCode = check.code;
       } else if (check.valid && check.kind === 'promo') {
         promoAppliedCents = Math.min(check.valueCents, computedTotal);
         computedTotal -= promoAppliedCents;
         promoCoupon = check.coupon;
+        appliedCouponCode = check.code;
       }
     }
+    const discountCents = creditAppliedCents + promoAppliedCents;
 
     if (computedTotal !== input.expectedTotalCents) {
       throw new PriceMismatchError(input.expectedTotalCents, computedTotal);
@@ -306,6 +313,8 @@ export const orderRepo = {
         chatLeadId: input.chatLeadId,
         totalCents: input.expectedTotalCents,
         currency: input.currency,
+        couponCode: appliedCouponCode,
+        discountCents,
         shippingMode: input.shippingMode,
         paymentMethod: input.paymentMethod,
         formId: input.formContext.formId,

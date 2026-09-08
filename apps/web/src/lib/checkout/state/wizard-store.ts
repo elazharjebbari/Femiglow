@@ -135,8 +135,11 @@ export interface WizardState {
   /** Code crédit saisi (persisté pour reprise après refresh). */
   couponCode: string | null;
   /**
-   * Montant du crédit validé (centimes). NON persisté : re-validé à l'usage
-   * via /api/coupons/redeem (le serveur reste autoritaire au paiement).
+   * Montant du crédit validé (centimes). Persisté avec le code depuis le
+   * correctif « promo 199→99 » : sans lui, un rechargement laissait
+   * `couponCode` seul, le total attendu repassait au prix plein et la
+   * commande partait sans remise (ou échouait en 422). Le serveur reste
+   * autoritaire : il re-valide le code et recalcule le total à la commande.
    */
   creditCents: number;
   /**
@@ -476,9 +479,12 @@ const persistOpts: PersistOptions<WizardState, Partial<WizardState>> = {
     leadDraft: state.leadDraft,
     addressDraft: state.addressDraft,
     paymentDraft: state.paymentDraft,
-    // Phase 3 : on persiste le CODE (reprise) mais pas `creditCents`
-    // (re-validé à l'usage — le serveur reste autoritaire).
+    // Phase 3 : le CODE, son MONTANT et sa NATURE sont persistés ensemble —
+    // un code sans montant produit un total attendu incohérent (cf. garde
+    // anti-422 dans `use-wizard-mutations`). Le serveur re-valide de toute
+    // façon le code à la création de la commande.
     couponCode: state.couponCode,
+    creditCents: state.creditCents,
     couponKind: state.couponKind,
     loyalty: state.loyalty,
     resumeBannerDismissed: state.resumeBannerDismissed,
