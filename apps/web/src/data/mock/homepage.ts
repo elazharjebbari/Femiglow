@@ -65,7 +65,7 @@ export const mockHomepage: HomepageContent = {
       authorContext: 'Casablanca',
       initieeDepuis: 'Janvier 2025',
       quote:
-        'Trois mois sans casse. Cinq minutes par soir suffisent.',
+        'Trois mois sans casse. Cinq minutes, un soir par semaine, suffisent.',
       handImage: {
         src: '/avis/mains-salma.svg',
         alt: 'Mains au repos sur un plaid clair, lumière naturelle',

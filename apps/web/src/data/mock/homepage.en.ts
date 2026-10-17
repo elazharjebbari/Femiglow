@@ -68,7 +68,7 @@ export const mockHomepageEn: HomepageContent = {
     ...a,
     quote:
       a.id === 't1'
-        ? 'Three months without breakage. Five minutes each evening suffice.'
+        ? 'Three months without breakage. Five minutes, one evening a week, is enough.'
         : a.id === 't2'
           ? 'The ritual punctuates the end of my day. It has become a moment for myself.'
           : 'The paste delivers a finish that resembles me. Natural, without polish.',

@@ -112,7 +112,7 @@ export const KIT_FORBIDDEN_CLAIMS: ReadonlyArray<{ pattern: RegExp; why: string 
   { pattern: /\b30 ?ml\b|\b30 ?g\b/i, why: 'contenances : paste 15 g, powder 8 g' },
   { pattern: /47 (jours|soins|days|treatments)/i, why: 'durée du pack : 25 soins, environ six mois' },
   { pattern: /quatre (à|à) cinq mois|four to five months|أربعة إلى خمسة أشهر/i, why: 'durée du pack : environ six mois' },
-  { pattern: /tous les soirs|every evening|every night|كل مساء/i, why: 'fréquence : une fois par semaine' },
+  { pattern: /tous les soirs|every evening|every night|each evening|par soir\b|كل مساء/i, why: 'fréquence : une fois par semaine' },
   { pattern: /cinq minutes par jour|five minutes a day|خمس دقائق كلّ يوم|خمس دقائق كل يوم/i, why: 'fréquence : une fois par semaine' },
   { pattern: /\b(deux|trois|cinq) gestes\b|\b(two|three|five) gestures\b|حركتان|ثلاث حركات|خمس حركات/i, why: 'le rituel compte quatre gestes' },
   { pattern: /powder rose poudr|rose poudré powder|powdered rose powder/i, why: 'la powder est blanche ; seule l’étiquette est rose poudré' },
