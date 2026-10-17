@@ -37,7 +37,23 @@ INSERT INTO kit_coherence (component_key, field_key, locale, new_value) VALUES
   ('kit-hero-produit', 'attributeChips', 'fr', '["Sans vernis", "Sans UV", "Sans acétone", "Compatible woudou"]'::jsonb),
   ('kit-hero-produit', 'description', 'fr', to_jsonb('Le pack FemiGlow associe deux soins et un polissoir, pensés pour la manucure japonaise halal. Une paste qui lisse, une powder qui lustre, un polissoir Step 4 Polish & Shine. Sans vernis, sans lampe UV, sans acétone. Quatre gestes, cinq minutes, une fois par semaine. L’ongle nu retrouve sa lumière. Rien ne recouvre l’ongle : le woudou reste intact.'::text)),
   ('kit-hero-produit', 'description', 'en', to_jsonb('The FemiGlow pack brings together two care jars and a buffer, designed for the halal Japanese manicure. A paste that smooths, a powder that polishes, a Step 4 Polish & Shine buffer. No polish, no UV lamp, no acetone. Four gestures, five minutes, once a week. The bare nail regains its light. Nothing covers the nail: your wudu remains intact.'::text)),
+  -- Avis de l'accueil : le pack ne contient pas de « base » (paste)
+  ('home-avis-strip', 'reviews', 'fr', NULL),
+  ('home-avis-strip', 'reviews', 'en', NULL),
+  ('home-avis-strip', 'reviews', 'ar', NULL),
+
   ('kit-hero-produit', 'description', 'ar', to_jsonb('يجمع كيت FemiGlow علبتَي عناية ومُلمِّعًا، مصمَّمة للمانيكور الياباني الحلال. عجينة تُملِّس، وبودرة تُلمِّع، ومُلمِّع الخطوة 4 للصقل واللمعان. دون طلاء، دون مصباح الأشعة فوق البنفسجية، دون أسيتون. أربع حركات، خمس دقائق، مرة واحدة في الأسبوع. يستعيد الظفر العاري نوره. لا شيء يغطي الظفر: يبقى الوضوء سليمًا.'::text));
+
+-- Avis : on ne réécrit que le mot « base » dans la valeur publiée existante.
+UPDATE kit_coherence k
+SET new_value = replace(replace(replace(b.value::text,
+      'La base a une finition', 'La paste a une finition'),
+      'The base has a natural finish', 'The paste has a natural finish'),
+      'تمنح القاعدة', 'تمنح العجينة')::jsonb
+FROM component_field_bindings b
+JOIN site_components sc ON sc.id = b.component_id
+WHERE k.new_value IS NULL AND sc.key = k.component_key
+  AND b.field_key = k.field_key AND b.locale = k.locale AND b.status = 'published';
 
 -- Garde-fou : tous les champs ciblés doivent exister et être publiés.
 DO $$
