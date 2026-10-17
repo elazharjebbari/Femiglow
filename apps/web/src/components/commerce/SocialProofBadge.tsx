@@ -1,7 +1,8 @@
 import { cn } from '@/lib/utils/cn';
 
 export interface SocialProofBadgeProps {
-  rating: number;
+  /** Note réelle ; `null` → compteur seul, sans étoiles. */
+  rating: number | null;
   reviewsCount: number;
   /** Si fourni, le badge devient un lien vers cette ancre. */
   href?: string;
@@ -16,7 +17,8 @@ export interface SocialProofBadgeProps {
 }
 
 /**
- * Badge social proof : `★★★★⯨  4,8/5 · 287 avis`.
+ * Badge social proof : `★★★★⯨  4,6/5 · 51 avis`, ou `51 avis` seul quand
+ * aucune note réelle n'existe (pas d'étoiles inventées).
  *
  * Étoiles en or poudré `#B8956B`, texte tabular-nums pour précision.
  * Note rendue en format FR (virgule décimale).
@@ -34,22 +36,27 @@ export function SocialProofBadge({
   reviewsLabel: reviewsLabelProp,
   className,
 }: SocialProofBadgeProps): JSX.Element {
-  const clampedRating = clamp(rating, 0, 5);
-  const ratingFr = formatRatingFr(clampedRating);
+  const clampedRating = rating === null ? null : clamp(rating, 0, 5);
+  const ratingFr = clampedRating === null ? null : formatRatingFr(clampedRating);
   const reviewsLabel = reviewsLabelProp ?? `${reviewsCount} avis`;
   const label =
-    ariaLabel ?? `Note ${ratingFr} sur 5 basée sur ${reviewsCount} avis`;
+    ratingFr === null
+      ? reviewsLabel
+      : (ariaLabel ?? `Note ${ratingFr} sur 5 basée sur ${reviewsCount} avis`);
 
-  const content = (
-    <>
-      <StarRow rating={clampedRating} size={size} />
-      <span className="tabular-nums">{ratingFr}/5</span>
-      <span aria-hidden="true" className="text-encre/40">
-        ·
-      </span>
+  const content =
+    clampedRating === null ? (
       <span className="tabular-nums">{reviewsLabel}</span>
-    </>
-  );
+    ) : (
+      <>
+        <StarRow rating={clampedRating} size={size} />
+        <span className="tabular-nums">{ratingFr}/5</span>
+        <span aria-hidden="true" className="text-encre/40">
+          ·
+        </span>
+        <span className="tabular-nums">{reviewsLabel}</span>
+      </>
+    );
 
   const wrapperClass = cn(
     'inline-flex items-center gap-2',

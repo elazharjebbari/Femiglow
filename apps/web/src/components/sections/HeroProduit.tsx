@@ -45,7 +45,8 @@ export interface HeroProduitProps {
   /** Champs editorial CMS. */
   fields: HeroProduitFields;
   /** Stats reviews — note + count. */
-  reviewStats: ProductReviewStats;
+  /** Stats d'avis (`getKitReviewStats`) ; `null` → badge masqué. */
+  reviewStats: ProductReviewStats | null;
   observeId?: string;
   /**
    * Mode du CTA primaire :
@@ -207,7 +208,7 @@ export function HeroProduit({
               {heroName}
             </Heading>
 
-            {fields.reviewBadgeEnabled && reviewStats.reviewsCount > 0 ? (
+            {fields.reviewBadgeEnabled && reviewStats && reviewStats.reviewsCount > 0 ? (
               <SocialProofBadge
                 rating={reviewStats.rating}
                 reviewsCount={reviewStats.reviewsCount}

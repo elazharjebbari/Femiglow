@@ -17,8 +17,8 @@ import {
 } from '@/lib/products/public';
 import { buildKitProductFeed } from '@/lib/products/feed/kit-feed';
 import { feedToProductSchemaEnrichment } from '@/lib/products/feed/json-ld';
-import { getProductReviewStats } from '@/lib/products/reviews';
-import { getRitualSummary } from '@/lib/db/queries/rituals';
+import { getKitReviewStats } from '@/lib/products/reviews';
+import { KIT_COPY, KIT_FACTS } from '@/lib/products/kit-facts';
 import { KIT_LAYOUT_VERSION } from '@/lib/feature-flags/kit-layout';
 import { KitPageLayoutV1 } from '@/components/marketing/kit-layout/KitPageLayoutV1';
 import { KitPageLayoutV2 } from '@/components/marketing/kit-layout/KitPageLayoutV2';
@@ -31,8 +31,7 @@ const FALLBACK_OG = {
 };
 
 const FALLBACK_TITLE = 'Le pack FemiGlow — manucure japonaise';
-const FALLBACK_DESCRIPTION =
-  'Pack FemiGlow — coffret de manucure japonaise en deux gestes. Paste verte sauge, powder rose poudré et polissoir Step 4 Polish & Shine. Pensé à Rabat par notre équipe. Sans vernis, sans abrasion. Livraison offerte au Maroc.';
+const FALLBACK_DESCRIPTION = `Pack FemiGlow — manucure japonaise en ${KIT_COPY.fr.gesturesLower}, ${KIT_COPY.fr.duration} ${KIT_COPY.fr.frequency}. Paste ${KIT_FACTS.paste.grams} g, powder ${KIT_FACTS.powder.grams} g et polissoir Step 4 Polish & Shine. Pensé à Rabat. Sans vernis, sans abrasion. Livraison offerte au Maroc.`;
 
 export async function generateMetadata(): Promise<Metadata> {
   const og = (await resolveOgImage('kit-og')) ?? FALLBACK_OG;
@@ -124,15 +123,11 @@ export default async function KitPage({ searchParams }: KitPageProps) {
       fallback: { title: FALLBACK_TITLE, description: FALLBACK_DESCRIPTION },
     }),
   ]);
-  // Stats reviews lues séparément (dépendent de `dbProduct.id`). Null si
-  // la base est encore vide : le builder retombe sur le starter rating.
-  const reviewStats = await getProductReviewStats(dbProduct.id);
-
-  // Summary du module rituels (« voix de la maison »). C'est le bloc
-  // social proof à grande échelle de la page — le badge hero doit
-  // afficher SON count (vs handsTestimonials qui n'a que 3 cartes).
-  // Anchor : la section porte H2 id="rituals-module-title".
-  const ritualSummary = await getRitualSummary('pack-femiglow');
+  // Avis — source unique pour hero, bloc pack/prix et JSON-LD : compteur
+  // des témoignages approuvés (module rituels, même chiffre que la section
+  // « Les voix de la maison ») + note réelle si elle existe. Null si aucune
+  // donnée : compteur et note sont masqués partout.
+  const reviewStats = await getKitReviewStats(dbProduct.id);
 
   // Tracking ViewContent — fire CAPI server-side avec event_id déterministe
   // partagé avec le Pixel client (via ViewItemTracker.eventIdSeed). Meta
@@ -179,7 +174,7 @@ export default async function KitPage({ searchParams }: KitPageProps) {
   //    via `seo.structuredData` (override CMS, scope product).
   //  - L'aggregateRating + review sont **toujours** system-driven (calculés
   //    depuis le feed kit + les testimonials du CMS). Sans aggregateRating,
-  //    Google n'affiche AUCUNE étoile dans les SERP même avec 287 avis 4,8/5.
+  //    Google n'affiche AUCUNE étoile dans les SERP.
   //    On les injecte donc systématiquement, même quand un override existe,
   //    pour ne pas perdre les Rich Results.
   const productFeed = buildKitProductFeed(dbProduct, content, reviewStats);
@@ -194,11 +189,18 @@ export default async function KitPage({ searchParams }: KitPageProps) {
     ? seo.structuredData
     : enrichedAuto;
   const productJsonLd: Record<string, unknown> = { ...baseProductJsonLd };
+  // Note et avis toujours issus de `getKitReviewStats` : on écrase (ou on
+  // retire) ceux d'un éventuel override admin pour ne jamais publier un
+  // chiffre figé.
   if (enrichedAuto.aggregateRating !== undefined) {
     productJsonLd.aggregateRating = enrichedAuto.aggregateRating;
+  } else {
+    delete productJsonLd.aggregateRating;
   }
   if (enrichedAuto.review !== undefined) {
     productJsonLd.review = enrichedAuto.review;
+  } else {
+    delete productJsonLd.review;
   }
 
   // Délégation au layout v1 ou v2.
@@ -225,7 +227,6 @@ export default async function KitPage({ searchParams }: KitPageProps) {
     dbProduct,
     productJsonLd,
     reviewStats,
-    ritualSummary,
   };
   return effectiveLayout === 'v2' ? (
     <KitPageLayoutV2 {...layoutProps} />

@@ -7,11 +7,9 @@
 
 ## Combien de temps avant la livraison au Maroc ?
 
-On livre **partout au Maroc en 24 à 72 h** selon la ville :
-- **Rabat** : 24 h ouvrées.
-- **Casablanca, Salé** : 24 à 48 h ouvrées.
-- **Tanger, Marrakech, Fès, Meknès, Agadir** : 24 à 48 h ouvrées.
-- **Autres villes** : 48 à 72 h ouvrées.
+On livre **partout au Maroc** :
+- **Rabat** : 24 h.
+- **Reste du Maroc** : 48 à 72 h.
 
 Les commandes passées avant 14 h en jour ouvré partent le jour même
 depuis l'atelier de Rabat (25 bis avenue Patrice Lumumba). Celles

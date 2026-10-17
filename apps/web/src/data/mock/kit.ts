@@ -1,4 +1,5 @@
 import type { KitPageContent } from '@/lib/schemas';
+import { KIT_FACTS } from '@/lib/products/kit-facts';
 import { mockKit } from './product';
 import { mockRituel } from './rituel';
 import {
@@ -24,7 +25,7 @@ export const mockKitPageContent: KitPageContent = {
       volume: '15 g',
       usageHint: 'une noisette filme dix doigts',
       narrative:
-        '12 % de cire d’abeille fondue à basse température par la coopérative apicole du Moyen Atlas. Trois minutes de pose, le fini est mat.',
+        '12 % de cire d’abeille fondue à basse température par la coopérative apicole du Moyen Atlas. Un instant de pose, le fini est mat.',
       image: {
         src: '/products/kit-base.svg',
         alt: 'Pot carré transparent à bords facettés, étiquette circulaire vert sauge "1 paste", pâte crème onctueuse',
@@ -60,10 +61,7 @@ export const mockKitPageContent: KitPageContent = {
             'Vitamine E d\u2019origine v\u00e9g\u00e9tale. Pr\u00e9serve les huiles de la formule du rancissement.',
         },
       ],
-      certifications: [
-        { label: 'Cosmos Organic', body: 'Ecocert' },
-        { label: 'Vegan', body: 'EVE Vegan' },
-      ],
+      certifications: [...KIT_FACTS.certifications],
     },
     {
       id: '2-powder',
@@ -111,9 +109,7 @@ export const mockKitPageContent: KitPageContent = {
             'Forme cosm\u00e9tique du silicate. Donne la glisse et r\u00e9v\u00e8le la brillance au polissage.',
         },
       ],
-      certifications: [
-        { label: 'Cosmos Organic', body: 'Ecocert' },
-      ],
+      certifications: [...KIT_FACTS.certifications],
     },
     {
       id: 'polissoir-step-4',
@@ -158,7 +154,7 @@ export const mockKitPageContent: KitPageContent = {
             'Encre \u00e0 base d\u2019eau, sans solvant ni m\u00e9tal lourd. Marque le grain sans contaminer le polissage.',
         },
       ],
-      certifications: [],
+      certifications: [...KIT_FACTS.certifications],
     },
   ],
   // CHA-243 — Vidéo hero kit servie via YouTube (Short vertical).
@@ -187,7 +183,7 @@ export const mockKitPageContent: KitPageContent = {
       {
         axis: 'Tenue',
         vernis: '5 \u00e0 7 jours sur ongle pr\u00e9par\u00e9, retouches fr\u00e9quentes.',
-        rituel: 'Pas de tenue color\u00e9e\u202F: l\u2019ongle reste tel qu\u2019il est, soutenu jour apr\u00e8s jour.',
+        rituel: 'Pas de tenue color\u00e9e\u202F: la brillance naturelle reste visible jusqu\u2019\u00e0 trois semaines.',
       },
       {
         axis: 'R\u00e9cup\u00e9ration',
@@ -197,18 +193,18 @@ export const mockKitPageContent: KitPageContent = {
       {
         axis: 'Co\u00fbt annuel',
         vernis: 'Vernis + dissolvant + cures r\u00e9paratrices, env. 1\u202F500 dh.',
-        rituel: 'Un pack FemiGlow tient quatre à cinq mois. Le coût annuel reste bien en deçà de celui du vernis.',
+        rituel: 'Un pack tient environ six mois. Deux packs par an, soit environ 400\u202Fdh.',
       },
       {
         axis: 'Impact mati\u00e8re',
         vernis: 'Solvants volatils, formules \u00e0 base p\u00e9trochimique fr\u00e9quente.',
         rituel:
-          'Cire d\u2019abeille, jojoba, talc min\u00e9ral, riz, kaolin. Certification Cosmos Organic.',
+          'Cire d\u2019abeille, jojoba, talc min\u00e9ral, riz, kaolin. INCI complet sur chaque pot.',
       },
       {
-        axis: 'Temps quotidien',
+        axis: 'Temps par soin',
         vernis: 'Application 20 min, s\u00e9chage long, retouches.',
-        rituel: 'Cinq minutes par jour, geste lent, sans s\u00e9chage forc\u00e9.',
+        rituel: 'Cinq minutes, une fois par semaine. Geste lent, sans s\u00e9chage.',
       },
     ],
   },
@@ -217,19 +213,19 @@ export const mockKitPageContent: KitPageContent = {
       id: 'duree-pack',
       question: 'Combien de temps dure un pack\u202F?',
       answer:
-        'En usage quotidien, le pack tient quatre \u00e0 cinq mois. La paste se vide en premier, la powder suit. Le polissoir dure environ un an. Nous proposons des recharges \u00e0 partir de l\u2019automne 2026.',
+        'Environ vingt-cinq soins, \u00e0 raison d\u2019un par semaine\u202F: soit environ six mois. Le polissoir dure lui aussi environ six mois. Les recharges arrivent prochainement.',
     },
     {
       id: 'frequence',
       question: '\u00c0 quelle fr\u00e9quence appliquer\u202F?',
       answer:
-        'Tous les soirs si vous le pouvez, en cinq minutes. Si vous sautez un jour, ce n\u2019est pas grave\u202F: la maison accueille la pause comme elle accueille le retour.',
+        'Une fois par semaine, en cinq minutes. La brillance tient jusqu\u2019\u00e0 trois semaines. Si vous sautez une semaine, ce n\u2019est pas grave\u202F: la maison accueille la pause comme elle accueille le retour.',
     },
     {
       id: 'compatibilite-vernis',
       question: 'Puis-je continuer \u00e0 porter du vernis\u202F?',
       answer:
-        'Le rituel s\u2019accommode du vernis m\u00eame s\u2019il est pens\u00e9 pour s\u2019en passer. Appliquez la paste et la powder les soirs sans vernis. La plaque respire, le rituel installe sa lenteur.',
+        'Le rituel s\u2019accommode du vernis m\u00eame s\u2019il est pens\u00e9 pour s\u2019en passer. Faites votre soin hebdomadaire un soir sans vernis. La plaque respire, le rituel installe sa lenteur.',
     },
     {
       id: 'grossesse',

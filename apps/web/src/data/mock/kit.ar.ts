@@ -13,13 +13,13 @@
  * Voix : MSA simplifié, adresse féminine systématique (impératifs
  * féminins). Termes de marque préservés en latin : `عجينة`, `بودرة`,
  * Phase 9 : termes de marque TRADUITS en arabe (عجينة, بودرة, الخطوة 4,
- * تلميع وإشراق). Seuls restent en latin : `FemiGlow`, les noms INCI et les
- * labels de certification entre parenthèses (Cosmos Organic, EVE Vegan,
- * Ecocert), tolérés par l'audit strict. Devise affichée en درهم sur /ar.
+ * تلميع وإشراق). Seuls restent en latin : `FemiGlow` et les noms INCI. Aucune
+ * certification affichée (cf. `KIT_FACTS.certifications`). Devise affichée en درهم sur /ar.
  *
  * @see docs/i18n-content-2026-05/03-seed-data/component-bindings-ar.csv
  */
 import type { KitPageContent } from '@/lib/schemas';
+import { KIT_FACTS } from '@/lib/products/kit-facts';
 
 import {
   KIT_VIDEO_COVER_ARIA_LABEL_AR,
@@ -34,13 +34,13 @@ export const mockKitPageContentAr: KitPageContent = {
   product: {
     ...mockKitPageContent.product,
     name: 'كيت FemiGlow',
-    tagline: 'مانيكور ياباني. حركتان، مُلمِّع، إشراقة.',
+    tagline: 'مانيكور ياباني حلال. أربع حركات، دون طلاء. يبقى الوضوء سليمًا.',
     description:
-      'يجمع كيت FemiGlow علبتين — عجينة مُملِّسة وبودرة مُلمِّعة — ومُلمِّع الخطوة 4 تلميع وإشراق. مانيكور ياباني، صيغ في الرباط من قِبَل فريقنا. دون طلاء. دون احتكاك. خمس دقائق كلّ يوم تكفي.',
+      'يجمع كيت FemiGlow علبتين — عجينة 15 غ وبودرة 8 غ — ومُلمِّع الخطوة 4 تلميع وإشراق. مانيكور ياباني، يُحضَّر في ورشتنا بالرباط. دون طلاء. أربع حركات، خمس دقائق، مرة واحدة في الأسبوع.',
     images: [
       {
         src: '/products/kit-principale.png',
-        alt: 'كيت FemiGlow مفتوح على خلفية باستيلية — علبة عجينة خضراء مريمية، علبة بودرة وردية ناعمة، مُلمِّع الخطوة 4 أزرق سماوي، موجة وردية ناعمة، حرف FemiGlow',
+        alt: 'كيت FemiGlow مفتوح على خلفية باستيلية — علبة عجينة خضراء مريمية، علبة بودرة بملصق وردي ناعم، مُلمِّع الخطوة 4 أزرق سماوي، موجة وردية ناعمة، حرف FemiGlow',
         width: 1600,
         height: 2000,
       },
@@ -85,7 +85,7 @@ export const mockKitPageContentAr: KitPageContent = {
       volume: '15 g',
       usageHint: 'حبّة بحجم البندقة تُغلِّف عشرة أصابع',
       narrative:
-        '12% شمع نحل مُذاب على حرارة منخفضة من قِبَل تعاونية النحل في الأطلس المتوسّط. ثلاث دقائق من التطبيق، اللمسة مطفأة.',
+        '12% شمع نحل مُذاب على حرارة منخفضة من قِبَل تعاونية النحل في الأطلس المتوسّط. لحظة قصيرة من التطبيق، اللمسة مطفأة.',
       image: {
         src: '/products/kit-base.svg',
         alt: 'علبة مربّعة شفّافة بحواف مُضلَّعة، ملصق دائري أخضر مريمي «1 عجينة»، عجينة كريمية ناعمة',
@@ -121,10 +121,7 @@ export const mockKitPageContentAr: KitPageContent = {
             'فيتامين E من أصل نباتي. يحفظ زيوت الصيغة من التزنّخ.',
         },
       ],
-      certifications: [
-        { label: 'شهادة عضوية', body: '(Cosmos Organic — Ecocert)' },
-        { label: 'نباتي', body: '(EVE Vegan)' },
-      ],
+      certifications: [...KIT_FACTS.certifications],
     },
     {
       id: '2-powder',
@@ -172,7 +169,7 @@ export const mockKitPageContentAr: KitPageContent = {
             'الشكل التجميلي للسيليكات. تمنح الانزلاق وتكشف اللمعان عند التلميع.',
         },
       ],
-      certifications: [{ label: 'شهادة عضوية', body: '(Cosmos Organic — Ecocert)' }],
+      certifications: [...KIT_FACTS.certifications],
     },
     {
       id: 'polissoir-step-4',
@@ -217,7 +214,7 @@ export const mockKitPageContentAr: KitPageContent = {
             'حبر بأساس مائي، دون مذيب ولا معدن ثقيل. يحدّد الدرجة دون أن يُلوِّث التلميع.',
         },
       ],
-      certifications: [],
+      certifications: [...KIT_FACTS.certifications],
     },
   ],
 
@@ -246,7 +243,7 @@ export const mockKitPageContentAr: KitPageContent = {
         axis: 'الثبات',
         vernis: '5 إلى 7 أيام على ظفر مُحضَّر، إصلاحات متكرّرة.',
         rituel:
-          'دون ثبات لوني: الظفر يبقى كما هو، مدعوما يوما بعد يوم.',
+          'دون ثبات لوني: يبقى اللمعان الطبيعي ظاهرا حتى ثلاثة أسابيع.',
       },
       {
         axis: 'التعافي',
@@ -257,18 +254,18 @@ export const mockKitPageContentAr: KitPageContent = {
         axis: 'التكلفة السنوية',
         vernis: 'طلاء + مزيل + كور إصلاحية، حوالي 1 500 درهم.',
         rituel:
-          'كيت FemiGlow بـ199 درهم يصمد أربعة إلى خمسة أشهر. أي حوالي 500 درهم في السنة.',
+          'يدوم الكيت حوالي ستة أشهر. كيتان في السنة، أي حوالي 400 درهم.',
       },
       {
         axis: 'أثر المادّة',
         vernis: 'مذيبات متطايرة، صيغ بأساس بتروكيميائي شائعة.',
         rituel:
-          'شمع نحل، جوجوبا، طلق معدني، أرزّ، كاولين. شهادة عضوية (Cosmos Organic).',
+          'شمع نحل، جوجوبا، طلق معدني، أرزّ، كاولين. قائمة INCI كاملة على كلّ علبة.',
       },
       {
-        axis: 'الوقت اليومي',
+        axis: 'وقت العناية',
         vernis: 'تطبيق 20 دقيقة، تجفيف طويل، إصلاحات.',
-        rituel: 'خمس دقائق كلّ يوم، حركة بطيئة، دون تجفيف قسري.',
+        rituel: 'خمس دقائق، مرة واحدة في الأسبوع. حركة بطيئة، دون تجفيف.',
       },
     ],
   },
@@ -278,19 +275,19 @@ export const mockKitPageContentAr: KitPageContent = {
       id: 'duree-pack',
       question: 'كم من الوقت يدوم الكيت؟',
       answer:
-        'في الاستعمال اليومي، يصمد الكيت أربعة إلى خمسة أشهر. تفرغ عجينة أوّلا، تليها بودرة. المُلمِّع يدوم حوالي سنة. نُقدِّم تعبئات إضافية ابتداء من خريف 2026.',
+        'حوالي خمس وعشرين عناية، بمعدّل عناية واحدة في الأسبوع: أي حوالي ستة أشهر. المُلمِّع يدوم هو أيضا حوالي ستة أشهر. التعبئات الإضافية قادمة قريبا.',
     },
     {
       id: 'frequence',
       question: 'ما هو إيقاع التطبيق؟',
       answer:
-        'كلّ مساء إن استطعتِ، في خمس دقائق. إن تخطّيتِ يوما، لا مشكلة: الدار تستقبل التوقّف كما تستقبل العودة.',
+        'مرة واحدة في الأسبوع، في خمس دقائق. يدوم اللمعان حتى ثلاثة أسابيع. إن تخطّيتِ أسبوعا، لا مشكلة: الدار تستقبل التوقّف كما تستقبل العودة.',
     },
     {
       id: 'compatibilite-vernis',
       question: 'هل أستطيع الاستمرار في وضع الطلاء؟',
       answer:
-        'يتكيّف الكيت مع الطلاء وإن صُمِّم للاستغناء عنه. ضعي عجينة وبودرة في الأمسيات دون طلاء. اللوحة تتنفّس، والكيت يُرسي بطأه.',
+        'يتكيّف الكيت مع الطلاء وإن صُمِّم للاستغناء عنه. خصّصي عنايتك الأسبوعية لمساء دون طلاء. اللوحة تتنفّس، والكيت يُرسي بطأه.',
     },
     {
       id: 'grossesse',

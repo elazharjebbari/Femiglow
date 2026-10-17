@@ -10,11 +10,12 @@
  */
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { resetMemoryStore } from '@/lib/db/client';
+import { memoryStore, resetMemoryStore } from '@/lib/db/client';
 
 import {
-  DEFAULT_KIT_REVIEW_STATS,
+  KIT_RITUAL_PRODUCT_KEY,
   _seedReview,
+  getKitReviewStats,
   getProductReviewStats,
   type ProductReview,
 } from './reviews';
@@ -89,16 +90,34 @@ describe('getProductReviewStats', () => {
   });
 });
 
-describe('DEFAULT_KIT_REVIEW_STATS', () => {
-  it('est aligné sur le starter rating historique (4.8 / 287)', () => {
-    // Verrou : ce starter rating est imprimé sur le visuel produit
-    // officiel. Toute évolution doit être faite consciemment (mise à
-    // jour du visuel print + ce verrou en même temps).
-    expect(DEFAULT_KIT_REVIEW_STATS).toEqual({ rating: 4.8, reviewsCount: 287 });
+function seedRitualCount(totalCount: number): void {
+  memoryStore().ritualAggregate.set(KIT_RITUAL_PRODUCT_KEY, {
+    productKey: KIT_RITUAL_PRODUCT_KEY,
+    totalCount,
+    ouiCount: totalCount,
+    hesiteCount: 0,
+    nonCount: 0,
+    withPhotosCount: 0,
+    topTags: [],
+    lastPublishedAt: null,
+    refreshedAt: new Date('2026-10-01T12:00:00Z'),
+  });
+}
+
+describe('getKitReviewStats — source unique du pack', () => {
+  it('retourne null sans aucune donnée (compteur et note masqués)', async () => {
+    expect(await getKitReviewStats(PRODUCT_ID)).toBeNull();
   });
 
-  it('respecte les contraintes Kolenda Pricing #14 (chiffres précis, pas ronds)', () => {
-    expect(DEFAULT_KIT_REVIEW_STATS.rating).not.toBe(Math.floor(DEFAULT_KIT_REVIEW_STATS.rating));
-    expect(DEFAULT_KIT_REVIEW_STATS.reviewsCount % 100).not.toBe(0);
+  it('compte les témoignages approuvés, sans note inventée', async () => {
+    seedRitualCount(51);
+    expect(await getKitReviewStats(PRODUCT_ID)).toEqual({ reviewsCount: 51, rating: null });
+  });
+
+  it('utilise la note moyenne réelle quand des avis notés existent', async () => {
+    seedRitualCount(51);
+    _seedReview(review(5, PRODUCT_ID, 0));
+    _seedReview(review(4, PRODUCT_ID, 1));
+    expect(await getKitReviewStats(PRODUCT_ID)).toEqual({ reviewsCount: 51, rating: 4.5 });
   });
 });

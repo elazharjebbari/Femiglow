@@ -14,7 +14,7 @@ describe('mockAdapter.getRituelPageContent — locale dispatch', () => {
   it('FR : retourne le hero français', async () => {
     const content = await mockAdapter.getRituelPageContent({ locale: 'fr' });
     expect(content.hero.title).toBe(
-      'Manucure japonaise. Deux gestes. Un éclat lent.',
+      'Manucure japonaise. Quatre gestes. Un éclat lent.',
     );
     expect(content.pivot.cta.label).toBe('Recevoir le pack — 199 dh');
   });
@@ -22,7 +22,7 @@ describe('mockAdapter.getRituelPageContent — locale dispatch', () => {
   it('AR : retourne le hero arabe (MSA féminin)', async () => {
     const content = await mockAdapter.getRituelPageContent({ locale: 'ar' });
     expect(content.hero.title).toMatch(/[؀-ۿ]/);
-    expect(content.hero.title).toBe('مانيكور ياباني. حركتان. إشراقة بطيئة.');
+    expect(content.hero.title).toBe('مانيكور ياباني. أربع حركات. إشراقة بطيئة.');
     // CTA pivot — verbe au féminin (استلمي)
     expect(content.pivot.cta.label).toMatch(/استلمي/);
     // Devise localisée en arabe : « درهم » (dirham), pas le code latin « MAD ».
@@ -32,7 +32,7 @@ describe('mockAdapter.getRituelPageContent — locale dispatch', () => {
   it('EN : retourne le hero anglais', async () => {
     const content = await mockAdapter.getRituelPageContent({ locale: 'en' });
     expect(content.hero.title).toBe(
-      'Japanese manicure. Two gestures. A slow glow.',
+      'Japanese manicure. Four gestures. A slow glow.',
     );
     expect(content.pivot.cta.label).toBe('Receive the pack — 199 MAD');
   });
@@ -40,7 +40,7 @@ describe('mockAdapter.getRituelPageContent — locale dispatch', () => {
   it('default (no options) → FR', async () => {
     const content = await mockAdapter.getRituelPageContent();
     expect(content.hero.title).toBe(
-      'Manucure japonaise. Deux gestes. Un éclat lent.',
+      'Manucure japonaise. Quatre gestes. Un éclat lent.',
     );
   });
 

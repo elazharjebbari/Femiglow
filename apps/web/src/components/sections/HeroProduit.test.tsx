@@ -4,7 +4,7 @@ import { HeroProduit, type HeroProduitFields } from './HeroProduit';
 import { useWizardStore } from '@/lib/checkout/state/wizard-store';
 import { ToastProvider } from '@/components/ui/Toast';
 import { mockKitPageContent } from '@/data/mock/kit';
-import { DEFAULT_KIT_REVIEW_STATS } from '@/lib/products/reviews';
+const REVIEW_STATS = { rating: 4.6, reviewsCount: 51 };
 import { expectNoAxeViolations } from '@/test/axe';
 import type { HeroGalleryImage } from '@/lib/products/hero-gallery-types';
 
@@ -39,7 +39,7 @@ function renderHero() {
         reassurances={reassurances}
         galleryImages={galleryImages}
         fields={fields}
-        reviewStats={DEFAULT_KIT_REVIEW_STATS}
+        reviewStats={REVIEW_STATS}
       />
     </ToastProvider>,
   );
@@ -89,7 +89,7 @@ describe('HeroProduit', () => {
             reassurances={reassurances}
             galleryImages={galleryImages}
             fields={fields}
-            reviewStats={DEFAULT_KIT_REVIEW_STATS}
+            reviewStats={REVIEW_STATS}
             strings={{
               kicker: 'The ritual',
               ctaLabel: 'Order',
@@ -143,10 +143,10 @@ describe('HeroProduit', () => {
     });
   });
 
-  it('affiche la note sociale (4,8 / 287 avis)', () => {
+  it('affiche la note sociale (4,6 / 51 avis)', () => {
     renderHero();
-    expect(screen.getByText(/4,8/)).toBeInTheDocument();
-    expect(screen.getByText(/287 avis/i)).toBeInTheDocument();
+    expect(screen.getByText(/4,6/)).toBeInTheDocument();
+    expect(screen.getByText(/51 avis/i)).toBeInTheDocument();
   });
 
   it('affiche la trust row au-dessus du CTA', () => {

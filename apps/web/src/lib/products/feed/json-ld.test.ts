@@ -17,18 +17,36 @@ import { buildKitProductFeed } from './kit-feed';
 import { feedToProductSchemaEnrichment } from './json-ld';
 
 const product = mockKitPageContent.product;
-const feed = buildKitProductFeed(product, mockKitPageContent);
+const feed = buildKitProductFeed(product, mockKitPageContent, {
+  rating: 4.6,
+  reviewsCount: 142,
+});
+const proof = feed.socialProof!;
 
 describe('feedToProductSchemaEnrichment', () => {
+  it('n’émet ni aggregateRating ni review sans note réelle', () => {
+    const noRating = buildKitProductFeed(product, mockKitPageContent, {
+      rating: null,
+      reviewsCount: 51,
+    });
+    expect(
+      feedToProductSchemaEnrichment(noRating, mockKitPageContent.handsTestimonials),
+    ).toEqual({});
+    const noStats = buildKitProductFeed(product, mockKitPageContent, null);
+    expect(
+      feedToProductSchemaEnrichment(noStats, mockKitPageContent.handsTestimonials),
+    ).toEqual({});
+  });
+
   it('expose un aggregateRating depuis le feed.socialProof', () => {
     const enrichment = feedToProductSchemaEnrichment(
       feed,
       mockKitPageContent.handsTestimonials,
     );
     expect(enrichment.aggregateRating).toBeDefined();
-    expect(enrichment.aggregateRating!.ratingValue).toBe(feed.socialProof.rating);
+    expect(enrichment.aggregateRating!.ratingValue).toBe(proof.rating);
     expect(enrichment.aggregateRating!.reviewCount).toBe(
-      feed.socialProof.reviewsCount,
+      proof.reviewsCount,
     );
     expect(enrichment.aggregateRating!.bestRating).toBe(5);
     expect(enrichment.aggregateRating!.worstRating).toBe(1);
@@ -45,7 +63,7 @@ describe('feedToProductSchemaEnrichment', () => {
     for (const r of enrichment.reviews!) {
       expect(r.authorName).toMatch(/.+/);
       expect(r.body).toMatch(/.+/);
-      expect(r.ratingValue).toBe(feed.socialProof.rating);
+      expect(r.ratingValue).toBe(proof.rating);
     }
   });
 
@@ -112,8 +130,8 @@ describe('productSchema (Schema.org Product) avec enrichissement', () => {
     // Aggregate rating bien formé pour Google Rich Results.
     expect(schema.aggregateRating).toMatchObject({
       '@type': 'AggregateRating',
-      ratingValue: feed.socialProof.rating.toFixed(1),
-      reviewCount: feed.socialProof.reviewsCount,
+      ratingValue: proof.rating!.toFixed(1),
+      reviewCount: proof.reviewsCount,
       bestRating: '5.0',
       worstRating: '1.0',
     });

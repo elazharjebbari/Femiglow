@@ -39,7 +39,7 @@ C\u2019est une phrase que l\u2019on r\u00e9p\u00e8te dans l\u2019atelier, et qui
 
 En hiver, le rituel se r\u00e9duit. On garde l\u2019huile, on garde la base. On enl\u00e8ve tout le reste. La lime devient inutile \u2014 l\u2019ongle est trop sec pour \u00eatre travaill\u00e9 \u00e0 plat. On laisse pousser, on laisse courir, on laisse le temps faire.
 
-Trois gestes suffisent :
+Trois temps suffisent :
 
 - D\u00e9poser une goutte d\u2019huile sur la cuticule, le soir, au coucher.
 - Masser doucement, du milieu de l\u2019ongle vers la base, pendant trente secondes.
@@ -57,7 +57,7 @@ Les m\u00eames mains, en septembre, n\u2019ont pas la m\u00eame force. C\u2019es
 
 C\u2019est une le\u00e7on plus large que celle des ongles. La saison qui semble la plus pauvre est celle qui prot\u00e8ge le plus. C\u2019est aussi pour cela que nous publions le journal au rythme du climat : pour rappeler que le geste change, et qu\u2019il a raison de changer.
 
-Pour aller plus loin, le [rituel \u2014 deux gestes et un polissoir](/rituel) est document\u00e9 pas \u00e0 pas. Pour comprendre pourquoi le sourcing direct compte aussi, l\u2019article [L\u2019huile d\u2019argan, vraie](/journal/huile-d-argan-vraie) ouvre l\u2019atelier. Et si vous \u00eates curieuses de la recherche en cosm\u00e9tique douce, le [rapport 2024 de la SOFW](https://www.sofw.com/) reste une r\u00e9f\u00e9rence accessible.
+Pour aller plus loin, le [rituel \u2014 quatre gestes, cinq minutes](/rituel) est document\u00e9 pas \u00e0 pas. Pour comprendre pourquoi le sourcing direct compte aussi, l\u2019article [L\u2019huile d\u2019argan, vraie](/journal/huile-d-argan-vraie) ouvre l\u2019atelier. Et si vous \u00eates curieuses de la recherche en cosm\u00e9tique douce, le [rapport 2024 de la SOFW](https://www.sofw.com/) reste une r\u00e9f\u00e9rence accessible.
 
 L\u2019hiver finit par passer. Les ongles auront \u00e9cout\u00e9 ; \u00e0 nous, simplement, d\u2019avoir \u00e9cout\u00e9 avec eux.`,
     isFeatured: false,
@@ -93,10 +93,10 @@ L\u2019hiver finit par passer. Les ongles auront \u00e9cout\u00e9 ; \u00e0 nous,
   },
   {
     slug: 'paste-et-powder-deux-gestes',
-    title: 'Paste et powder \u2014 deux gestes, un \u00e9clat',
+    title: 'Paste et powder \u2014 quatre gestes, un \u00e9clat',
     kicker: 'Rituel',
     excerpt:
-      'Deux gestes, un \u00e9clat. Tutorial sensoriel d\u00e9taill\u00e9 \u2014 paste, powder, polissoir Step 4.',
+      'Quatre gestes, un \u00e9clat. Tutorial sensoriel d\u00e9taill\u00e9 \u2014 pr\u00e9parer, paste, powder, polissoir Step 4.',
     category: 'pratique',
     readingTimeMinutes: 5,
     publishedAt: new Date('2026-02-18'),
@@ -108,7 +108,7 @@ L\u2019hiver finit par passer. Les ongles auront \u00e9cout\u00e9 ; \u00e0 nous,
       height: 1067,
     },
     author: { name: 'L’équipe FemiGlow' },
-    body: 'Vivre la paste et la powder par procuration avant de les pratiquer. Cire d\u2019abeille et jojoba pour la paste, talc et poudre de riz pour la powder, mouvement lent du polissoir Step 4 pour finir.',
+    body: 'Vivre les quatre gestes par procuration avant de les pratiquer. Mains propres et ongles lim\u00e9s pour commencer. Cire d\u2019abeille et jojoba pour la paste, talc et poudre de riz pour la powder, mouvement lent du polissoir Step 4 pour finir.',
     isFeatured: false,
     wordCount: 700,
     seo: { noIndex: false },

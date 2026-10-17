@@ -39,7 +39,7 @@ const faqs: FAQAccordionItem[] = [
     id: 'duree-rituel',
     question: 'Combien de temps dure le rituel\u202F?',
     answer:
-      'Cinq minutes par soir, mains pos\u00E9es. Deux gestes \u2014 paste, powder \u2014 puis le polissoir Step 4 en finition. La maison conseille un passage par jour pour installer la cadence.',
+      'Cinq minutes, mains pos\u00E9es, une fois par semaine. Quatre gestes\u202F: pr\u00E9parer l\u2019ongle, la paste, la powder, puis le polissoir Step 4 en finition. La brillance tient jusqu\u2019\u00E0 trois semaines.',
   },
   {
     id: 'ongles-fragiles',
@@ -51,7 +51,7 @@ const faqs: FAQAccordionItem[] = [
     id: 'delais-livraison',
     question: 'Quels sont les d\u00E9lais de livraison\u202F?',
     answer:
-      'Rabat\u00A0: 24 heures. Casablanca et Sal\u00E9\u00A0: 24 \u00E0 48 heures. Reste du Maroc\u00A0: 48 \u00E0 72 heures. Livraison offerte au Maroc, sans seuil. \u00C0 l\u2019international, \u00E9crivez-nous, nous \u00E9tudions chaque envoi \u00E0 la main.',
+      'Rabat\u00A0: 24 heures. Reste du Maroc\u00A0: 48 \u00E0 72 heures. Livraison offerte au Maroc, sans seuil. \u00C0 l\u2019international, \u00E9crivez-nous, nous \u00E9tudions chaque envoi \u00E0 la main.',
   },
   {
     id: 'formation-fondatrice',

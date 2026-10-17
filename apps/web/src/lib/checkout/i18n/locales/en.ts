@@ -45,7 +45,7 @@ export const dictionaryEn: WizardDictionary = {
     notesLabel: 'Note for the courier (optional)',
     notesPlaceholder: 'Intercom code, preferred time slot, instructions…',
     shippingTitle: 'Delivery method',
-    shippingFreeBody: 'Free delivery in 24-48 h everywhere in Morocco.',
+    shippingFreeBody: 'Free delivery: Rabat 24 h, rest of Morocco 48 to 72 h.',
     shippingDynamicFreeBody: (eta) =>
       `Free delivery in ${eta} — pay on delivery.`,
     shippingDynamicPaidBody: (price, eta) =>

@@ -8,7 +8,7 @@ export const mockRituel: RituelPageContent = {
   hero: {
     variant: 'editorial',
     kicker: 'LE RITUEL',
-    title: 'Manucure japonaise. Deux gestes. Un éclat lent.',
+    title: 'Manucure japonaise. Quatre gestes. Un éclat lent.',
     subtitle: 'Une méthode lente, racontée à Rabat.',
     image: {
       src: '/rituel/hero-lifestyle.svg',
@@ -21,9 +21,9 @@ export const mockRituel: RituelPageContent = {
     kicker: 'Origine',
     titre: 'Une attention venue du Japon, transmise \u00e0 Rabat.',
     paragraphes: [
-      'Au Japon, le soin de la main n\u2019est pas un produit\u202F: c\u2019est une attention quotidienne, lente, sans déclaration. La manucure japonaise — connue aussi sous les noms \u00ab\u202Fkawaii\u202F\u00bb ou \u00ab\u202Fchigiri\u202F\u00bb — remonte au début du XXᵉ siècle. Elle révèle la brillance naturelle de l\u2019ongle par polissage, sans vernis.',
-      'Notre fondatrice a rapporté ce geste d\u2019un voyage de formation. Elle l\u2019a réinscrit dans un référentiel marocain\u202F: matières locales, certification halal, atelier au 25 bis avenue Patrice Lumumba, à Rabat.',
-      'Le résultat tient en cinq minutes par jour. Pas de promesse, pas de cure. Une habitude qui s\u2019installe, comme on dépose une tasse sur une table en bois.',
+      'Au Japon, le soin de la main n\u2019est pas un produit\u202F: c\u2019est une attention régulière, lente, sans déclaration. La manucure japonaise — connue aussi sous les noms \u00ab\u202Fkawaii\u202F\u00bb ou \u00ab\u202Fchigiri\u202F\u00bb — remonte au début du XXᵉ siècle. Elle révèle la brillance naturelle de l\u2019ongle par polissage, sans vernis.',
+      'Notre fondatrice a rapporté ce geste d\u2019un voyage de formation. Elle l\u2019a réinscrit dans un référentiel marocain\u202F: matières locales, formule halal, atelier au 25 bis avenue Patrice Lumumba, à Rabat.',
+      'Le soin tient en cinq minutes, une fois par semaine. Pas de promesse, pas de cure. Une habitude qui s\u2019installe, comme on dépose une tasse sur une table en bois.',
     ],
     photoSepia: {
       src: '/rituel/origine-sepia.svg',
@@ -48,8 +48,8 @@ export const mockRituel: RituelPageContent = {
       ar: '/captions/rituel-ar.vtt',
     },
     transcript:
-      'La grande tendance clean girl pour les nails, c\u2019est la manucure japonaise. Par contre, il y a quelque chose que vous devez absolument savoir.\n\nLa manucure japonaise, c\u2019est en fait un soin qui vient s\u2019appliquer sur la plaque de l\u2019ongle et qui va venir le nourrir et le faire briller pendant au moins 3 semaines.\n\nBien évidemment, si vous avez les ongles abîmés, striés ou qu\u2019une dépose a été mal faite, le résultat ne sera pas à son maximum. Il faut d\u2019abord prendre soin de vos ongles qu\u2019ils soient réparés au maximum pour avoir le résultat optimum.\n\nEn revanche, comme la manucure japonaise contient de la cire d\u2019abeille, des silicates, de la poudre de perle et plein de belles choses à l\u2019intérieur, elle va vous aider à réparer votre plaque. C\u2019est un soin en profondeur.',
-    durationSeconds: 75,
+      'La grande tendance clean girl pour les nails, c\u2019est la manucure japonaise. Par contre, il y a quelque chose que vous devez absolument savoir.\n\nLa manucure japonaise, c\u2019est en fait un soin qui vient s\u2019appliquer sur la plaque de l\u2019ongle et qui va venir le nourrir et le faire briller jusqu\u2019à trois semaines.\n\nBien évidemment, si vous avez les ongles abîmés, striés ou qu\u2019une dépose a été mal faite, le résultat ne sera pas à son maximum. Il faut d\u2019abord prendre soin de vos ongles qu\u2019ils soient réparés au maximum pour avoir le résultat optimum.\n\nEn revanche, comme la manucure japonaise contient de la cire d\u2019abeille, de l\u2019huile de jojoba, de la poudre de riz, du kaolin et plein de belles choses à l\u2019intérieur, elle va vous aider à réparer votre plaque. C\u2019est un soin en profondeur.',
+    durationSeconds: 90,
     // Phase 1 — extensions Kolenda §4.4 (champs optionnels).
     chapters: [
       { key: 'paste', label: 'Paste', startSeconds: 0 },
@@ -82,7 +82,7 @@ export const mockRituel: RituelPageContent = {
         id: 'halal',
         titre: 'Le référentiel halal',
         paragraphe:
-          'Tra\u00e7abilit\u00e9 des mati\u00e8res, absence d\u2019alcool d\u00e9natur\u00e9, absence de d\u00e9riv\u00e9s animaux non conformes. Le label suit un audit du Halal Cosmetics Council\u00b3.',
+          'Tra\u00e7abilit\u00e9 des mati\u00e8res, absence d\u2019alcool d\u00e9natur\u00e9, absence de d\u00e9riv\u00e9s animaux non conformes. La formule suit le r\u00e9f\u00e9rentiel public du Halal Cosmetics Council\u00b3.',
         sourceRef: '[3]',
       },
     ],
@@ -124,15 +124,15 @@ export const mockRituel: RituelPageContent = {
       },
       {
         id: 'q4',
-        question: 'Cinq minutes par jour, c\u2019est peu. Pourquoi pas plus\u202F?',
+        question: 'Cinq minutes par semaine, c\u2019est peu. Pourquoi pas plus\u202F?',
         reponse:
-          'Parce que l\u2019ongle pousse de 0,1 mm par jour. Cinq minutes suffisent \u00e0 l\u2019accompagner. Plus serait inutile. Moins serait infid\u00e8le.',
+          'Parce que l\u2019ongle pousse lentement, et que la brillance tient jusqu\u2019\u00e0 trois semaines. Un soin par semaine suffit \u00e0 l\u2019accompagner. Plus serait inutile. Moins serait infid\u00e8le.',
       },
       {
         id: 'q5',
         question: 'Que conseilleriez-vous \u00e0 une initi\u00e9e qui commence\u202F?',
         reponse:
-          'Commencez par la paste. Pendant une semaine, rien d\u2019autre. Vous verrez ce que vos ongles vous racontent. Le polissoir arrive ensuite.',
+          'Regardez la vid\u00e9o une fois. Puis faites les quatre gestes dans l\u2019ordre, sans vous presser. Vous verrez ce que vos ongles vous racontent.',
       },
     ],
   },

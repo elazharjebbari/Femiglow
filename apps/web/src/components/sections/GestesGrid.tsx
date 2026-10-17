@@ -13,7 +13,7 @@ interface GestesGridProps {
 
 export function GestesGrid({
   kicker = 'Le rituel',
-  title = 'Cinq gestes, cinq minutes.',
+  title = 'Quatre gestes, cinq minutes.',
   etapes,
 }: GestesGridProps) {
   return (

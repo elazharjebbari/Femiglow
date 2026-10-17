@@ -135,7 +135,7 @@ function ShippingNotice({
         <Text size="small" className="font-medium text-encre">
           {freeShipping
             ? 'Livraison gratuite partout au Maroc.'
-            : 'Livraison sous 24-48 h.'}
+            : 'Rabat en 24\u00A0h, reste du Maroc en 48 à 72\u00A0h.'}
         </Text>
         <Text size="small" tone="secondary">
           Reçu en main propre, paiement à la livraison — sans frais cachés.

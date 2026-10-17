@@ -1,21 +1,21 @@
 import type { HomepageContent } from '@/lib/schemas';
 
 /**
- * Audit 08/09 — Hero, gestes 5\u21923, manifeste, témoins.
+ * Audit 08/09 — Hero, quatre gestes (fiche kit-facts), manifeste, témoins.
  * Centre de gravité : Rabat. Produit nommé : Pack FemiGlow.
  */
 export const mockHomepage: HomepageContent = {
   hero: {
     variant: 'editorial',
     kicker: 'Maison de Rabat',
-    title: 'Le pack FemiGlow. Deux gestes, un éclat révélé.',
+    title: 'Le pack FemiGlow. Quatre gestes, un éclat révélé.',
     subtitle:
       'Manucure japonaise halal, pensée à Rabat. Sans vernis, sans abrasion.',
     cta: { label: 'Découvrir le rituel', href: '/rituel', variant: 'primary' },
     ctaSecondary: { label: 'Recevoir le pack', href: '/kit', variant: 'link' },
     image: {
       src: '/journal/hero-accueil.svg',
-      alt: 'Coffret pastel FemiGlow ouvert, pot paste sauge et pot powder rose poudré, polissoir bleu ciel, lumière naturelle de fin de matinée',
+      alt: 'Coffret pastel FemiGlow ouvert, pot paste sauge et pot powder à étiquette rose poudré, polissoir bleu ciel, lumière naturelle de fin de matinée',
       width: 1600,
       height: 2000,
     },
@@ -23,22 +23,29 @@ export const mockHomepage: HomepageContent = {
   gestes: [
     {
       ordre: 1,
+      titre: 'Préparer',
+      duree: '1 minute',
+      description:
+        'Mains propres, ongles secs. Un coup de lime pour la forme.',
+    },
+    {
+      ordre: 2,
       titre: 'Paste',
-      duree: '2 minutes',
+      duree: '1 minute',
       description:
         'Pâte crème onctueuse, posée sur ongle sec. Filme, lisse, prépare.',
     },
     {
-      ordre: 2,
+      ordre: 3,
       titre: 'Powder',
-      duree: '2 minutes',
+      duree: '1 minute',
       description:
         'Poudre fine blanche, déposée sur la paste. Absorbe, lustre, réveille.',
     },
     {
-      ordre: 3,
+      ordre: 4,
       titre: 'Polish & Shine',
-      duree: '1 minute',
+      duree: '2 minutes',
       description:
         'Polissoir Step 4 passé en mouvements lents. La brillance naturelle apparaît.',
     },
@@ -48,7 +55,7 @@ export const mockHomepage: HomepageContent = {
     title: 'La beauté lente est une attention.',
     paragraphs: [
       'Nous croyons que les ongles révèlent ce qu\u2019on leur prête. Le geste, le temps, la patience.',
-      'Cinq minutes par jour. Deux gestes et un polissoir. Aucune démonstration.',
+      'Cinq minutes, une fois par semaine. Quatre gestes et un polissoir. Aucune démonstration.',
     ],
   },
   avis: [

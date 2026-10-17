@@ -125,15 +125,12 @@ describe('buildKitProductFeed', () => {
   });
 
   it('sélectionne un témoignage existant comme citation social proof', () => {
-    const feed = buildKitProductFeed(product, mockKitPageContent);
+    const feed = buildKitProductFeed(product, mockKitPageContent, {
+      rating: null,
+      reviewsCount: 51,
+    });
     const allQuotes = mockKitPageContent.handsTestimonials.map((t) => t.quote);
-    expect(allQuotes).toContain(feed.socialProof.quote);
-    // Pricing #14 — chiffres précis (note non-arrondie).
-    expect(feed.socialProof.rating).toBeGreaterThan(4);
-    expect(feed.socialProof.rating).toBeLessThan(5);
-    expect(feed.socialProof.reviewsCount).toBeGreaterThan(100);
-    // Pas un round 100/200/300/etc.
-    expect(feed.socialProof.reviewsCount % 100).not.toBe(0);
+    expect(allQuotes).toContain(feed.socialProof?.quote);
   });
 
   it('est pure : mêmes entrées → mêmes sorties (hors brand/locale)', () => {
@@ -159,21 +156,37 @@ describe('buildKitProductFeed', () => {
       rating: 4.6,
       reviewsCount: 142,
     });
-    expect(feed.socialProof.rating).toBe(4.6);
-    expect(feed.socialProof.reviewsCount).toBe(142);
+    expect(feed.socialProof?.rating).toBe(4.6);
+    expect(feed.socialProof?.reviewsCount).toBe(142);
+    expect(feed.socialProof?.countLabelGeo).toBe('142 maisons au Maroc');
   });
 
-  it('retombe sur DEFAULT_KIT_REVIEW_STATS quand stats=null', () => {
+  it('affiche le compteur sans note quand aucune note réelle n’existe', () => {
+    const feed = buildKitProductFeed(product, mockKitPageContent, {
+      rating: null,
+      reviewsCount: 51,
+    });
+    expect(feed.socialProof?.rating).toBeNull();
+    expect(feed.socialProof?.reviewsCount).toBe(51);
+  });
+
+  it('masque le social proof quand stats=null (aucun chiffre inventé)', () => {
     const feed = buildKitProductFeed(product, mockKitPageContent, null);
-    // Cohérent avec le visuel produit officiel imprimé.
-    expect(feed.socialProof.rating).toBe(4.8);
-    expect(feed.socialProof.reviewsCount).toBe(287);
+    expect(feed.socialProof).toBeUndefined();
   });
 
-  it('retombe sur DEFAULT_KIT_REVIEW_STATS quand stats=undefined (legacy callers)', () => {
+  it('masque le social proof quand stats=undefined (legacy callers)', () => {
     const feed = buildKitProductFeed(product, mockKitPageContent, undefined);
-    expect(feed.socialProof.rating).toBe(4.8);
-    expect(feed.socialProof.reviewsCount).toBe(287);
+    expect(feed.socialProof).toBeUndefined();
+  });
+
+  it('aligne contenances et nombre de soins sur la fiche produit', () => {
+    const feed = buildKitProductFeed(product, mockKitPageContent);
+    const labels = feed.hero.valueBreakdown?.map((v) => v.label).join(' | ') ?? '';
+    expect(labels).toMatch(/Paste · 15\u00A0g/);
+    expect(labels).toMatch(/Powder · 8\u00A0g/);
+    expect(feed.hero.perUsageHint).toMatch(/sur 25 soins$/);
+    expect(feed.stepsHeader?.lead).toBe('Quatre gestes lents, une fois par semaine.');
   });
 
   it('reste pur quand stats fournies (mêmes stats → mêmes sorties)', () => {

@@ -383,11 +383,15 @@ export function PriceBlock({
           data-label-used={socialProofLabelUsed}
           className="flex items-center justify-center gap-2 text-sm text-champagne-dark"
         >
-          <span aria-hidden="true">★★★★★</span>
-          <span className="font-medium tabular-nums">
-            {formatRating(socialProof.rating)}/5
-          </span>
-          <span className="text-encre/40">·</span>
+          {socialProof.rating !== null && (
+            <>
+              <span aria-hidden="true">★</span>
+              <span className="font-medium tabular-nums">
+                {formatRating(socialProof.rating)}/5
+              </span>
+              <span className="text-encre/40">·</span>
+            </>
+          )}
           <span className="text-encre/70">{socialProofLabel}</span>
         </p>
       )}

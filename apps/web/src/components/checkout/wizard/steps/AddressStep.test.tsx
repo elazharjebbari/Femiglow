@@ -165,8 +165,8 @@ describe('AddressStep — bloc réassurance livraison', () => {
   it('affiche le message générique tant qu\'aucune ville n\'est sélectionnée', () => {
     render(<AddressStep />);
     const body = screen.getByTestId('wizard-shipping-body');
-    expect(body.textContent ?? '').toMatch(/livraison gratuite/i);
-    expect(body.textContent ?? '').toMatch(/24-48/);
+    expect(body.textContent ?? '').toMatch(/livraison offerte/i);
+    expect(body.textContent ?? '').toMatch(/Rabat 24 h, reste du Maroc 48 à 72 h/);
   });
 
   it('CHA-230 : affiche un prix dynamique quand une ville payante est sélectionnée', async () => {

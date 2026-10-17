@@ -35,7 +35,7 @@ function localizeCurrencyUnit(label: string, locale?: string): string {
   return label.replace(/\bMAD\b/g, 'درهم').replace(/\bAED\b/g, 'درهم إماراتي');
 }
 
-/** Parse « ≈ 1,53 MAD par soin sur 47 jours » → { amount, days }. */
+/** Parse « ≈ 12,76 MAD le soin, sur 25 soins » → { amount, days }. */
 function parsePerUsage(hint: string): { amount: string; days: string } | null {
   const m = hint.match(/≈\s*([\d.,]+)\s+\S+.*?(\d+)\s*\S+\s*$/);
   if (!m || !m[1] || !m[2]) return null;
@@ -98,16 +98,16 @@ export function localizeKitProductFeed(
     };
   });
 
-  // Coût par soin — sur /ar la microcopy FR « par soin sur N jours » + le code
+  // Coût par soin — hors FR, la microcopy FR « le soin, sur N soins » + le code
   // MAD fuitent. On reconstruit via le gabarit ICU `per_usage.phrase` localisé.
   const localizedPerUsage = (() => {
     if (!feed.hero.perUsageHint) return undefined;
-    if (locale !== 'ar') return feed.hero.perUsageHint;
+    if (locale !== 'ar' && locale !== 'en') return feed.hero.perUsageHint;
     const parsed = parsePerUsage(feed.hero.perUsageHint);
     if (!parsed) return localizeCurrencyUnit(feed.hero.perUsageHint, locale);
     return t('per_usage.phrase', {
       amount: parsed.amount,
-      currency: 'درهم',
+      currency: locale === 'ar' ? 'درهم' : 'MAD',
       days: parsed.days,
     });
   })();
@@ -186,13 +186,18 @@ export function localizeKitProductFeed(
         detail: t(`claims.${key}.detail`),
       };
     }),
-    socialProof: {
-      ...feed.socialProof,
-      // La citation + l'auteur viennent du CMS (`content.handsTestimonials`,
-      // déjà locale-aware) ; on ne traduit ici que le libellé géo dérivé.
-      countLabelGeo: t('social_proof.count_label_geo', {
-        count: feed.socialProof.reviewsCount,
-      }),
-    },
+    // La citation + l'auteur viennent du CMS (`content.handsTestimonials`,
+    // déjà locale-aware) ; on ne traduit ici que le libellé géo dérivé.
+    // Sans avis (`socialProof` absent), rien à afficher.
+    ...(feed.socialProof
+      ? {
+          socialProof: {
+            ...feed.socialProof,
+            countLabelGeo: t('social_proof.count_label_geo', {
+              count: feed.socialProof.reviewsCount,
+            }),
+          },
+        }
+      : {}),
   };
 }

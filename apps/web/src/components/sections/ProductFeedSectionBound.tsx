@@ -27,8 +27,8 @@ interface ProductFeedSectionBoundProps {
   product: Product;
   content: KitPageContent;
   /**
-   * Stats reviews déjà résolues côté caller (RSC). Null/undefined →
-   * fallback `DEFAULT_KIT_REVIEW_STATS` interne au builder.
+   * Stats d'avis déjà résolues côté caller (`getKitReviewStats`). Null/
+   * undefined → pas de bloc social proof (compteur et note masqués).
    */
   reviewStats?: ProductReviewStats | null;
   anchorId?: string;
@@ -96,9 +96,13 @@ export async function ProductFeedSectionBound({
         initialCoupon={initialCoupon}
       isArabic={effectiveLocale === 'ar'}
       resultLabel={t('steps.result_label')}
-      reviewsCountLabel={t('social_proof.reviews_count', {
-        count: localizedFeed.socialProof.reviewsCount,
-      })}
+      reviewsCountLabel={
+        localizedFeed.socialProof
+          ? t('social_proof.reviews_count', {
+              count: localizedFeed.socialProof.reviewsCount,
+            })
+          : undefined
+      }
     />
   );
 }

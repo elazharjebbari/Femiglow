@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { imageSchema, ctaSchema } from './common';
+import { KIT_GESTURE_COUNT } from '@/lib/products/kit-facts';
 import {
   productSchema,
   subProductSchema,
@@ -59,7 +60,8 @@ export type FAQItem = z.infer<typeof faqItemSchema>;
 
 export const homepageContentSchema = z.object({
   hero: heroSchema,
-  gestes: z.array(gesteEtapeSchema).length(5),
+  // Le rituel compte quatre gestes (fiche `kit-facts.ts`).
+  gestes: z.array(gesteEtapeSchema).length(KIT_GESTURE_COUNT),
   manifeste: manifesteSchema,
   avis: z.array(testimonialSchema).max(3),
   journalExtraitsSlugs: z.array(z.string()).max(3),

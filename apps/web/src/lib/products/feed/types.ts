@@ -160,7 +160,7 @@ export interface ProductFeedHero {
  * label · valueLabel.
  */
 export interface ProductFeedValueItem {
-  /** Libellé court de l'item (ex « 1 Paste · 30 ml »). */
+  /** Libellé court de l'item (ex « Paste · 15 g »). */
   label: string;
   /** Valeur affichée à droite (ex « 19 € » ou « offert »). */
   valueLabel: string;
@@ -188,15 +188,19 @@ export interface ProductFeedClaim {
 export interface ProductFeedSocialProof {
   /** Nombre d'avis. */
   reviewsCount: number;
-  /** Note moyenne (0-5), affichée avec décimale. */
-  rating: number;
-  /** Citation courte d'un témoignage réel. */
+  /**
+   * Note moyenne (0-5), affichée avec décimale. `null` quand aucun avis
+   * noté n'existe : le compteur s'affiche seul, sans étoiles.
+   */
+  rating: number | null;
+  /** Citation courte d'un témoignage réel (vide si aucun témoignage). */
   quote: string;
   /** Attribution lisible ("Lina, Rabat"). */
   authorLabel: string;
   /**
    * Libellé géographique optionnel pour le bloc condensé sous le CTA
-   * (ex « 287 maisons au Maroc »). Fallback : `${reviewsCount} avis`.
+   * (ex « 51 maisons au Maroc »). Fallback : `${reviewsCount} avis`.
+   * Un override admin peut utiliser le jeton `{count}`.
    * Plus chaleureux et plus crédible qu'un simple « avis ».
    */
   countLabelGeo?: string;
@@ -244,6 +248,9 @@ export interface ProductFeed {
   stepsPostCta?: ProductFeedStepsPostCta;
   /** 3 claims (origine naturelle · sans agressifs · ongles forts). */
   claims: ProductFeedClaim[];
-  /** Social proof condensé. */
-  socialProof: ProductFeedSocialProof;
+  /**
+   * Social proof condensé. Absent quand aucun avis n'est disponible
+   * (base vide, mode mémoire) : compteur et note sont alors masqués.
+   */
+  socialProof?: ProductFeedSocialProof;
 }

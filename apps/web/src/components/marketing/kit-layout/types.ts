@@ -7,7 +7,6 @@
  */
 import type { KitPageContent, Article, Product } from '@/lib/schemas';
 import type { ProductReviewStats } from '@/lib/products/reviews';
-import type { RitualSummary } from '@/lib/schemas/rituals';
 import type { Locale } from '@/i18n.config';
 import type { AppliedCouponSeed } from '@/lib/checkout/state/use-applied-coupon';
 
@@ -20,15 +19,12 @@ export interface KitPageLayoutProps {
   dbProduct: Product;
   /** JSON-LD Product enrichi (aggregateRating + review system-driven). */
   productJsonLd: Record<string, unknown>;
-  /** Stats reviews DB — null si bdd vide (starter rating fallback côté builder). */
-  reviewStats: ProductReviewStats | null;
   /**
-   * Summary du module rituels (« voix de la maison »). Source du count
-   * affiché dans le badge hero + ancre href cible. totalCount=0 si la
-   * table `ritual_aggregate` est vide (le layout retombe alors sur le
-   * fallback handsTestimonials ou starter rating).
+   * Stats d'avis — source unique (`getKitReviewStats`) : compteur des
+   * témoignages approuvés + note réelle si elle existe. `null` si aucune
+   * donnée : hero, bloc pack/prix et JSON-LD masquent compteur et note.
    */
-  ritualSummary: RitualSummary;
+  reviewStats: ProductReviewStats | null;
   /**
    * Phase 7B — Locale active de la page. Propagée aux Bound qui consomment
    * `resolveComponentFields(componentKey, locale)`. Optionnel pour rester

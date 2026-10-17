@@ -36,7 +36,7 @@ interface CompositionRevealProps {
 
 const DEFAULT_COMPOSITION_HEADER = {
   kicker: 'La composition',
-  title: 'Trois objets, trois gestes.',
+  title: 'Trois objets, quatre gestes.',
   description:
     'Le kit tient dans une main. Chaque pièce a sa place dans le geste, sa place sur la table de chevet, sa place dans la saison.',
 };

@@ -64,7 +64,6 @@ export async function KitPageLayoutV2({
   dbProduct,
   productJsonLd,
   reviewStats,
-  ritualSummary,
   locale,
   initialCoupon,
 }: KitPageLayoutProps) {
@@ -131,14 +130,9 @@ export async function KitPageLayoutV2({
         // remplacer le nom DB FR ("Pack FemiGlow") et la tagline FR hardcodée.
         displayName={content.product.name}
         taglineFallback={content.product.tagline}
-        // Count badge avis depuis le module rituels (47 en DB courante).
-        // Fallback handsTestimonials si rituals vide. L'ancre cliquable
-        // cible #rituals-module-title (cf. HeroProduitBound).
-        reviewsCountOverride={
-          ritualSummary.totalCount > 0
-            ? ritualSummary.totalCount
-            : (content.handsTestimonials?.length ?? 0)
-        }
+        // Avis : même objet que le bloc pack/prix et le JSON-LD
+        // (`getKitReviewStats`). Null → badge masqué.
+        reviewStats={reviewStats}
       />
 
       {/* — 1bis. STORIES vidéo shoppables — DESKTOP uniquement ici (après le
@@ -220,8 +214,8 @@ export async function KitPageLayoutV2({
 
       {/*
         — 8. SOCIAL PROOF À GRANDE ÉCHELLE : Voix de la maison §4.8 —
-        Module rituels (47 initiées ont partagé, 38 reprendraient). C'est
-        ce module qui alimente le compteur du badge hero et son ancre.
+        Module rituels (témoignages approuvés). Son compteur est celui du
+        badge hero, du bloc pack/prix et du JSON-LD (`getKitReviewStats`).
         Position post-wizard : capte les hésitants à grande échelle.
       */}
       <RitualsModuleBound productKey="pack-femiglow" locale={effectiveLocale} />

@@ -46,7 +46,7 @@ interface ProductFeedSectionProps {
   /** Phase 9bis — libellé localisé du badge « Résultat » (step `isResult`). */
   resultLabel?: string;
   /**
-   * Libellé localisé du compteur d'avis (ex. « 287 avis » / « 287 تقييم »).
+   * Libellé localisé du compteur d'avis (ex. « 51 avis » / « 51 تقييم »).
    * Défaut FR « {count} avis » si absent — préserve le rendu legacy. Les
    * chiffres restent latins (cohérence de marque).
    */
@@ -130,31 +130,43 @@ export function ProductFeedSection({
           ))}
         </ul>
 
-        {/* 4 — Social proof condensé ------------------------------------ */}
+        {/* 4 — Social proof condensé ------------------------------------
+            Masqué sans avis réels (`socialProof` absent). Étoiles et note
+            uniquement si une note réelle existe. */}
+        {feed.socialProof && (
         <figure
           aria-label="Avis clientes"
           className="mx-auto mt-16 max-w-2xl rounded-md border border-encre/10 bg-creme-warm px-8 py-10 text-center"
           data-testid="product-feed-social-proof"
         >
           <div className="flex items-center justify-center gap-2 text-sm text-champagne-dark">
-            <span aria-hidden="true">★★★★★</span>
-            <span className="font-medium tabular-nums">
-              {feed.socialProof.rating.toFixed(1)}/5
-            </span>
-            <span className="text-encre/50">·</span>
+            {feed.socialProof.rating !== null && (
+              <>
+                <span aria-hidden="true">★</span>
+                <span className="font-medium tabular-nums">
+                  {feed.socialProof.rating.toFixed(1).replace('.', ',')}/5
+                </span>
+                <span className="text-encre/50">·</span>
+              </>
+            )}
             <span className="text-encre/70 tabular-nums">
               {reviewsCountLabel ?? `${feed.socialProof.reviewsCount} avis`}
             </span>
           </div>
-          <blockquote className="mt-4">
-            <Text size="lead" italic prose className="mx-auto">
-              {`\u00ab\u202f${feed.socialProof.quote}\u202f\u00bb`}
-            </Text>
-          </blockquote>
-          <figcaption className="mt-3 text-xs uppercase tracking-[0.18em] text-encre/55">
-            {feed.socialProof.authorLabel}
-          </figcaption>
+          {feed.socialProof.quote && (
+            <blockquote className="mt-4">
+              <Text size="lead" italic prose className="mx-auto">
+                {`\u00ab\u202f${feed.socialProof.quote}\u202f\u00bb`}
+              </Text>
+            </blockquote>
+          )}
+          {feed.socialProof.authorLabel && (
+            <figcaption className="mt-3 text-xs uppercase tracking-[0.18em] text-encre/55">
+              {feed.socialProof.authorLabel}
+            </figcaption>
+          )}
         </figure>
+        )}
       </Container>
     </section>
   );

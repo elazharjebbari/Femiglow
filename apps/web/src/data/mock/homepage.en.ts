@@ -20,7 +20,7 @@ export const mockHomepageEn: HomepageContent = {
   hero: {
     ...mockHomepage.hero,
     kicker: 'Maison de Rabat',
-    title: 'The FemiGlow kit. Two gestures, a revealed glow.',
+    title: 'The FemiGlow kit. Four gestures, a revealed glow.',
     subtitle:
       'Japanese halal manicure, conceived in Rabat. No polish, no abrasion.',
     cta: {
@@ -35,7 +35,7 @@ export const mockHomepageEn: HomepageContent = {
     },
     image: {
       src: '/journal/hero-accueil.svg',
-      alt: 'Open FemiGlow pastel kit, sage paste jar and powder rose-petal jar, sky-blue buffer, natural late-morning light',
+      alt: 'Open FemiGlow pastel kit, sage paste jar and powder jar with a rose-petal label, sky-blue buffer, natural late-morning light',
       width: 1600,
       height: 2000,
     },
@@ -43,13 +43,16 @@ export const mockHomepageEn: HomepageContent = {
 
   gestes: mockHomepage.gestes.map((g, i) => ({
     ...g,
-    duree: i === 0 ? '2 minutes' : i === 1 ? '2 minutes' : '1 minute',
+    titre: i === 0 ? 'Prepare' : g.titre,
+    duree: i === 3 ? '2 minutes' : '1 minute',
     description:
       i === 0
-        ? 'Smooth cream paste, applied on dry nails. Films, smooths, prepares.'
+        ? 'Clean hands, dry nails. A stroke of the file for the shape.'
         : i === 1
-          ? 'Fine white powder, layered on the paste. Absorbs, lustres, awakens.'
-          : 'Step 4 buffer used in slow strokes. The natural shine emerges.',
+          ? 'Smooth cream paste, applied on dry nails. Films, smooths, prepares.'
+          : i === 2
+            ? 'Fine white powder, layered on the paste. Absorbs, lustres, awakens.'
+            : 'Step 4 buffer used in slow strokes. The natural shine emerges.',
   })),
 
   manifeste: {
@@ -57,7 +60,7 @@ export const mockHomepageEn: HomepageContent = {
     title: 'Slow beauty is an attention.',
     paragraphs: [
       'We believe that nails reveal what is given to them. The gesture, the time, the patience.',
-      'Five minutes a day. Two gestures and a buffer. No demonstration.',
+      'Five minutes, once a week. Four gestures and a buffer. No demonstration.',
     ],
   },
 

@@ -68,11 +68,25 @@ describe('resolveKitPack — avec override publié', () => {
     expect(r.feed.hero.ctaLabel).toBe('Commander le rituel');
   });
 
-  it('countLabelGeo override appliqué sur socialProof', () => {
-    upsertKitPackOverride({ countLabelGeo: '500 maisons à Paris' });
+  it('countLabelGeo override appliqué sur socialProof, avec le vrai compteur', () => {
+    const stats = { rating: null, reviewsCount: 51 };
+    upsertKitPackOverride({ countLabelGeo: '{count} maisons à Rabat' });
     publishKitPackOverride();
-    const r = resolveKitPack(product, mockKitPageContent);
-    expect(r.feed.socialProof.countLabelGeo).toBe('500 maisons à Paris');
+    expect(resolveKitPack(product, mockKitPageContent, stats).feed.socialProof?.countLabelGeo).toBe(
+      '51 maisons à Rabat',
+    );
+    // Legacy : un nombre figé en tête est remplacé par le vrai compteur.
+    upsertKitPackOverride({ countLabelGeo: '287 maisons au Maroc' });
+    publishKitPackOverride();
+    expect(resolveKitPack(product, mockKitPageContent, stats).feed.socialProof?.countLabelGeo).toBe(
+      '51 maisons au Maroc',
+    );
+  });
+
+  it('sans avis, pas de socialProof même avec un override géo', () => {
+    upsertKitPackOverride({ countLabelGeo: '{count} maisons au Maroc' });
+    publishKitPackOverride();
+    expect(resolveKitPack(product, mockKitPageContent).feed.socialProof).toBeUndefined();
   });
 
   it('valueBreakdown override remplace la liste entière', () => {

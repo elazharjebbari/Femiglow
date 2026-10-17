@@ -40,7 +40,7 @@ export const mockMaisonEn: MaisonPageContent = {
     kicker: 'The origin',
     titre: 'An attention born of a simple observation.',
     paragraphs: [
-      'FemiGlow was born of a simple observation: nails hold when given the time they ask for. No more, no less. Five minutes in the evening, two measured gestures and a buffer.',
+      'FemiGlow was born of a simple observation: nails hold when given the time they ask for. No more, no less. Five minutes, one evening a week. Four measured gestures and a buffer.',
       'The idea took shape in Rabat, in an atelier on avenue Patrice Lumumba where the light falls just before 6 PM. Three crafts sat around a table: formulation, materials, writing. One conviction — slow beauty is an attention, never a performance.',
       'Our founder is a biologist. She trained in cosmetic manufacturing before editing her first natural skincare lines. Today, she runs workshops in the same atelier where FemiGlow is designed. The ritual is not a discovery — it is a transmission.',
     ],
@@ -103,7 +103,7 @@ export const mockMaisonEn: MaisonPageContent = {
       return {
         ...m,
         nom: 'Beeswax',
-        origine: 'Harvested in the Souss, in partnership with a family cooperative.',
+        origine: 'Harvested in the Middle Atlas, in partnership with a family beekeeping cooperative.',
         pourquoi: 'Softens the seating of the nail and holds the Paste without stiffening it.',
       };
     }
@@ -147,9 +147,9 @@ export const mockMaisonEn: MaisonPageContent = {
       case 2:
         return {
           ...e,
-          titre: 'Halal certification',
+          titre: 'Halal formula',
           description:
-            'Each material is traced. Our manufacturer is audited by the Halal Cosmetics Council. The label appears on every jar and on the buffer.',
+            'Each material is traced. The formula follows the public framework of the Halal Cosmetics Council: no denatured alcohol, no non-compliant animal derivative.',
         };
       case 3:
         return {
@@ -163,7 +163,7 @@ export const mockMaisonEn: MaisonPageContent = {
           ...e,
           titre: 'Slow ritual',
           description:
-            'Everything is calibrated for five minutes in the evening. Shorter, it becomes cosmetics. Longer, it becomes a chore.',
+            'Everything is calibrated for five minutes, once a week. Shorter, it becomes cosmetics. Longer, it becomes a chore.',
         };
       case 5:
         return {

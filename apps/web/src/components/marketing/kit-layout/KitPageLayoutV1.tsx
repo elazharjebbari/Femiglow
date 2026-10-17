@@ -41,7 +41,6 @@ export async function KitPageLayoutV1({
   dbProduct,
   productJsonLd,
   reviewStats,
-  ritualSummary,
   locale,
   initialCoupon,
 }: KitPageLayoutProps) {
@@ -112,16 +111,9 @@ export async function KitPageLayoutV1({
         // remplacer le nom DB FR ("Pack FemiGlow") et la tagline FR hardcodée.
         displayName={content.product.name}
         taglineFallback={content.product.tagline}
-        // Le count badge avis vient du module rituels (« voix de la maison »)
-        // — c'est le seul bloc social proof à grande échelle de la page.
-        // 47 en DB courante. Fallback handsTestimonials.length si rituals
-        // est vide (dev local sans seed). Devient ignoré dès qu'une review
-        // DB product_reviews réelle existe (cf. HeroProduitBound).
-        reviewsCountOverride={
-          ritualSummary.totalCount > 0
-            ? ritualSummary.totalCount
-            : (content.handsTestimonials?.length ?? 0)
-        }
+        // Avis : même objet que le bloc pack/prix et le JSON-LD
+        // (`getKitReviewStats`). Null → badge masqué.
+        reviewStats={reviewStats}
       />
       {/* Stories vidéo — DESKTOP uniquement ici (après le Hero). Sur mobile, le
         bloc est rendu DANS le hero (sous les images, avant le titre) via

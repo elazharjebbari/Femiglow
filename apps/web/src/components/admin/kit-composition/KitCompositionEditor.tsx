@@ -367,7 +367,7 @@ export function KitCompositionEditor({
                   next[i] = { ...next[i]!, label: e.target.value };
                   setState({ ...state, certifications: next });
                 }}
-                placeholder="Label (ex. Cosmos Organic)"
+                placeholder="Label (laisser vide sans certificat fourni)"
                 maxLength={60}
                 className="rounded border border-encre/20 px-2 py-1"
                 aria-label={`Label certification ${i + 1}`}
@@ -380,7 +380,7 @@ export function KitCompositionEditor({
                   next[i] = { ...next[i]!, body: e.target.value };
                   setState({ ...state, certifications: next });
                 }}
-                placeholder="Body (ex. Ecocert)"
+                placeholder="Organisme certificateur"
                 maxLength={60}
                 className="rounded border border-encre/20 px-2 py-1"
                 aria-label={`Body certification ${i + 1}`}

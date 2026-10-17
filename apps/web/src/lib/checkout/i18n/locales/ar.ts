@@ -48,7 +48,7 @@ export const dictionaryAr: WizardDictionary = {
     notesLabel: 'ملاحظة لعامل التوصيل (اختياري)',
     notesPlaceholder: 'رمز الإنتركوم، الوقت المفضل، تعليمات…',
     shippingTitle: 'طريقة التوصيل',
-    shippingFreeBody: 'توصيل مجاني خلال 24-48 ساعة في جميع أنحاء المغرب.',
+    shippingFreeBody: 'توصيل مجاني: الرباط 24 ساعة، باقي المغرب 48 إلى 72 ساعة.',
     shippingDynamicFreeBody: (eta) =>
       `توصيل مجاني خلال ${eta} — الدفع عند الاستلام.`,
     shippingDynamicPaidBody: (price, eta) =>
