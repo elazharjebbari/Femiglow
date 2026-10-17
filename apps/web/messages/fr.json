@@ -59,8 +59,8 @@
     "menu_season_label_short": "Printemps · Rabat",
     "menu_signature": "Rabat, saison du printemps.",
     "menu": {
-      "rituel_description": "Manucure japonaise halal. Deux gestes, un polissoir.",
-      "kit_description": "Paste, powder, polissoir Step 4. Cinq minutes par soir.",
+      "rituel_description": "Manucure japonaise halal. Quatre gestes, une fois par semaine.",
+      "kit_description": "Paste, powder, polissoir Step 4. Cinq minutes, une fois par semaine.",
       "journal_description": "Les notes de l’atelier, en lecture lente.",
       "maison_description": "Rabat, l’atelier de notre fondatrice, les mains qui font.",
       "contact_description": "Une question, une commande spéciale."
@@ -108,22 +108,22 @@
     "home": {
       "metadata": {
         "title": "Maison de soin pour les ongles — à Rabat",
-        "description": "Pack FemiGlow — manucure japonaise halal. Deux gestes, un polissoir, cinq minutes par soir. Édité à Rabat.",
+        "description": "Pack FemiGlow — manucure japonaise halal. Quatre gestes, cinq minutes, une fois par semaine. Pensé à Rabat.",
         "og_title": "FemiGlow — Maison de soin pour les ongles",
-        "og_description": "Manucure japonaise halal. Deux gestes, un polissoir, cinq minutes par soir."
+        "og_description": "Manucure japonaise halal. Quatre gestes, cinq minutes, une fois par semaine."
       },
       "fallback_og_alt": "FemiGlow",
       "hero": {
         "kicker": "Maison de Rabat",
-        "title": "Le pack FemiGlow. Deux gestes, un éclat révélé.",
+        "title": "Le pack FemiGlow. Quatre gestes, un éclat révélé.",
         "subtitle": "Manucure japonaise halal, pensée à Rabat. Sans vernis, sans abrasion.",
         "cta_primary": "Découvrir le rituel",
         "cta_secondary": "Recevoir le pack",
-        "image_alt": "Coffret pastel FemiGlow ouvert, pot paste sauge et pot powder rose poudré, polissoir bleu ciel, lumière naturelle de fin de matinée"
+        "image_alt": "Coffret pastel FemiGlow ouvert, pot paste à l’étiquette vert sauge et pot powder à l’étiquette rose poudré, polissoir bleu ciel, lumière naturelle de fin de matinée"
       },
       "gestes": {
         "kicker": "Le rituel",
-        "title": "Cinq gestes, cinq minutes.",
+        "title": "Quatre gestes, cinq minutes.",
         "paste_titre": "Paste",
         "paste_duree": "2 minutes",
         "paste_description": "Pâte crème onctueuse, posée sur ongle sec. Filme, lisse, prépare.",
@@ -138,11 +138,11 @@
         "kicker": "Manifeste",
         "title": "La beauté lente est une attention.",
         "statement_1": "Nous croyons que les ongles révèlent ce qu’on leur prête. Le geste, le temps, la patience.",
-        "statement_2": "Cinq minutes par jour. Deux gestes et un polissoir. Aucune démonstration."
+        "statement_2": "Cinq minutes, une fois par semaine. Quatre gestes et un polissoir. Aucune démonstration."
       },
       "avis": {
         "salma": {
-          "quote": "Trois mois sans casse. Cinq minutes par soir suffisent.",
+          "quote": "Trois mois sans casse. Cinq minutes, un soir par semaine, suffisent.",
           "first_name": "Salma",
           "context": "Casablanca",
           "initiee_depuis": "Janvier 2025"
@@ -161,9 +161,9 @@
         "title_default": "Celles qui ont essayé.",
         "initiee_prefix": "Initiée depuis {date}",
         "rating_score": "4,8",
-        "rating_count": "287",
-        "rating_label": "4,8/5 — 287 initiées",
-        "rating_aria": "Note moyenne 4,8 sur 5, sur 287 retours d'initiées."
+        "rating_count": "{count}",
+        "rating_label": "4,8/5 — {count} initiées",
+        "rating_aria": "Note moyenne 4,8 sur 5, sur {count} retours d’initiées."
       },
       "journal": {
         "kicker": "Le journal",
@@ -174,14 +174,14 @@
     "kit": {
       "metadata": {
         "title_fallback": "Le pack FemiGlow — manucure japonaise",
-        "description_fallback": "Pack FemiGlow — coffret de manucure japonaise en deux gestes. Paste verte sauge, powder rose poudré et polissoir Step 4 Polish & Shine. Pensé à Rabat par notre équipe. Sans vernis, sans abrasion. Livraison offerte au Maroc.",
+        "description_fallback": "Pack FemiGlow — coffret de manucure japonaise en quatre gestes. Paste (étiquette vert sauge), powder (étiquette rose poudré) et polissoir Step 4 Polish & Shine. Pensé à Rabat par notre équipe. Sans vernis, sans abrasion. Livraison offerte au Maroc.",
         "og_alt": "Le pack FemiGlow — paste, powder, polissoir Step 4"
       },
       "product": {
         "name": "Pack FemiGlow",
-        "tagline": "Manucure japonaise. Deux gestes, un polissoir, un éclat.",
-        "description": "Le pack FemiGlow réunit deux pots — une paste lissante et une powder lustrante — et un polissoir Step 4 Polish & Shine. Une manucure japonaise, formulée à Rabat par notre équipe. Sans vernis. Sans abrasion. Cinq minutes par jour suffisent.",
-        "image_alt_primary": "Pack FemiGlow ouvert sur fond pastel — pot paste vert sauge, pot powder rose poudré, polissoir Step 4 bleu ciel, vague rose poudré, typographie FemiGlow",
+        "tagline": "Manucure japonaise halal. Quatre gestes, sans vernis. Le woudou reste intact.",
+        "description": "Le pack FemiGlow réunit deux pots — une paste lissante de 15 g et une powder lustrante de 8 g — et un polissoir Step 4 Polish & Shine. Une manucure japonaise, formulée à Rabat par notre équipe. Sans vernis. Sans abrasion. Cinq minutes, une fois par semaine, suffisent.",
+        "image_alt_primary": "Pack FemiGlow ouvert sur fond pastel — pot paste à l’étiquette vert sauge, pot powder à l’étiquette rose poudré, polissoir Step 4 bleu ciel, vague rose poudré, typographie FemiGlow",
         "image_alt_secondary": "Mains aux ongles nus, courts à moyens, naturellement brillants après le rituel paste-powder-polish",
         "shipping_estimate": "Rabat : 24 h. Maroc : 48 à 72 h. Livraison offerte."
       },
@@ -192,7 +192,7 @@
           "short_description": "Pâte crème onctueuse. Filme la plaque sans l’étouffer. Une noisette suffit.",
           "volume": "15 g",
           "usage_hint": "une noisette filme dix doigts",
-          "narrative": "12 % de cire d’abeille fondue à basse température par la coopérative apicole du Moyen Atlas. Trois minutes de pose, le fini est mat.",
+          "narrative": "12 % de cire d’abeille fondue à basse température par la coopérative apicole du Moyen Atlas. Une minute de pose, le fini est mat.",
           "ingredient": {
             "cire": {
               "name": "Cire d’abeille",
@@ -202,7 +202,7 @@
             },
             "jojoba": {
               "name": "Huile de jojoba",
-              "function": "Hémisphage des cuticules",
+              "function": "Assouplit les cuticules",
               "origin": "Cultures biologiques, Souss-Massa",
               "inci_definition": "Cire végétale liquide, proche du sébum naturel. Assouplit les cuticules sans graisser."
             },
@@ -214,10 +214,10 @@
             }
           },
           "certification": {
-            "cosmos_label": "Cosmos Organic",
-            "cosmos_body": "Ecocert",
-            "vegan_label": "Vegan",
-            "vegan_body": "EVE Vegan"
+            "cosmos_label": "Formule tracée",
+            "cosmos_body": "Atelier de Rabat",
+            "vegan_label": "Sans solvant",
+            "vegan_body": "Ni acétone, ni toluène"
           }
         },
         "powder": {
@@ -267,7 +267,7 @@
         },
         "section": {
           "kicker": "La composition",
-          "title": "Trois objets, trois gestes.",
+          "title": "Trois objets, quatre gestes.",
           "description": "Le kit tient dans une main. Chaque pièce a sa place dans le geste, sa place sur la table de chevet, sa place dans la saison."
         },
         "card_cta": "Lire le détail"
@@ -285,7 +285,7 @@
           "tenue": {
             "axis": "Tenue",
             "vernis": "5 à 7 jours sur ongle préparé, retouches fréquentes.",
-            "rituel": "Pas de tenue colorée : l’ongle reste tel qu’il est, soutenu jour après jour."
+            "rituel": "Pas de tenue colorée : l’ongle reste tel qu’il est. Brillance naturelle jusqu’à trois semaines."
           },
           "recuperation": {
             "axis": "Récupération",
@@ -295,17 +295,17 @@
           "cout": {
             "axis": "Coût annuel",
             "vernis": "Vernis + dissolvant + cures réparatrices, env. 1 500 MAD.",
-            "rituel": "Un pack FemiGlow à 199 MAD tient quatre à cinq mois. Soit environ 500 MAD par an."
+            "rituel": "Un pack FemiGlow à 199 MAD tient environ six mois. Soit environ 400 MAD par an."
           },
           "impact": {
             "axis": "Impact matière",
             "vernis": "Solvants volatils, formules à base pétrochimique fréquente.",
-            "rituel": "Cire d’abeille, jojoba, talc minéral, riz, kaolin. Certification Cosmos Organic."
+            "rituel": "Cire d’abeille, jojoba, talc minéral, poudre de riz, kaolin. Sans solvant volatil."
           },
           "temps": {
-            "axis": "Temps quotidien",
+            "axis": "Temps de soin",
             "vernis": "Application 20 min, séchage long, retouches.",
-            "rituel": "Cinq minutes par jour, geste lent, sans séchage forcé."
+            "rituel": "Cinq minutes, une fois par semaine. Geste lent, sans séchage."
           }
         },
         "kicker": "Comparatif",
@@ -315,15 +315,15 @@
       "faq": {
         "duree_pack": {
           "question": "Combien de temps dure un pack ?",
-          "answer": "En usage quotidien, le pack tient quatre à cinq mois. La paste se vide en premier, la powder suit. Le polissoir dure environ un an. Nous proposons des recharges à partir de l’automne 2026."
+          "answer": "À raison d’un soin par semaine, le pack tient environ six mois, soit environ 25 soins. Le polissoir dure lui aussi environ six mois. Nous proposons des recharges à partir de l’automne 2026."
         },
         "frequence": {
           "question": "À quelle fréquence appliquer ?",
-          "answer": "Tous les soirs si vous le pouvez, en cinq minutes. Si vous sautez un jour, ce n’est pas grave : la maison accueille la pause comme elle accueille le retour."
+          "answer": "Une fois par semaine, en cinq minutes. La brillance tient jusqu’à trois semaines. Si vous sautez une semaine, ce n’est pas grave : la maison accueille la pause comme elle accueille le retour."
         },
         "compatibilite_vernis": {
           "question": "Puis-je continuer à porter du vernis ?",
-          "answer": "Le rituel s’accommode du vernis même s’il est pensé pour s’en passer. Appliquez la paste et la powder les soirs sans vernis. La plaque respire, le rituel installe sa lenteur."
+          "answer": "Le rituel s’accommode du vernis même s’il est pensé pour s’en passer. Gardez votre soin de la semaine pour un soir sans vernis. La plaque respire, le rituel installe sa lenteur."
         },
         "grossesse": {
           "question": "Le rituel convient-il pendant la grossesse ?",
@@ -410,13 +410,16 @@
       "hero": {
         "kicker": "Le rituel",
         "savings": "Économie {savings} MAD",
+        "promo_applied": "Code {code} appliqué",
+        "promo_auto_applied": "Remise appliquée automatiquement, rien à saisir.",
         "cta_commander": "Commander le rituel",
         "reviews": "{count, plural, one {# avis} other {# avis}}",
         "reviews_aria": "Note {rating} sur 5 basée sur {count, plural, one {# avis} other {# avis}}",
         "chips": {
           "no_polish": "Sans vernis",
           "no_uv": "Sans UV",
-          "no_acetone": "Sans acétone"
+          "no_acetone": "Sans acétone",
+          "wudu": "Compatible woudou"
         },
         "trust": {
           "delivery": "Livraison offerte",
@@ -425,8 +428,8 @@
       },
       "commander": {
         "kicker_default": "Commander le rituel",
-        "title_default": "Trois gestes, livrés chez vous.",
-        "subtitle_default": "Quelques coordonnées, une adresse au Maroc, et nous nous occupons du reste. Livraison gratuite en 24-48 heures."
+        "title_default": "Quatre gestes, livrés chez vous.",
+        "subtitle_default": "Quelques coordonnées, une adresse au Maroc, et nous nous occupons du reste. Livraison offerte : Rabat 24 h, reste du Maroc 48 à 72 h."
       },
       "sticky": {
         "aria_region": "Achat rapide"
@@ -434,7 +437,7 @@
       "pivot_final": {
         "kicker": "Le geste",
         "title": "Posez le geste.",
-        "body": "Le rituel commence quand vous le décidez. Cinq minutes le soir, une saison, et la plaque retrouve sa cadence.",
+        "body": "Le rituel commence quand vous le décidez. Cinq minutes, un soir par semaine, et la plaque retrouve sa cadence.",
         "cta_secondary": "Lire encore"
       },
       "journal_grid": {
@@ -450,47 +453,47 @@
         "post_cta": "Voir le pack ci-dessous",
         "poster": {
           "kicker": "La manucure japonaise",
-          "title_line1": "Brille 3 semaines.",
+          "title_line1": "Brille jusqu’à trois semaines.",
           "title_line2": "Sans vernis.",
-          "subtitle_line1": "Cire d’abeille, silicates, poudre de perle.",
-          "subtitle_line2": "4 gestes en 90 secondes — c’est tout.",
+          "subtitle_line1": "Cire d’abeille, jojoba, poudre de riz, kaolin.",
+          "subtitle_line2": "Quatre gestes en quatre-vingt-dix secondes.",
           "play_aria_prefix": "Lancer la vidéo :"
         }
       },
       "product_feed": {
         "hero": {
           "kicker": "Le pack",
-          "title": "Le rituel s’installe en deux gestes et un polissoir.",
-          "lead": "Trois objets dans la main, deux gestes dans la soirée. La paste filme, la powder lustre, le polissoir Step 4 révèle — manucure japonaise, pensée à Rabat.",
+          "title": "Le rituel s’installe en quatre gestes, une fois par semaine.",
+          "lead": "Trois objets dans la main, quatre gestes en cinq minutes. On prépare l’ongle, la paste filme, la powder lustre, le polissoir Step 4 révèle — manucure japonaise, pensée à Rabat.",
           "price_prefix": "Tout compris :",
           "cta_label": "Commander le rituel",
           "cta_microcopy": "Paste · Powder · Polissoir Step 4 inclus · Livraison offerte au Maroc · Paiement à la livraison · Retour 30 j."
         },
         "compare_at_aria": "Prix non packagé {price}",
         "value": {
-          "paste": "1 Paste · 30 ml",
-          "powder": "2 Powder · 30 g",
-          "polissoir": "Polissoir 4 zones",
+          "paste": "1 Paste · 15 g",
+          "powder": "2 Powder · 8 g",
+          "polissoir": "Polissoir Step 4 · 3 faces",
           "notice": "Notice rituel + carte",
           "notice_offert": "offert",
           "livraison": "Livraison au Maroc"
         },
         "value_breakdown": {
-          "paste": "1 Paste · 30 ml",
-          "powder": "2 Powder · 30 g",
-          "buffer": "Polissoir 4 zones",
+          "paste": "1 Paste · 15 g",
+          "powder": "2 Powder · 8 g",
+          "buffer": "Polissoir Step 4 · 3 faces",
           "notice": "Notice rituel + carte",
           "shipping": "Livraison au Maroc",
           "free": "offert",
           "savings_phrase": "Vous économisez {amount} {currency} · {pct} %"
         },
         "per_usage": {
-          "phrase": "≈ {amount} {currency} par soin sur {days} jours"
+          "phrase": "≈ {amount} {currency} par soin, sur {days} soins"
         },
         "steps": {
           "header": {
             "kicker": "En tout",
-            "total_duration": "5 minutes le soir",
+            "total_duration": "Cinq minutes en tout",
             "lead": "Quatre gestes lents, une fois par semaine."
           },
           "post_cta": {
@@ -506,13 +509,13 @@
           "paste": {
             "kicker": "Geste 1",
             "title": "Appliquez la paste",
-            "description": "Une noisette de paste vert sauge, le polissoir glisse, la cire entre dans la kératine.",
+            "description": "Une noisette de paste crème, le polissoir glisse, la cire entre dans la kératine.",
             "duration": "1 min"
           },
           "powder": {
             "kicker": "Geste 2",
             "title": "Appliquez la powder",
-            "description": "On dépose la powder rose poudré, on lustre lentement, la lumière revient à la surface.",
+            "description": "On dépose la powder blanche, on lustre lentement, la lumière revient à la surface.",
             "duration": "2 min"
           },
           "step4": {
@@ -550,15 +553,15 @@
         "label_avis_clientes": "Avis clientes"
       },
       "value_per_use": {
-        "label": "Coût par geste",
-        "value": "≈ 1,5 MAD par geste matin et soir, sur quatre saisons.",
+        "label": "Coût par soin",
+        "value": "≈ 8 MAD par soin, une fois par semaine, pendant environ six mois.",
         "vs_label": "vs salon",
         "vs_value": "≈ 150 MAD la manucure classique en salon.",
-        "note": "Calcul : 199 MAD ÷ 130 gestes (deux par jour, 65 jours) ≈ 1,5 MAD."
+        "note": "Calcul : 199 MAD ÷ 25 soins (un par semaine, environ six mois) ≈ 8 MAD."
       },
       "value_breakdown": {
         "title": "Si vous achetiez chaque pièce séparément",
-        "subtitle": "Le kit groupe ce qu'on assemblerait sur trois saisons.",
+        "subtitle": "Le kit groupe ce qu’on assemblerait pour six mois de soin.",
         "paste_label": "Paste — soin réparateur",
         "paste_value": "120 MAD",
         "powder_label": "Powder — fini lumineux",
@@ -596,6 +599,23 @@
           "fini-brillant": "fini brillant",
           "halal": "halal"
         }
+      },
+      "stories": {
+        "sectionLabel": "Stories FemiGlow",
+        "heading": "Découvrez en vidéo",
+        "openAria": "Ouvrir la story : %title%",
+        "scrollHint": "Faites glisser pour voir plus",
+        "prevSegment": "Segment précédent",
+        "nextSegment": "Segment suivant",
+        "close": "Fermer",
+        "mute": "Couper le son",
+        "unmute": "Activer le son",
+        "pause": "Pause",
+        "play": "Lecture",
+        "segmentProgress": "Segment %index% sur %total%",
+        "defaultCta": "Commander",
+        "scrollMore": "Voir plus de stories",
+        "countLabel": "{count} vidéos"
       }
     },
     "maison": {
@@ -615,7 +635,7 @@
       "origine": {
         "kicker": "L’origine",
         "titre": "Une attention partie d’un constat simple.",
-        "paragraph_1": "FemiGlow est né d’un constat simple : les ongles tiennent quand on leur prête le temps qu’ils demandent. Pas plus, pas moins. Cinq minutes le soir, deux gestes mesurés et un polissoir.",
+        "paragraph_1": "FemiGlow est né d’un constat simple : les ongles tiennent quand on leur prête le temps qu’ils demandent. Pas plus, pas moins. Cinq minutes, un soir par semaine, quatre gestes mesurés.",
         "paragraph_2": "L’idée a pris forme à Rabat, dans un atelier de l’avenue Patrice Lumumba où la lumière tombe juste avant 18 heures. Trois métiers se sont assis autour d’une table : la formulation, la matière, l’écriture. Une seule conviction — la beauté lente est une attention, jamais une performance.",
         "paragraph_3": "Notre fondatrice est biologiste. Elle a suivi plusieurs formations en fabrication cosmétique avant d’éditer ses premières marques de soins naturels. Aujourd’hui, elle anime des formations dans le même atelier où FemiGlow est conçu. Le rituel n’est pas une découverte — c’est une transmission."
       },
@@ -681,7 +701,7 @@
         },
         "rituel": {
           "titre": "Rituel lent",
-          "description": "Tout est calibré pour cinq minutes le soir. Plus court, c’est de la cosmétique. Plus long, c’est une corvée."
+          "description": "Tout est calibré pour cinq minutes, une fois par semaine. Plus court, c’est de la cosmétique. Plus long, c’est une corvée."
         },
         "local": {
           "titre": "Local",
@@ -713,18 +733,18 @@
     },
     "rituel": {
       "metadata": {
-        "title": "Le rituel — manucure japonaise halal, deux gestes",
+        "title": "Le rituel — manucure japonaise halal, quatre gestes",
         "description": "Origine japonaise, sciences du soin, interview de notre fondatrice à Rabat. Le rituel FemiGlow raconté sans précipitation.",
         "og_title": "Le rituel FemiGlow",
-        "og_description": "Deux gestes, un polissoir, une méthode lente, racontée à Rabat."
+        "og_description": "Quatre gestes, cinq minutes, une méthode lente, racontée à Rabat."
       },
       "howto": {
         "name": "Le rituel FemiGlow",
-        "description": "Deux gestes et un polissoir en cinq minutes pour le soin lent des ongles, expliqués pas à pas — manucure japonaise halal."
+        "description": "Quatre gestes en cinq minutes, une fois par semaine, pour le soin lent des ongles, expliqués pas à pas — manucure japonaise halal."
       },
       "hero": {
         "kicker": "Le rituel",
-        "title": "Manucure japonaise. Deux gestes. Un éclat lent.",
+        "title": "Manucure japonaise. Quatre gestes. Un éclat lent.",
         "subtitle": "Une méthode lente, racontée à Rabat.",
         "image_alt": "Mains au repos sur un drap de lin clair, lumière oblique de fin de matinée"
       },
@@ -733,7 +753,7 @@
         "titre": "Une attention venue du Japon, transmise à Rabat.",
         "paragraph_1": "Au Japon, le soin de la main n’est pas un produit : c’est une attention quotidienne, lente, sans déclaration. La manucure japonaise — connue aussi sous les noms « kawaii » ou « chigiri » — remonte au début du XXᵉ siècle. Elle révèle la brillance naturelle de l’ongle par polissage, sans vernis.",
         "paragraph_2": "Notre fondatrice a rapporté ce geste d’un voyage de formation. Elle l’a réinscrit dans un référentiel marocain : matières locales, certification halal, atelier au 25 bis avenue Patrice Lumumba, à Rabat.",
-        "paragraph_3": "Le résultat tient en cinq minutes par jour. Pas de promesse, pas de cure. Une habitude qui s’installe, comme on dépose une tasse sur une table en bois."
+        "paragraph_3": "Le résultat tient en cinq minutes, une fois par semaine. Pas de promesse, pas de cure. Une habitude qui s’installe, comme on dépose une tasse sur une table en bois."
       },
       "video": {
         "transcript": "La grande tendance clean girl pour les nails, c’est la manucure japonaise. Par contre, il y a quelque chose que vous devez absolument savoir...",
@@ -753,10 +773,10 @@
         "post_cta": "Voir le pack ci-dessous",
         "poster": {
           "kicker": "La manucure japonaise",
-          "title_line1": "Brille 3 semaines.",
+          "title_line1": "Brille jusqu’à trois semaines.",
           "title_line2": "Sans vernis.",
-          "subtitle_line1": "Cire d’abeille, silicates, poudre de perle.",
-          "subtitle_line2": "4 gestes en 90 secondes — c’est tout.",
+          "subtitle_line1": "Cire d’abeille, jojoba, poudre de riz, kaolin.",
+          "subtitle_line2": "Quatre gestes en quatre-vingt-dix secondes.",
           "play_aria_prefix": "Lancer la vidéo :"
         }
       },
@@ -809,12 +829,12 @@
           "reponse": "Tout. Origine des matières, traçabilité, absence d’alcool dénaturé, absence de gélatine animale. Ce n’est pas un argument marketing — c’est un référentiel de fabrication."
         },
         "q4": {
-          "question": "Cinq minutes par jour, c’est peu. Pourquoi pas plus ?",
-          "reponse": "Parce que l’ongle pousse de 0,1 mm par jour. Cinq minutes suffisent à l’accompagner. Plus serait inutile. Moins serait infidèle."
+          "question": "Cinq minutes par semaine, c’est peu. Pourquoi pas plus ?",
+          "reponse": "Parce que l’ongle se renouvelle lentement, et la brillance tient jusqu’à trois semaines. Un soin par semaine suffit à l’accompagner. Plus serait inutile. Moins serait infidèle."
         },
         "q5": {
           "question": "Que conseilleriez-vous à une initiée qui commence ?",
-          "reponse": "Commencez par la paste. Pendant une semaine, rien d’autre. Vous verrez ce que vos ongles vous racontent. Le polissoir arrive ensuite."
+          "reponse": "Choisissez un soir calme et faites les quatre gestes, sans vous presser. Vous verrez ce que vos ongles vous racontent. La cadence vient ensuite."
         }
       },
       "pivot": {
@@ -878,7 +898,7 @@
         "title": "Réponses rapides.",
         "duree": {
           "question": "Combien de temps dure le rituel ?",
-          "answer": "Cinq minutes par soir, mains posées. Deux gestes — paste, powder — puis le polissoir Step 4 en finition. La maison conseille un passage par jour pour installer la cadence."
+          "answer": "Cinq minutes, mains posées. Quatre gestes — préparer l’ongle, paste, powder, puis le polissoir Step 4 en finition. La maison conseille un soin par semaine : la brillance tient jusqu’à trois semaines."
         },
         "fragiles": {
           "question": "Mes ongles sont fragiles, est-ce indiqué ?",
@@ -886,7 +906,7 @@
         },
         "livraison": {
           "question": "Quels sont les délais de livraison ?",
-          "answer": "Rabat : 24 heures. Casablanca et Salé : 24 à 48 heures. Reste du Maroc : 48 à 72 heures. Livraison offerte au Maroc, sans seuil. À l’international, écrivez-nous, nous étudions chaque envoi à la main."
+          "answer": "Rabat : 24 heures. Reste du Maroc : 48 à 72 heures. Livraison offerte au Maroc, sans seuil. À l’international, écrivez-nous, nous étudions chaque envoi à la main."
         },
         "formation": {
           "question": "Comment suivre une formation avec notre équipe ?",
@@ -950,7 +970,7 @@
         "title": {
           "hiver": "Hiver, ongles, patience",
           "matieres_ailleurs": "Matières d’ailleurs",
-          "paste_powder": "Paste et powder — deux gestes",
+          "paste_powder": "Paste et powder, au cœur du rituel",
           "maison_printemps": "La maison, au printemps",
           "voix_amal": "La voix d’Amal",
           "pluie_mars": "Pluie de mars",
@@ -970,7 +990,7 @@
         "excerpt": {
           "hiver": "Le froid sec de Rabat dessèche tout ce qui résiste. Les ongles plient, mais ne cassent pas — à condition de ralentir.",
           "matieres_ailleurs": "Le sourcing parle d’honnêteté. Voici ce qui compose vraiment notre soin, et d’où viennent les matières.",
-          "paste_powder": "Deux gestes, un éclat. Tutorial sensoriel détaillé — paste, powder, polissoir Step 4.",
+          "paste_powder": "Quatre gestes, un éclat. Tutoriel sensoriel détaillé — préparer, paste, powder, polissoir Step 4.",
           "maison_printemps": "L’atelier de Rabat change de souffle quand l’orange fleurit. Visite d’un mois où la lumière revient.",
           "voix_amal": "Trois mois de rituel, racontés par celle qui les a tenus. Sans promesse, sans avant-après caricatural.",
           "pluie_mars": "L’humidité revient sur la côte. Les cuticules respirent, les gestes peuvent s’espacer.",
@@ -1073,7 +1093,7 @@
       },
       "empty_cart": {
         "title": "Le panier est vide.",
-        "subtitle": "Le rituel commence par un geste. Trois pots, cinq minutes.",
+        "subtitle": "Le rituel commence par un geste. Trois objets, cinq minutes.",
         "cta_primary": "Découvrir le rituel",
         "cta_secondary": "Voir le kit"
       },
@@ -1096,7 +1116,7 @@
         "empty": {
           "kicker": "Panier",
           "title": "Le panier est vide.",
-          "subtitle": "Le rituel commence par un kit. Trois gestes, cinq minutes.",
+          "subtitle": "Le rituel commence par un kit. Quatre gestes, cinq minutes.",
           "cta": "Voir le kit"
         },
         "unit": "l’unité"
@@ -1191,11 +1211,11 @@
         "alternate_name": "Maison FemiGlow",
         "description": "Maison de soin pour les ongles éditée au Maroc. Rituel de manucure japonaise halal en quatre gestes.",
         "founder_name": "Yasmine Jebbari",
-        "address_locality": "Casablanca"
+        "address_locality": "Rabat"
       }
     },
     "settings": {
-      "default_description": "FemiGlow — maison de soin pour les ongles éditée à Casablanca. Manucure japonaise halal en quatre gestes : pâte, poudre, brillance, polissage."
+      "default_description": "FemiGlow — maison de soin pour les ongles, atelier à Rabat. Manucure japonaise halal en quatre gestes : préparer, paste, powder, polir."
     },
     "known_pages": {
       "home": "Accueil",

@@ -91,8 +91,8 @@ const KIT_STEPS = ['lead', 'address', 'thank_you'] as const;
 export function KitCommanderSection({
   initialCart,
   kicker = 'Commander le rituel',
-  title = 'Trois gestes, livrés chez vous.',
-  subtitle = 'Quelques coordonnées, une adresse au Maroc, et nous nous occupons du reste. Livraison gratuite en 24-48&nbsp;heures.',
+  title = 'Trois objets, livrés chez vous.',
+  subtitle = 'Quelques coordonnées, une adresse au Maroc, et nous nous occupons du reste. Livraison offerte\u00A0: Rabat en 24\u00A0h, reste du Maroc en 48 à 72\u00A0h.',
   preface,
   packImage,
   wizardLanguage,

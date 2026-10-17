@@ -11,7 +11,10 @@
  *
  * Le but : débloquer les **Rich Results** Google (étoiles + nb d'avis +
  * extrait de citation directement dans la SERP). Sans aggregateRating,
- * Google ne peut pas afficher d'étoiles, même si on a 287 avis 4.8/5.
+ * Google ne peut pas afficher d'étoiles.
+ *
+ * Sans note réelle (`socialProof` absent ou `rating` null), on n'émet ni
+ * `aggregateRating` ni `review` : aucune note inventée dans le balisage.
  *
  * Pure : ne fait pas d'I/O. Sortable côté serveur (RSC) ou côté client.
  */
@@ -40,9 +43,12 @@ export function feedToProductSchemaEnrichment(
   feed: ProductFeed,
   testimonials: ReadonlyArray<HandsTestimonial>,
 ): ProductSchemaEnrichment {
+  const proof = feed.socialProof;
+  if (!proof || proof.rating === null || proof.reviewsCount <= 0) return {};
+  const rating = proof.rating;
   const aggregateRating = {
-    ratingValue: feed.socialProof.rating,
-    reviewCount: feed.socialProof.reviewsCount,
+    ratingValue: rating,
+    reviewCount: proof.reviewsCount,
     bestRating: 5,
     worstRating: 1,
   };
@@ -55,7 +61,7 @@ export function feedToProductSchemaEnrichment(
     // Les témoignages individuels héritent de la note moyenne — c'est
     // l'usage courant quand on n'a pas de rating par-avis (Schema.org
     // l'autorise explicitement, cf. Yoast Recommendations 2024).
-    ratingValue: feed.socialProof.rating,
+    ratingValue: rating,
   }));
 
   return { aggregateRating, reviews };

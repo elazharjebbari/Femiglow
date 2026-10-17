@@ -65,8 +65,16 @@ export async function dispatchCartAbandonWebhook(
         ? items.map((i) => i.sku).join(', ')
         : undefined;
   const quantity = Math.max(1, items.reduce((acc, it) => acc + (it.quantity ?? 0), 0));
+  // Le panier persisté porte le total AVANT remise ; un code promo appliqué
+  // par la cliente vit dans `discountCents`. Sans cette soustraction, le CRM
+  // (et donc la carte Trello) annonçait 199 MAD pour un panier à 99.
+  const discountCents = Math.max(0, Math.round(snap?.discountCents ?? 0));
   const totalPrice =
-    typeof snap?.totalCents === 'number' ? Math.round(snap.totalCents) / 100 : undefined;
+    typeof snap?.totalCents === 'number'
+      ? Math.max(0, Math.round(snap.totalCents) - discountCents) / 100
+      : undefined;
+  const discountAmount = discountCents > 0 ? discountCents / 100 : undefined;
+  const couponCode = snap?.couponCode?.trim().toUpperCase() || undefined;
   const currency = (snap?.currency ?? lead.cartCurrency ?? 'MAD').toUpperCase();
 
   const countryCode = (lead.shippingCountry ?? 'MA').toUpperCase();
@@ -75,6 +83,13 @@ export async function dispatchCartAbandonWebhook(
   const noteParts: string[] = ['cart-abandoned'];
   if (lead.shippingNotes) noteParts.push(lead.shippingNotes.trim());
   if (lead.lastTouchedStep) noteParts.push(`step:${lead.lastTouchedStep}`);
+  if (couponCode) {
+    noteParts.push(
+      discountAmount != null
+        ? `promo:${couponCode} -${discountAmount} ${currency}`
+        : `promo:${couponCode}`,
+    );
+  }
 
   const result = await dispatchToAllChannels({
     source: 'cart-abandon',
@@ -91,6 +106,8 @@ export async function dispatchCartAbandonWebhook(
       city: lead.shippingCity ?? undefined,
       country: countryLabel,
       total_price: totalPrice,
+      discount_amount: discountAmount,
+      coupon_code: couponCode,
       currency,
       quantity,
       product_name: productName,

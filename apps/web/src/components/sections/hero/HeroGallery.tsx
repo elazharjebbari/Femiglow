@@ -7,7 +7,6 @@ import type { HeroGalleryImage } from '@/lib/products/hero-gallery-types';
 import { useGallery } from './useGallery';
 import { HeroGalleryMain } from './HeroGalleryMain';
 import { HeroGalleryThumbnails } from './HeroGalleryThumbnails';
-import { HeroGalleryDots } from './HeroGalleryDots';
 import { HeroGalleryArrow } from './HeroGalleryArrow';
 
 export interface HeroGalleryProps {
@@ -122,11 +121,24 @@ export function HeroGallery({
           onIndexChange={setIndex}
           reducedMotion={reducedMotion}
         />
-        <HeroGalleryDots
-          count={images.length}
-          activeIndex={currentIndex}
-          onSelect={setIndex}
-        />
+        {/* Vignettes sélectionnables sous le carousel (images secondaires). */}
+        {showThumbnails ? (
+          <HeroGalleryThumbnails
+            orientation="horizontal"
+            images={images}
+            currentIndex={currentIndex}
+            onSelect={setIndex}
+            className="mt-3"
+          />
+        ) : null}
+        <div
+          className="flex items-center justify-center pt-3 text-[12px] tabular-nums text-encre/60"
+          aria-live="polite"
+        >
+          <span className="font-medium text-encre/80">{currentIndex + 1}</span>
+          <span className="mx-1">/</span>
+          <span>{images.length}</span>
+        </div>
       </div>
     </div>
   );

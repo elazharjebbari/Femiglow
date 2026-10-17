@@ -21,8 +21,8 @@
  *    compris ».
  *  - Pricing #11 — **Densify the payment section** : microcopy
  *    serrée sous le CTA.
- *  - Pricing #14 — **Precise digits** : nombres non-ronds
- *    (4,8/5 plutôt que 5/5 ; 287 avis plutôt que 300).
+ *  - Pricing #14 — **Precise digits** : les chiffres affichés sont les
+ *    vrais (avis : `getKitReviewStats`, contenances : `kit-facts.ts`).
  *  - Ecommerce #14 — Reviews count + average + quote, ensemble.
  *  - Luxury #6 — **Imply craftsmanship** : « affin\u00E9e \u00E0 Rabat »,
  *    « lustr\u00E9e au polissoir », « atelier marocain ».
@@ -32,11 +32,8 @@
  */
 import type { KitPageContent, Product } from '@/lib/schemas';
 
-import {
-  DEFAULT_KIT_REVIEW_STATS,
-  type ProductReviewStats,
-} from '../reviews';
-import { buildPerUsageHint } from '@/lib/kit/pack/per-usage';
+import type { ProductReviewStats } from '../reviews';
+import { KIT_COPY, KIT_FACTS } from '../kit-facts';
 import { assertValidProductFeed } from './schema';
 import type {
   ProductFeed,
@@ -133,7 +130,7 @@ function buildSteps(): ProductFeedStep[] {
       kicker: 'Geste 1',
       title: 'Appliquez la paste',
       description:
-        'Une noisette de paste vert sauge, le polissoir glisse, la cire entre dans la k\u00E9ratine.',
+        'Une noisette de paste, le polissoir glisse, la cire d\u2019abeille nourrit la k\u00E9ratine.',
       accent: 'sauge',
       duration: '1\u00A0min',
       icon: 'drop',
@@ -143,7 +140,7 @@ function buildSteps(): ProductFeedStep[] {
       kicker: 'Geste 2',
       title: 'Appliquez la powder',
       description:
-        'On d\u00E9pose la powder rose poudr\u00E9, on lustre lentement, la lumi\u00E8re revient \u00E0 la surface.',
+        'On d\u00E9pose un voile de powder blanche, on lustre lentement, la lumi\u00E8re revient \u00E0 la surface.',
       accent: 'petale',
       duration: '2\u00A0min',
       icon: 'sparkle',
@@ -154,7 +151,7 @@ function buildSteps(): ProductFeedStep[] {
       title: 'Polish & Shine',
       // Premier pas montr\u00E9 comme d\u00E9j\u00E0 accompli (Copy #21).
       description:
-        'On finit au polissoir bleu ciel \u2014 l\u2019ongle devient miroir, sans vernis, sans abrasion.',
+        'On finit au polissoir Step\u00A04 \u2014 l\u2019ongle devient miroir, sans vernis, sans abrasion.',
       accent: 'champagne',
       duration: '1\u00A0min',
       icon: 'mirror',
@@ -170,8 +167,8 @@ function buildSteps(): ProductFeedStep[] {
 function buildStepsHeader(): ProductFeedStepsHeader {
   return {
     kicker: 'EN TOUT',
-    totalDuration: '5 minutes le soir',
-    lead: 'Quatre gestes lents, une fois par semaine.',
+    totalDuration: `${capitalize(KIT_COPY.fr.duration)} en tout`,
+    lead: `${KIT_COPY.fr.gestures} lents, ${KIT_COPY.fr.frequency}.`,
   };
 }
 
@@ -215,33 +212,46 @@ function buildClaims(): ProductFeedClaim[] {
  * une citation brève « lit » mieux dans un bandeau de social proof
  * (Kolenda Attention : low-density text wins focus).
  *
- * Le rating + reviewsCount viennent de `stats` (lu depuis la DB par le
- * caller). Si `stats` est null/undefined (pas de reviews encore en
- * base ou caller legacy qui ne passe pas le 3ᵉ argument), on retombe
- * sur `DEFAULT_KIT_REVIEW_STATS` — chiffres précis (Pricing #14)
- * cohérents avec le visuel produit imprimé.
+ * Le compteur + la note viennent de `stats` (`getKitReviewStats`, lu par
+ * le caller). Sans stats (base vide, mode mémoire), le bloc n'existe pas :
+ * on masque plutôt que d'afficher un chiffre inventé.
  */
 function buildSocialProof(
   content: KitPageContent,
   stats: ProductReviewStats | null | undefined,
-): ProductFeedSocialProof {
+): ProductFeedSocialProof | undefined {
+  if (!stats || stats.reviewsCount <= 0) return undefined;
   const quotes = content.handsTestimonials
     .map((t) => ({ quote: t.quote, label: `${t.authorFirstName}, ${t.city ?? 'Maroc'}` }))
     .sort((a, b) => a.quote.length - b.quote.length);
-  const top = quotes[0] ?? {
-    quote: 'Cinq minutes le soir, c\u2019est devenu un signal de fin de journée.',
-    authorLabel: 'Lina, Rabat',
-  };
-  const effective = stats ?? DEFAULT_KIT_REVIEW_STATS;
+  const top = quotes[0];
   return {
-    reviewsCount: effective.reviewsCount,
-    rating: effective.rating,
-    quote: top.quote ?? '',
-    authorLabel: 'authorLabel' in top ? top.authorLabel : top.label,
+    reviewsCount: stats.reviewsCount,
+    rating: stats.rating,
+    quote: top?.quote ?? '',
+    authorLabel: top?.label ?? '',
     // Kolenda §4.6 — libellé géographique plus chaleureux que « avis ».
-    // Le builder produit un défaut ; l'override admin peut le personnaliser.
-    countLabelGeo: `${effective.reviewsCount} maisons au Maroc`,
+    // Le builder produit un défaut ; l'override admin peut le personnaliser
+    // (le jeton `{count}` y est remplacé par le vrai compteur).
+    countLabelGeo: `${stats.reviewsCount} maisons au Maroc`,
   };
+}
+
+/** « cinq minutes » → « Cinq minutes ». */
+function capitalize(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+/**
+ * Coût par soin : prix du pack réparti sur les soins qu'il contient
+ * (`KIT_FACTS.treatmentsPerPack`, un soin par semaine ≈ six mois).
+ * Format parsé par `localize.ts` (`≈ montant devise … N mot`).
+ */
+function buildPerSoinHint(priceCents: number, currencyUnit: string): string | null {
+  const soins = KIT_FACTS.treatmentsPerPack;
+  if (!Number.isFinite(priceCents) || priceCents <= 0) return null;
+  const formatted = (priceCents / 100 / soins).toFixed(2).replace('.', ',');
+  return `\u2248 ${formatted} ${currencyUnit} le soin, sur ${soins} soins`;
 }
 
 /**
@@ -290,24 +300,27 @@ function buildHero(product: Product): ProductFeedHero {
   const polissoirVal = compareMajor - pasteVal - powderVal;
 
   const valueBreakdown: ProductFeedValueItem[] = [
-    { label: '1 Paste · 30 ml', valueLabel: `${pasteVal} ${currencyUnit}` },
-    { label: '2 Powder · 30 g', valueLabel: `${powderVal} ${currencyUnit}` },
-    { label: 'Polissoir 4 zones', valueLabel: `${polissoirVal} ${currencyUnit}` },
+    { label: `Paste · ${KIT_FACTS.paste.grams}\u00A0g`, valueLabel: `${pasteVal} ${currencyUnit}` },
+    { label: `Powder · ${KIT_FACTS.powder.grams}\u00A0g`, valueLabel: `${powderVal} ${currencyUnit}` },
+    {
+      label: `Polissoir Step\u00A04 · ${KIT_FACTS.polissoir.faces} faces`,
+      valueLabel: `${polissoirVal} ${currencyUnit}`,
+    },
     { label: 'Notice rituel + carte', valueLabel: 'offert', muted: true },
     { label: 'Livraison au Maroc', valueLabel: 'offert', muted: true },
   ];
 
-  // Coût par soin : ~47 soins pour 1 mois et demi d'usage standard.
-  // Unité alignée sur la devise du produit (cohérence visuelle avec
-  // le prix XXL — éviter savings € sur prix MAD).
-  const perUsage = buildPerUsageHint(effectiveCents, 47, currencyUnit);
+  // Coût par soin : le pack contient ~25 soins (un par semaine, environ
+  // six mois). Unité alignée sur la devise du produit (cohérence visuelle
+  // avec le prix XXL — éviter savings € sur prix MAD).
+  const perUsage = buildPerSoinHint(effectiveCents, currencyUnit);
 
   return {
     kicker: 'Le pack',
     // Présent + verbes d'action (Copy #1).
-    title: 'Le rituel s’installe en deux gestes et un polissoir.',
+    title: `Le rituel s’installe en ${KIT_COPY.fr.gesturesLower}, ${KIT_COPY.fr.frequency}.`,
     lead:
-      'Trois objets dans la main, deux gestes dans la soirée. La paste filme, la powder lustre, le polissoir Step 4 révèle — manucure japonaise, pensée à Rabat.',
+      'Trois objets dans la main, cinq minutes devant soi. La paste nourrit, la powder lustre, le polissoir Step 4 révèle — manucure japonaise, pensée à Rabat.',
     pricePrefix: 'Tout compris :',
     ctaLabel: 'Commander le rituel',
     // Microcopy serrée (Pricing #11) — chiffres précis (Pricing #14).
@@ -325,9 +338,8 @@ function buildHero(product: Product): ProductFeedHero {
  * Construit le feed produit complet. La fonction est pure : à
  * mêmes entrées, même sortie — elle est testée à ce contrat.
  *
- * `stats` est optionnel : si non passé (ou null), le builder retombe
- * sur `DEFAULT_KIT_REVIEW_STATS` pour conserver la rétro-compatibilité
- * avec les tests qui n'ont pas de reviews en base.
+ * `stats` est optionnel : si non passé (ou null), le feed n'a pas de
+ * `socialProof` — compteur et note sont masqués partout.
  */
 export function buildKitProductFeed(
   product: Product,
@@ -359,8 +371,9 @@ export function buildKitProductFeed(
     stepsHeader: buildStepsHeader(),
     stepsPostCta: buildStepsPostCta(),
     claims: buildClaims(),
-    socialProof: buildSocialProof(content, stats),
   };
+  const socialProof = buildSocialProof(content, stats);
+  if (socialProof) feed.socialProof = socialProof;
 
   // Validation runtime — fail-fast en dev/test pour repérer toute
   // dérive du contrat (champ manquant, type erroné, contrainte

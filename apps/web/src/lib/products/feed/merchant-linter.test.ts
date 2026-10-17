@@ -21,7 +21,7 @@ import { validateMerchantFeed } from './merchant-linter';
 const product = mockKitPageContent.product;
 
 function baselineFeed() {
-  return buildKitProductFeed(product, mockKitPageContent);
+  return buildKitProductFeed(product, mockKitPageContent, { rating: 4.6, reviewsCount: 142 });
 }
 
 describe('validateMerchantFeed', () => {
@@ -128,7 +128,7 @@ describe('validateMerchantFeed', () => {
 
   it('signale rating-too-round en warning pour une note exactement 5/5', () => {
     const feed = baselineFeed();
-    feed.socialProof.rating = 5;
+    feed.socialProof!.rating = 5;
     const report = validateMerchantFeed(feed);
     expect(report.warnings.some((w) => w.code === 'rating-too-round')).toBe(
       true,
@@ -137,16 +137,16 @@ describe('validateMerchantFeed', () => {
 
   it('signale reviews-count-round en warning pour 200 / 300 / 500 avis', () => {
     const feed = baselineFeed();
-    feed.socialProof.reviewsCount = 300;
+    feed.socialProof!.reviewsCount = 300;
     const report = validateMerchantFeed(feed);
     expect(report.warnings.some((w) => w.code === 'reviews-count-round')).toBe(
       true,
     );
   });
 
-  it('ne remonte PAS reviews-count-round pour 287 (chiffre précis)', () => {
+  it('ne remonte PAS reviews-count-round pour 51 (chiffre précis)', () => {
     const feed = baselineFeed();
-    feed.socialProof.reviewsCount = 287;
+    feed.socialProof!.reviewsCount = 51;
     const report = validateMerchantFeed(feed);
     expect(report.warnings.some((w) => w.code === 'reviews-count-round')).toBe(
       false,
@@ -166,7 +166,7 @@ describe('validateMerchantFeed', () => {
     const feed = baselineFeed();
     feed.priceMajor = 0; // error
     feed.imageUrl = '/relative.svg'; // 3 errors (svg + not-absolute + not-raster, suivant l'implé)
-    feed.socialProof.rating = 5; // warning
+    feed.socialProof!.rating = 5; // warning
     const report = validateMerchantFeed(feed);
     expect(report.errors.length).toBeGreaterThanOrEqual(2);
     expect(report.warnings.length).toBeGreaterThanOrEqual(1);

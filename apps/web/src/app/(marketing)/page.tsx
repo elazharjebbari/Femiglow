@@ -29,12 +29,12 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: 'Maison de soin pour les ongles \u2014 \u00e0 Rabat',
     description:
-      'Pack FemiGlow \u2014 manucure japonaise halal. Deux gestes, un polissoir, cinq minutes par soir. \u00c9dit\u00e9 \u00e0 Rabat.',
+      'Pack FemiGlow \u2014 manucure japonaise halal. Quatre gestes, cinq minutes, une fois par semaine. \u00c9dit\u00e9 \u00e0 Rabat.',
     alternates: { canonical: '/' },
     openGraph: {
       type: 'website',
       title: 'FemiGlow \u2014 Maison de soin pour les ongles',
-      description: 'Manucure japonaise halal. Deux gestes, un polissoir, cinq minutes par soir.',
+      description: 'Manucure japonaise halal. Quatre gestes, cinq minutes, une fois par semaine.',
       locale: 'fr_MA',
       siteName: 'FemiGlow',
       images: [{ url: og.url, width: og.width, height: og.height, alt: og.alt }],
@@ -42,7 +42,7 @@ export async function generateMetadata(): Promise<Metadata> {
     twitter: {
       card: 'summary_large_image',
       title: 'FemiGlow \u2014 Maison de soin pour les ongles',
-      description: 'Manucure japonaise halal. Deux gestes, un polissoir, cinq minutes par soir.',
+      description: 'Manucure japonaise halal. Quatre gestes, cinq minutes, une fois par semaine.',
       images: [og.url],
     },
   };

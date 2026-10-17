@@ -175,6 +175,8 @@ export function WizardShell({
   const storedFormContext = useWizardStore((s) => s.formContext);
   const storedCart = useWizardStore((s) => s.cartSnapshot);
   const appliedCreditCents = useWizardStore((s) => s.creditCents);
+  const appliedCouponCode = useWizardStore((s) => s.couponCode);
+  const appliedCouponKind = useWizardStore((s) => s.couponKind);
   const setFormContext = useWizardStore((s) => s.setFormContext);
   const setCartSnapshot = useWizardStore((s) => s.setCartSnapshot);
   const goToStep = useWizardStore((s) => s.goToStep);
@@ -331,6 +333,15 @@ export function WizardShell({
           shippingIncludedLabel={t.cartRecap.shippingIncluded}
           currencyLabel={t.cartRecap.currency}
           appliedCreditCents={appliedCreditCents}
+          creditLabel={(amount) =>
+            appliedCouponKind === 'promo' && appliedCouponCode
+              ? dir === 'rtl'
+                ? `الرمز ${appliedCouponCode} −${amount}`
+                : `Code ${appliedCouponCode} −${amount}`
+              : dir === 'rtl'
+                ? `رصيد الوفاء −${amount}`
+                : `Crédit fidélité −${amount}`
+          }
           welcomeCoupon={welcomeCoupon}
           welcomeLabel={
             dir === 'rtl'

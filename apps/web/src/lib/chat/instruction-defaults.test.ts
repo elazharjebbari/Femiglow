@@ -41,10 +41,17 @@ describe('DEFAULT_INSTRUCTION_FR_V2 (CHA-245 — connaissance produit)', () => {
     expect(body).toMatch(/toco?ph[eé]rol/i);
   });
 
-  it('liste les certifications (Cosmos Organic + Halal + Vegan)', () => {
-    expect(DEFAULT_INSTRUCTION_FR_V2).toMatch(/Cosmos Organic/);
-    expect(DEFAULT_INSTRUCTION_FR_V2).toMatch(/Halal/);
-    expect(DEFAULT_INSTRUCTION_FR_V2).toMatch(/Vegan/);
+  it('ne cite aucune certification (fiche kit-facts) mais garde le halal', () => {
+    expect(DEFAULT_INSTRUCTION_FR_V2).not.toMatch(/Cosmos Organic|Ecocert|EVE Vegan|\bvegan\b/i);
+    expect(DEFAULT_INSTRUCTION_FR_V2).toMatch(/Certifications : aucune/);
+    expect(DEFAULT_INSTRUCTION_FR_V2).toMatch(/halal/i);
+  });
+
+  it('énonce le rituel : quatre gestes, cinq minutes, une fois par semaine', () => {
+    expect(DEFAULT_INSTRUCTION_FR_V2).toMatch(/quatre gestes/);
+    expect(DEFAULT_INSTRUCTION_FR_V2).toMatch(/cinq\s+minutes/);
+    expect(DEFAULT_INSTRUCTION_FR_V2).toMatch(/une\s+fois\s+par\s+semaine/);
+    expect(DEFAULT_INSTRUCTION_FR_V2).not.toMatch(/par jour|quotidien|tous les soirs/i);
   });
 
   it('donne les délais de livraison concrets (24 h Rabat, 48-72 h Maroc)', () => {
@@ -61,11 +68,13 @@ describe('DEFAULT_INSTRUCTION_FR_V2 (CHA-245 — connaissance produit)', () => {
     expect(body).toMatch(/avant.*payer|avant le paiement|avant paiement/i);
   });
 
-  it('mentionne l\'autonomie 4 à 5 mois', () => {
-    expect(DEFAULT_INSTRUCTION_FR_V2).toMatch(/quatre à cinq mois|4 à 5 mois/i);
+  it('mentionne l\'autonomie : environ 25 soins, environ six mois', () => {
+    expect(DEFAULT_INSTRUCTION_FR_V2).toMatch(/25 soins/);
+    expect(DEFAULT_INSTRUCTION_FR_V2).toMatch(/environ six\s+mois/);
+    expect(DEFAULT_INSTRUCTION_FR_V2).not.toMatch(/quatre à cinq mois|un an\b/i);
   });
 
-  it('annonce la brillance qui tient au moins trois semaines', () => {
+  it('annonce la brillance jusqu\'à trois semaines', () => {
     expect(DEFAULT_INSTRUCTION_FR_V2).toMatch(/trois semaines|3 semaines/i);
   });
 
@@ -164,9 +173,9 @@ describe('DEFAULT_INSTRUCTION_AR_MA_V2 (CHA-245 — connaissance produit, darija
   });
 });
 
-describe('DEFAULT_INSTRUCTION_NOTES_V2 (CHA-245 + CHA-230 — bump v2.5)', () => {
-  it('commence par le label v2.5', () => {
-    expect(DEFAULT_INSTRUCTION_NOTES_V2.startsWith('v2.5-')).toBe(true);
+describe('DEFAULT_INSTRUCTION_NOTES_V2 (bump v2.6 — fiche kit-facts)', () => {
+  it('commence par le label v2.6', () => {
+    expect(DEFAULT_INSTRUCTION_NOTES_V2.startsWith('v2.6-')).toBe(true);
   });
 
   it('mentionne les ajouts clés (composition, 199 dh, livraison concrète, brillance 3 semaines, questions complexes)', () => {

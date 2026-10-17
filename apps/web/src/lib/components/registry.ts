@@ -207,7 +207,7 @@ export const SITE_COMPONENT_REGISTRY: SiteComponentSeed[] = [
         type: 'multiline',
         required: false,
         defaultValue:
-          'Trois gestes, une saison. Une beauté lente, ancrée au Maroc.',
+          'Quatre gestes, une fois par semaine. Une beauté lente, ancrée au Maroc.',
         description: 'Phrase d’accroche éditoriale, deux à trois lignes max.',
         group: 'Header',
         order: 3,
@@ -304,7 +304,7 @@ export const SITE_COMPONENT_REGISTRY: SiteComponentSeed[] = [
                 authorContext: { v: 'Casablanca' },
                 initieeDepuis: { v: 'Janvier 2025' },
                 quote: {
-                  v: 'Mes ongles ne cassent plus depuis trois mois. Je ne pensais pas que cinq minutes le soir suffiraient.',
+                  v: 'Mes ongles ne cassent plus depuis trois mois. Je ne pensais pas que cinq minutes par semaine suffiraient.',
                 },
               },
             },
@@ -730,7 +730,7 @@ export const SITE_COMPONENT_REGISTRY: SiteComponentSeed[] = [
         type: 'text',
         required: false,
         defaultValue:
-          'Manucure japonaise. Deux gestes, un polissoir. La main se révèle.',
+          'Manucure japonaise halal. Quatre gestes, sans vernis. Le woudou reste intact.',
         description:
           "Phrase d'accroche sous le H1. La continuité d'image se ferme sur la main (sujet final).",
         group: 'Contenu',
@@ -743,7 +743,7 @@ export const SITE_COMPONENT_REGISTRY: SiteComponentSeed[] = [
         type: 'multiline',
         required: false,
         defaultValue:
-          "Le pack FemiGlow associe deux soins et un polissoir, pensés pour la manucure japonaise. Une paste qui lisse, une powder qui lustre, un polissoir Step 4 Polish & Shine. Sans vernis, sans lampe UV, sans acétone. Quelques gestes suffisent. L'ongle nu retrouve sa lumière. Le woudou reste intact.",
+          "Le pack FemiGlow associe deux soins et un polissoir, pensés pour la manucure japonaise. Une paste qui lisse, une powder qui lustre, un polissoir Step 4 Polish & Shine. Sans vernis, sans lampe UV, sans acétone. Quatre gestes, une fois par semaine. L'ongle nu retrouve sa lumière. Le woudou reste intact.",
         description:
           "Texte descriptif. Affiché sous les chips attribut, au-dessus du prix.",
         group: 'Contenu',
@@ -755,7 +755,7 @@ export const SITE_COMPONENT_REGISTRY: SiteComponentSeed[] = [
         label: 'Chips attributs',
         type: 'list',
         required: false,
-        defaultValue: ['Sans vernis', 'Sans UV', 'Sans acétone'],
+        defaultValue: ['Sans vernis', 'Sans UV', 'Sans acétone', 'Compatible woudou'],
         description:
           'Pastilles courtes (max 6). Réponses aux requêtes mentales — placées sous le tagline.',
         group: 'Réassurance',

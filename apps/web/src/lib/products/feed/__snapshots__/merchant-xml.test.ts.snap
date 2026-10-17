@@ -6,14 +6,14 @@ exports[`merchantFeedXml > snapshot XML complet pour le kit mock (golden) 1`] = 
   <channel>
     <title>FemiGlow — Catalogue produits</title>
     <link>https://femiglow-maroc.com</link>
-    <description><![CDATA[Le rituel manucure FemiGlow — édité au Maroc, livré en 48 heures.]]></description>
+    <description><![CDATA[Le rituel manucure FemiGlow — édité à Rabat, livraison offerte au Maroc.]]></description>
     <language>fr-MA</language>
     <lastBuildDate>__DATE__</lastBuildDate>
-    <generator>femiglow-feed/1.0 rating=4.8</generator>
+    <generator>femiglow-feed/1.0</generator>
     <item>
       <g:id>le-rituel</g:id>
       <g:title><![CDATA[Le kit FemiGlow]]></g:title>
-      <g:description><![CDATA[Le pack FemiGlow réunit deux pots — une paste lissante et une powder lustrante — et un polissoir Step 4 Polish & Shine. Une manucure japonaise, formulée à Rabat par notre équipe. Sans vernis. Sans abrasion. Cinq minutes par jour suffisent.]]></g:description>
+      <g:description><![CDATA[Le pack FemiGlow réunit deux pots — une paste 15 g et une powder 8 g — et un polissoir Step 4 Polish & Shine. Une manucure japonaise, préparée dans notre atelier de Rabat. Sans vernis. Quatre gestes, cinq minutes, une fois par semaine.]]></g:description>
       <g:link>https://femiglow-maroc.com/kit</g:link>
       <g:image_link>https://femiglow-maroc.com/products/kit-principale.png</g:image_link>
       <g:availability>in stock</g:availability>

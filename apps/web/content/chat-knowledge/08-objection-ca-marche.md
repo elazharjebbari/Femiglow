@@ -8,14 +8,15 @@
 ## Est-ce que le pack fonctionne vraiment ?
 
 La manucure japonaise agit sur le terrain de l'ongle (souplesse,
-brillance, hydratation, base de pousse). La majorité des clientes
-constatent un changement après **2 à 4 semaines** d'usage régulier
-(cinq minutes par soir). Ce n'est pas un soin spectaculaire — c'est un
-soin patient, qui révèle l'éclat naturel sans vernis.
+brillance, hydratation, base de pousse). La brillance se voit dès le
+premier soin et tient **jusqu'à trois semaines**. La souplesse et la
+résistance de la plaque s'installent sur plusieurs semaines, à raison
+d'un soin de cinq minutes par semaine. C'est un soin patient, qui
+révèle l'éclat naturel sans vernis.
 
 ### Reformulation à proposer (chat)
 - "Qu'est-ce qui vous ferait dire que ça marche pour vous ?"
-- "On peut commencer par 4 semaines de rituel régulier — c'est la
+- "On peut commencer par quatre soins, un par semaine — c'est la
   fenêtre où la différence se voit le plus clairement."
 
 ### Faits liés

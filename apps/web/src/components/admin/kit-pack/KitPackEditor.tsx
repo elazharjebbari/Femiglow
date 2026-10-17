@@ -247,7 +247,7 @@ export function KitPackEditor({
             id="title"
             value={state.title}
             onChange={(e) => set('title', e.target.value)}
-            placeholder="Le rituel s’installe en deux gestes…"
+            placeholder="Le rituel s’installe en quatre gestes, une fois par semaine…"
             className={baseFieldClasses}
           />
         </Field>
@@ -258,7 +258,7 @@ export function KitPackEditor({
             value={state.lead}
             onChange={(e) => set('lead', e.target.value)}
             rows={3}
-            placeholder="Trois objets dans la main, deux gestes dans la soirée…"
+            placeholder="Trois objets dans la main, cinq minutes devant soi…"
             className={baseFieldClasses}
           />
         </Field>
@@ -320,7 +320,7 @@ export function KitPackEditor({
             id="perUsageHint"
             value={state.perUsageHint}
             onChange={(e) => set('perUsageHint', e.target.value)}
-            placeholder="≈ 0,75 € par soin sur 30 jours"
+            placeholder="≈ 7,96 MAD le soin, sur 25 soins"
             className={baseFieldClasses}
           />
         </Field>
@@ -330,7 +330,7 @@ export function KitPackEditor({
             id="countLabelGeo"
             value={state.countLabelGeo}
             onChange={(e) => set('countLabelGeo', e.target.value)}
-            placeholder="287 maisons au Maroc"
+            placeholder="{count} maisons au Maroc"
             className={baseFieldClasses}
           />
         </Field>

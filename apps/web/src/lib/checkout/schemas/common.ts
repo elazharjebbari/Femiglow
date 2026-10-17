@@ -141,8 +141,27 @@ export const cartSnapshotSchema = z.object({
    * Garantie : `compareAtTotalCents > totalCents` quand défini.
    */
   compareAtTotalCents: z.number().int().positive().optional(),
+  /**
+   * Remise d'un code promo / crédit appliquée au panier (centimes).
+   * `totalCents` reste le total AVANT remise (contrat historique : le récap
+   * wizard, l'invariant anti-422 et l'analytics panier s'appuient dessus).
+   * Les consommateurs qui doivent annoncer un montant à payer — au premier
+   * chef le webhook `cart.abandoned` qui alimente le CRM/Trello — soustraient
+   * ce champ. Sans lui, un panier remisé à 99 MAD partait au CRM à 199.
+   */
+  discountCents: z.number().int().nonnegative().optional(),
+  /** Code appliqué, pour que l'opérateur CRM sache d'où vient la remise. */
+  couponCode: z.string().trim().max(64).optional(),
   currency: z.string().length(3, 'Devise sur 3 caractères (ex. MAD).'),
 });
+
+/** Total réellement dû par la cliente : total panier − remise, plancher 0. */
+export function netCartTotalCents(snapshot: {
+  totalCents: number;
+  discountCents?: number | null;
+}): number {
+  return Math.max(0, snapshot.totalCents - Math.max(0, snapshot.discountCents ?? 0));
+}
 export type CartSnapshot = z.infer<typeof cartSnapshotSchema>;
 
 // ─────────────────────────────────────────────────────────────────────────────

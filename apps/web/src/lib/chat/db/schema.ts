@@ -600,7 +600,16 @@ export const chatLead = pgTable(
     // Snapshot panier au moment de la capture
     cartSnapshot: jsonb('cart_snapshot').$type<{
       items: Array<{ sku: string; name: string; quantity: number; unitPriceCents: number }>;
+      /** Total AVANT remise (contrat historique). */
       totalCents: number;
+      /**
+       * Remise d'un code promo / crédit appliquée par la cliente (centimes).
+       * Colonne JSONB : ajout sans migration. Le webhook `cart.abandoned`
+       * soustrait ce montant pour annoncer au CRM le net réellement dû.
+       */
+      discountCents?: number;
+      /** Code appliqué, pour tracer la remise côté CRM. */
+      couponCode?: string;
       currency: string;
     }>(),
     cartTotalCents: integer('cart_total_cents'),

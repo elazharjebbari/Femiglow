@@ -130,13 +130,13 @@ export default function PreviewPage() {
       <Section title="Typographie">
         <div style={{ display: 'grid', gap: 16 }}>
           <p style={{ fontFamily: 'var(--cs-font-display)', fontSize: 44, fontWeight: 500, letterSpacing: '-0.02em' }}>
-            Trois gestes lents, à la lumière d'une bougie.
+            Quatre gestes lents, à la lumière d'une bougie.
           </p>
           <p style={{ fontFamily: 'var(--cs-font-display)', fontSize: 24, fontWeight: 500 }}>
             Sous-titre · display 24
           </p>
           <p style={{ fontFamily: 'var(--cs-font-body)', fontSize: 17 }}>
-            Body 17 — Trois gestes lents, à la lumière d'une bougie. Le rituel commence quand on accepte que le soin prenne son temps.
+            Body 17 — Quatre gestes lents, à la lumière d'une bougie. Le rituel commence quand on accepte que le soin prenne son temps.
           </p>
           <p style={{ fontFamily: 'var(--cs-font-body)', fontSize: 14, color: 'var(--cs-fg-secondary)' }}>
             Body 14 secondary — Texte de description pour annotation ou contexte

@@ -45,7 +45,7 @@ export const dictionaryFr: WizardDictionary = {
     notesLabel: 'Note pour le livreur (optionnel)',
     notesPlaceholder: 'Code interphone, créneau préféré, instructions…',
     shippingTitle: 'Mode de livraison',
-    shippingFreeBody: 'Livraison gratuite en 24-48 h partout au Maroc.',
+    shippingFreeBody: 'Livraison offerte : Rabat 24 h, reste du Maroc 48 à 72 h.',
     shippingDynamicFreeBody: (eta) =>
       `Livraison gratuite en ${eta} — paiement à la livraison.`,
     shippingDynamicPaidBody: (price, eta) =>

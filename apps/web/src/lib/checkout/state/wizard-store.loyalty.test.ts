@@ -51,19 +51,30 @@ describe('F13 wizard-store loyalty', () => {
       useWizardStore.getState().reset();
     });
 
-    it('F13-U005 persiste couponCode + loyalty mais PAS creditCents', () => {
+    // CONTRAT INVERSÉ (correctif « commandes à 199 sur Trello ») : le montant
+    // EST persisté avec le code. Auparavant seul `couponCode` survivait au
+    // rechargement ; le total attendu repassait au prix plein tandis que le
+    // code partait quand même → 422 price_mismatch, ou remise perdue. La
+    // garantie de fraîcheur est assurée autrement : `PromoCodeAutoApply`
+    // re-valide le code à CHAQUE montage, et le serveur reste autoritaire à
+    // la création de la commande.
+    it('F13-U005 persiste couponCode, creditCents, couponKind et loyalty', () => {
       useWizardStore.getState().setCoupon('FG-AAA111', 2500);
       useWizardStore.getState().setLoyalty({ code: 'FG-SAUGE-7212', valueCents: 2000, activatesAt: '2026-06-10' });
       const raw = JSON.parse(localStorage.getItem(PERSIST_KEY) ?? '{}');
       expect(raw.state.couponCode).toBe('FG-AAA111');
+      expect(raw.state.creditCents).toBe(2500);
+      expect(raw.state.couponKind).toBe('credit');
       expect(raw.state.loyalty?.code).toBe('FG-SAUGE-7212');
-      expect(raw.state).not.toHaveProperty('creditCents');
     });
 
-    it('F13-U006 ne persiste aucun montant de crédit en clair (re-validation forcée)', () => {
+    it('F13-U006 le retrait du code efface aussi le montant persisté', () => {
       useWizardStore.getState().setCoupon('FG-AAA111', 2500);
-      const raw = localStorage.getItem(PERSIST_KEY) ?? '';
-      expect(raw).not.toContain('"creditCents"');
+      useWizardStore.getState().clearCoupon();
+      const raw = JSON.parse(localStorage.getItem(PERSIST_KEY) ?? '{}');
+      expect(raw.state.couponCode).toBeNull();
+      expect(raw.state.creditCents).toBe(0);
+      expect(raw.state.couponKind).toBeNull();
     });
   });
 });

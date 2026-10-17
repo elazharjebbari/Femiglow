@@ -22,7 +22,7 @@ export const mockMaison: MaisonPageContent = {
     kicker: 'L\u2019origine',
     titre: 'Une attention partie d\u2019un constat simple.',
     paragraphs: [
-      'FemiGlow est n\u00e9 d\u2019un constat simple : les ongles tiennent quand on leur pr\u00eate le temps qu\u2019ils demandent. Pas plus, pas moins. Cinq minutes le soir, deux gestes mesur\u00e9s et un polissoir.',
+      'FemiGlow est n\u00e9 d\u2019un constat simple : les ongles tiennent quand on leur pr\u00eate le temps qu\u2019ils demandent. Pas plus, pas moins. Cinq minutes, un soir par semaine. Quatre gestes mesur\u00e9s et un polissoir.',
       'L\u2019id\u00e9e a pris forme \u00e0 Rabat, dans un atelier de l\u2019avenue Patrice Lumumba o\u00f9 la lumi\u00e8re tombe juste avant 18 heures. Trois m\u00e9tiers se sont assis autour d\u2019une table : la formulation, la mati\u00e8re, l\u2019\u00e9criture. Une seule conviction \u2014 la beaut\u00e9 lente est une attention, jamais une performance.',
       'Notre fondatrice est biologiste. Elle a suivi plusieurs formations en fabrication cosm\u00e9tique avant d\u2019\u00e9diter ses premi\u00e8res marques de soins naturels. Aujourd\u2019hui, elle anime des formations dans le m\u00eame atelier o\u00f9 FemiGlow est con\u00e7u. Le rituel n\u2019est pas une d\u00e9couverte \u2014 c\u2019est une transmission.',
     ],
@@ -81,7 +81,7 @@ export const mockMaison: MaisonPageContent = {
     {
       id: 'cire',
       nom: 'Cire d\u2019abeille',
-      origine: 'R\u00e9colt\u00e9e dans le Souss, en partenariat avec une coop\u00e9rative familiale.',
+      origine: 'R\u00e9colt\u00e9e dans le Moyen Atlas, en partenariat avec une coop\u00e9rative apicole familiale.',
       pourquoi: 'Adoucit le sertissage de l\u2019ongle et tient la paste sans la rigidifier.',
       iconSlug: 'cire',
       ambiance: 'champagne',
@@ -120,9 +120,9 @@ export const mockMaison: MaisonPageContent = {
     },
     {
       ordre: 2,
-      titre: 'Certification halal',
+      titre: 'Formule halal',
       description:
-        'Chaque mati\u00e8re est trac\u00e9e. Notre fabricant est audit\u00e9 par le Halal Cosmetics Council. Le label figure sur chaque pot et sur le polissoir.',
+        'Chaque mati\u00e8re est trac\u00e9e. La formule suit le r\u00e9f\u00e9rentiel public du Halal Cosmetics Council\u202F: pas d\u2019alcool d\u00e9natur\u00e9, pas de d\u00e9riv\u00e9 animal non conforme.',
     },
     {
       ordre: 3,
@@ -134,7 +134,7 @@ export const mockMaison: MaisonPageContent = {
       ordre: 4,
       titre: 'Rituel lent',
       description:
-        'Tout est calibr\u00e9 pour cinq minutes le soir. Plus court, c\u2019est de la cosm\u00e9tique. Plus long, c\u2019est une corv\u00e9e.',
+        'Tout est calibr\u00e9 pour cinq minutes, une fois par semaine. Plus court, c\u2019est de la cosm\u00e9tique. Plus long, c\u2019est une corv\u00e9e.',
     },
     {
       ordre: 5,

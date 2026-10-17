@@ -13,7 +13,7 @@ describe('mockAdapter.getHomepageContent — locale dispatch', () => {
   it('FR : retourne le hero français', async () => {
     const content = await mockAdapter.getHomepageContent({ locale: 'fr' });
     expect(content.hero.title).toBe(
-      'Le pack FemiGlow. Deux gestes, un éclat révélé.',
+      'Le pack FemiGlow. Quatre gestes, un éclat révélé.',
     );
     expect(content.hero.cta!.label).toBe('Découvrir le rituel');
   });
@@ -22,7 +22,7 @@ describe('mockAdapter.getHomepageContent — locale dispatch', () => {
     const content = await mockAdapter.getHomepageContent({ locale: 'ar' });
     // Le titre doit contenir des caractères arabes
     expect(content.hero.title).toMatch(/[؀-ۿ]/);
-    expect(content.hero.title).toBe('كيت فيمي قلو. حركتان، إشراق مكشوف.');
+    expect(content.hero.title).toBe('كيت فيمي قلو. أربع حركات، إشراق مكشوف.');
     // CTA en arabe — verbe au féminin (اكتشفي) ; focus produit « الكيت » (le kit)
     expect(content.hero.cta!.label).toBe('اكتشفي الكيت');
   });
@@ -30,7 +30,7 @@ describe('mockAdapter.getHomepageContent — locale dispatch', () => {
   it('EN : retourne le hero anglais', async () => {
     const content = await mockAdapter.getHomepageContent({ locale: 'en' });
     expect(content.hero.title).toBe(
-      'The FemiGlow kit. Two gestures, a revealed glow.',
+      'The FemiGlow kit. Four gestures, a revealed glow.',
     );
     expect(content.hero.cta!.label).toBe('Discover the ritual');
   });
@@ -55,7 +55,7 @@ describe('mockAdapter.getHomepageContent — locale dispatch', () => {
     // Toutes ont les mêmes top-level keys
     expect(Object.keys(fr).sort()).toEqual(Object.keys(ar).sort());
     expect(Object.keys(fr).sort()).toEqual(Object.keys(en).sort());
-    // Toutes ont le même nombre de gestes (3) et d'avis (3)
+    // Toutes ont le même nombre de gestes (4) et d'avis (3)
     expect(ar.gestes.length).toBe(fr.gestes.length);
     expect(en.gestes.length).toBe(fr.gestes.length);
     expect(ar.avis.length).toBe(fr.avis.length);

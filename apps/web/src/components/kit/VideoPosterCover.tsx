@@ -58,8 +58,8 @@ export const DEFAULT_VIDEO_POSTER_STRINGS: VideoPosterStrings = {
   kicker: 'La manucure japonaise',
   titleLine1: 'Brille 3 semaines.',
   titleLine2: 'Sans vernis.',
-  subtitleLine1: "Cire d'abeille, silicates, poudre de perle.",
-  subtitleLine2: "4 gestes en 90 secondes — c'est tout.",
+  subtitleLine1: 'Cire d’abeille, jojoba, poudre de riz, kaolin.',
+  subtitleLine2: '4 gestes en 90 secondes — c’est tout.',
   playAriaPrefix: 'Lancer la vidéo :',
 };
 

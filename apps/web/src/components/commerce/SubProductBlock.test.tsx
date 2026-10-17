@@ -93,19 +93,34 @@ describe('SubProductBlock — rendu', () => {
   });
 
   it('rend les certifications si présentes', () => {
+    // Fixture locale : la fiche produit n'affiche aucune certification,
+    // on vérifie ici le rendu du composant seul.
+    const withCerts = {
+      ...subProduct,
+      certifications: [{ label: 'Label test', body: 'Organisme test' }],
+    };
     render(
       <SubProductBlock
-        subProduct={subProduct}
+        subProduct={withCerts}
         index={0}
         anchor="ingredients-details"
         defaultOpen
       />,
     );
     const certs = screen.getByTestId(`certifications-${subProduct.id}`);
-    expect(certs).toBeDefined();
-    expect(certs.querySelectorAll('li').length).toBe(
-      subProduct.certifications.length,
+    expect(certs.querySelectorAll('li').length).toBe(1);
+  });
+
+  it('ne rend aucun bloc certifications quand la liste est vide', () => {
+    render(
+      <SubProductBlock
+        subProduct={{ ...subProduct, certifications: [] }}
+        index={0}
+        anchor="ingredients-details"
+        defaultOpen
+      />,
     );
+    expect(screen.queryByTestId(`certifications-${subProduct.id}`)).toBeNull();
   });
 
   it('rend le lien PostCtaLink avec subProductId', () => {

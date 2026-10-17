@@ -47,7 +47,7 @@ We first notice a new roughness at the edge of the nail. Then a white drawing on
 
 ## The slow ritual
 
-In winter, the ritual narrows. We keep the oil, we keep the base. We remove the rest. Three gestures are enough:
+In winter, the ritual narrows. We keep the oil, we keep the base. We remove the rest. Three steps are enough:
 
 - Place a drop of oil on the cuticle, in the evening, before bed.
 - Massage gently, from the middle of the nail toward the base, for thirty seconds.
@@ -96,7 +96,7 @@ The rice powder, finally, comes from traced organic Asian crops. A small grain, 
 
 Longer than the list of what we choose, the list of what we refuse. No parabens, no phthalates, no toluene. No volatile solvents, no industrial hardeners. No untraced animal gelatine.
 
-The halal certification comes from the Halal Cosmetics Council. The audit is annual, all materials are traced from source.
+The halal framework follows the public standards of the Halal Cosmetics Council. All materials are traced from source.
 
 ## The real cost
 
@@ -109,8 +109,8 @@ The materials that go into a Paste jar cost more than the off-the-shelf list. Bu
   },
   {
     slug: 'paste-et-powder-deux-gestes',
-    title: 'Paste and powder — two gestures',
-    excerpt: 'Two gestures, a quiet glow. A detailed sensory tutorial — paste, powder, Step 4 buffer.',
+    title: 'Paste and powder — four gestures',
+    excerpt: 'Four gestures, a quiet glow. A detailed sensory tutorial — prepare, paste, powder, Step 4 buffer.',
     category: 'pratique',
     readingTimeMinutes: 5,
     publishedAt: new Date('2026-02-18'),
@@ -125,21 +125,25 @@ The materials that go into a Paste jar cost more than the off-the-shelf list. Bu
       name: 'The FemiGlow team',
       bio: 'Founder of Maison FemiGlow. Biologist and formulator, she writes from Rabat on slow care and the materials of the Maghreb.',
     },
-    body: `Before practising the gesture, live it by proxy. Paste in one hand, powder in the other, the buffer beside. Three pieces, a fixed order.
+    body: `Before practising the gesture, live it by proxy. Paste in one hand, powder in the other, the buffer beside. Three pieces, four gestures, a fixed order.
 
-## Paste — the first gesture
+## Prepare — the first gesture
+
+Clean hands, dry nails. A light stroke of the file to give the shape. Nothing more.
+
+## Paste — the second gesture
 
 A hazelnut-sized amount. No more. You touch the paste with your thumb, then trace it across the nail from base to tip. The beeswax is warm, the jojoba glides. The pace is slow, the pressure light.
 
 The nail absorbs what it needs. The excess stays on the surface — not a problem. The powder will take care of it.
 
-## Powder — the second gesture
+## Powder — the third gesture
 
 A small pinch. You dust it over the plate with a dry finger. The cosmetic talc absorbs the excess, the rice powder softens, the silica reveals the glide.
 
-The touch changes. Matte, then satin. That is the cue for the third gesture.
+The touch changes. Matte, then satin. That is the cue for the fourth gesture.
 
-## Step 4 buffer — the final touch
+## Step 4 buffer — the fourth gesture
 
 Three sides, from rough to smooth. You begin with the first, a slow stroke from base to tip. Then the second side, the same motion. Then the third — that is the one that reveals the shine.
 
@@ -147,7 +151,7 @@ Do not press. The plate responds to the gesture, not to force. Five minutes, sto
 
 ## After
 
-The hand breathes. No polish, no solvent, no forced drying. The glow is there, simple, natural. You will come back tomorrow, or another day. The ritual does not demand insistence.`,
+The hand breathes. No polish, no solvent, no forced drying. The glow is there, simple, natural. You will come back next week. The shine holds up to three weeks. The ritual does not demand insistence.`,
     isFeatured: false,
     wordCount: 700,
     seo: { noIndex: false },
@@ -188,7 +192,7 @@ We receive by appointment, on Tuesdays and Thursdays. These visitors sometimes c
 
 Spring is an active season, but not a rush. We tidy the supplies, reread the labels, refresh a few formulas — only what deserves it.
 
-The ritual does not change. Five minutes in the evening, paste, powder, Step 4 buffer. The season renews the material, not the gesture.`,
+The ritual does not change. Five minutes, one evening a week: prepare, paste, powder, Step 4 buffer. The season renews the material, not the gesture.`,
     isFeatured: false,
     wordCount: 1200,
     seo: { noIndex: false },
@@ -266,13 +270,13 @@ These are not anxious questions. They are research questions. The maison is glad
 
 ## The transition
 
-January was dry. We applied paste daily. In March, the gestures can space out — two or three times a week is enough. The plate is no longer thirsty.
+January was dry. We kept the weekly ritual, with a drop of oil in between. In March, the oil can rest — the weekly ritual is enough. The plate is no longer thirsty.
 
 This is a subtle but important change. The ritual does not impose a single tempo — it follows the season. Insistence under humidity does not serve, it weighs down.
 
 ## Cuticles in spring
 
-The friction of winter is left behind. The skin around the plate recovers elasticity. We no longer need oil every evening. Jojoba oil once a week, a slow circular motion, is enough.
+The friction of winter is left behind. The skin around the plate recovers elasticity. We no longer need oil between treatments. Jojoba oil once a week, a slow circular motion, is enough.
 
 The touch after the ritual is soft, light. Not greasy, not forcibly shiny. That is what the hand asks for in March.
 
@@ -280,7 +284,7 @@ The touch after the ritual is soft, light. Not greasy, not forcibly shiny. That 
 
 The most common spring mistake: continuing the winter rhythm. Too much paste leads to a shiny but closed plate. A sign that we have gone beyond what the skin asked.
 
-The ritual listens. It asks: do you need this today? If the nail says no, we leave it. Tomorrow, we ask again.`,
+The ritual listens. It asks: do you need this this week? If the nail says no, we leave it. Next week, we ask again.`,
     isFeatured: false,
     wordCount: 680,
     seo: { noIndex: false },
@@ -495,7 +499,7 @@ That unveiling also reveals its state. The plate that held through January deser
 
 ## The pace lightens
 
-April is not the season of daily paste. The plate is strong, the cuticle is supple, the buffer alone twice a week is enough.
+In April, the weekly ritual is enough on its own. The plate is strong, the cuticle is supple, the shine holds up to three weeks.
 
 This is a silent victory for the slow ritual. What was built in winter protects in spring. The seasonal investment pays — not as a promise, as tangible fact.
 
@@ -571,7 +575,7 @@ Direct sourcing costs time, costs trust, costs travel. But it is the only way to
       name: 'The FemiGlow team',
       bio: 'Founder of Maison FemiGlow. Biologist and formulator, she writes from Rabat on slow care and the materials of the Maghreb.',
     },
-    body: `The kit lasts four to five months. But proper storage extends that period and preserves the quality of the materials.
+    body: `The pack lasts about six months — some twenty-five treatments, at one a week. Proper storage preserves the quality of the materials.
 
 ## Three rules
 
@@ -599,7 +603,7 @@ If the buffer gets wet, dry it with a cotton towel, then leave it two hours in t
 
 If you pause for a month, no worry. The kit holds. On return, check the jars: paste texture, powder scent, buffer suppleness. If all is well, you resume.
 
-The ritual welcomes the pause as it welcomes the return. Faithfulness is not measured by daily presence — it is measured by intention.`,
+The ritual welcomes the pause as it welcomes the return. Faithfulness is not measured by never missing a week — it is measured by intention.`,
     isFeatured: false,
     wordCount: 620,
     seo: { noIndex: false },
@@ -640,7 +644,7 @@ All the tools were dual-use: a wooden spoon for soup in the morning, for a paste
 
 After forty attempts, the first paste formula. Wax 12%, jojoba 60%, tocopherol 0.5%. Our founder wrote it in a small notebook, formula number 41.
 
-The current formula, the one in the kit, is number 287. Six years of refinements, adjustments, reversals. But the base — wax, jojoba, tocopherol — was already in formula 41.
+The current formula, the one in the kit, is number 214. Six years of refinements, adjustments, reversals. But the base — wax, jojoba, tocopherol — was already in formula 41.
 
 ## What remains
 

@@ -7,12 +7,13 @@
 
 ## C'est cher pour un soin d'ongles
 
-Le pack FemiGlow est à **199 dh** (contre 390 dh en référence), pour un
-rituel qui dure **3 à 4 mois d'usage régulier**. En comparaison, un
-passage en institut pour une manucure professionnelle revient à
-80–120 dh, à raison d'un rendez-vous par mois — soit 1500 dh par an.
-Le pack permet le même soin chez soi, en cinq minutes par soir, pour
-une saison entière.
+Le pack FemiGlow est à **199 dh** (contre 289 dh en référence), pour
+**environ 25 soins**, soit **environ six mois** à raison d'un soin par
+semaine. Sur un an, cela fait environ deux packs, soit près de 400 dh.
+En comparaison, un passage en institut pour une manucure
+professionnelle revient à 80–120 dh, à raison d'un rendez-vous par
+mois — soit environ 1 500 dh par an. Le pack permet le soin chez soi,
+en cinq minutes, une fois par semaine.
 
 ### Reformulation à proposer (chat)
 - "Je comprends. Est-ce le prix global qui surprend, ou la sensation
@@ -21,7 +22,7 @@ une saison entière.
   vernis, dissolvant — souvent le pack revient moins cher sur l'année."
 
 ### Faits liés
-- Durée moyenne du pack : 3 à 4 mois (dépend de la fréquence).
+- Durée du pack : environ six mois (environ 25 soins, un par semaine).
 - Pas d'abonnement caché, pas de prélèvement automatique.
 - Livraison offerte au Maroc, sans seuil.
 - Retour 30 jours, même produit entamé (voir « Retour, garantie »).

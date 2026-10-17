@@ -236,17 +236,21 @@ describe('KitCompositionEditor — Reset', () => {
   });
 });
 
+// La fiche produit n'affiche aucune certification : fixture locale pour
+// tester l'éditeur seul.
+const pasteWithCert = { ...paste, certifications: [{ label: 'A', body: 'B' }] };
+
 describe('KitCompositionEditor — certifications', () => {
   it('ajoute une certification vide via + Ajouter', () => {
     render(
       <KitCompositionEditor
         subProductId="1-paste"
         initial={null}
-        baseSubProduct={paste}
+        baseSubProduct={pasteWithCert}
         source="mock"
       />,
     );
-    const initialCount = screen.getAllByTestId(/kit-composition-cert-\d+$/).length;
+    const initialCount = screen.queryAllByTestId(/kit-composition-cert-\d+$/).length;
     fireEvent.click(screen.getByTestId('kit-composition-cert-add'));
     const finalCount = screen.getAllByTestId(/kit-composition-cert-\d+$/).length;
     expect(finalCount).toBe(initialCount + 1);
@@ -257,11 +261,11 @@ describe('KitCompositionEditor — certifications', () => {
       <KitCompositionEditor
         subProductId="1-paste"
         initial={null}
-        baseSubProduct={paste}
+        baseSubProduct={pasteWithCert}
         source="mock"
       />,
     );
-    const initialCount = screen.getAllByTestId(/kit-composition-cert-\d+$/).length;
+    const initialCount = screen.queryAllByTestId(/kit-composition-cert-\d+$/).length;
     fireEvent.click(screen.getByTestId('kit-composition-cert-remove-0'));
     const finalCount = screen.queryAllByTestId(/kit-composition-cert-\d+$/).length;
     expect(finalCount).toBe(initialCount - 1);

@@ -256,3 +256,133 @@ describe('dispatchOrderWebhook — sync chat_lead.webhook_status (/admin/leads)'
     );
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PROMO — le CRM (Baiti → Trello) doit recevoir le total NET *et* savoir d'où
+// vient l'écart avec le prix catalogue. Régression historique : les cartes
+// Trello affichaient 199 MAD pour des commandes remisées à 99.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('dispatchOrderWebhook — commande avec code promo', () => {
+  function captureNext() {
+    const captured: { body?: string } = {};
+    server.use(
+      http.post('https://hook.example.com/outbound', async ({ request }) => {
+        captured.body = await request.text();
+        return HttpResponse.json({ ok: true });
+      }),
+    );
+    return captured;
+  }
+
+  it('PROMO-W1 total_price = NET, discount_amount et coupon_code renseignés', async () => {
+    const captured = captureNext();
+    const result = await dispatchOrderWebhook({
+      // 199 MAD catalogue − 100 MAD de code = 99 MAD facturés.
+      order: {
+        id: 'ord_promo1',
+        totalCents: 9900,
+        currency: 'MAD',
+        couponCode: 'GLOW99',
+        discountCents: 10000,
+      },
+      items: [{ sku: 'FEMI-KIT-100', name: 'Pack FemiGlow', quantity: 1 }],
+      lead: makeLead(),
+      shippingMode: 'standard',
+      paymentMethod: 'cod',
+    });
+    expect(result.status).toBe('sent');
+
+    const payload = JSON.parse(captured.body!) as Record<string, unknown>;
+    expect(payload.total_price).toBe(99);
+    expect(payload.discount_amount).toBe(100);
+    expect(payload.coupon_code).toBe('GLOW99');
+    expect(payload.currency).toBe('MAD');
+  });
+
+  it('PROMO-W2 la note porte le code et le montant remisé (intégrations CRM legacy)', async () => {
+    const captured = captureNext();
+    await dispatchOrderWebhook({
+      order: {
+        id: 'ord_promo2',
+        totalCents: 9900,
+        currency: 'MAD',
+        couponCode: 'GLOW99',
+        discountCents: 10000,
+      },
+      items: [{ sku: 'FEMI-KIT-100', name: 'Pack FemiGlow', quantity: 1 }],
+      lead: makeLead(),
+      shippingMode: 'standard',
+      paymentMethod: 'cod',
+    });
+    const payload = JSON.parse(captured.body!) as Record<string, unknown>;
+    expect(payload.note).toContain('promo:GLOW99 -100 MAD');
+  });
+
+  it('PROMO-W3 code en minuscules / espaces → normalisé en MAJUSCULES', async () => {
+    const captured = captureNext();
+    await dispatchOrderWebhook({
+      order: {
+        id: 'ord_promo3',
+        totalCents: 9900,
+        currency: 'MAD',
+        couponCode: '  glow99 ',
+        discountCents: 10000,
+      },
+      items: [{ sku: 'FEMI-KIT-100', name: 'Pack FemiGlow', quantity: 1 }],
+      lead: makeLead(),
+    });
+    const payload = JSON.parse(captured.body!) as Record<string, unknown>;
+    expect(payload.coupon_code).toBe('GLOW99');
+  });
+
+  it('PROMO-W4 sans code → aucun champ promo pollué (non-régression)', async () => {
+    const captured = captureNext();
+    await dispatchOrderWebhook({
+      order: { id: 'ord_nopromo', totalCents: 19900, currency: 'MAD', discountCents: 0 },
+      items: [{ sku: 'FEMI-KIT-100', name: 'Pack FemiGlow', quantity: 1 }],
+      lead: makeLead(),
+      shippingMode: 'standard',
+      paymentMethod: 'cod',
+    });
+    const payload = JSON.parse(captured.body!) as Record<string, unknown>;
+    expect(payload.total_price).toBe(199);
+    expect(payload).not.toHaveProperty('discount_amount');
+    expect(payload).not.toHaveProperty('coupon_code');
+    expect(String(payload.note ?? '')).not.toContain('promo:');
+  });
+
+  it('PROMO-W5 contexte legacy sans champs promo → payload inchangé', async () => {
+    const captured = captureNext();
+    await dispatchOrderWebhook({
+      // Ancien appelant (outbox d'avant le correctif) : ni couponCode ni discountCents.
+      order: { id: 'ord_legacy', totalCents: 19900, currency: 'MAD' },
+      items: [{ sku: 'FEMI-KIT-100', name: 'Pack FemiGlow', quantity: 1 }],
+      lead: makeLead(),
+    });
+    const payload = JSON.parse(captured.body!) as Record<string, unknown>;
+    expect(payload.total_price).toBe(199);
+    expect(payload).not.toHaveProperty('discount_amount');
+    expect(payload).not.toHaveProperty('coupon_code');
+  });
+
+  it('PROMO-W6 code présent mais remise nulle → code seul, sans montant', async () => {
+    const captured = captureNext();
+    await dispatchOrderWebhook({
+      order: {
+        id: 'ord_promo0',
+        totalCents: 19900,
+        currency: 'MAD',
+        couponCode: 'GLOW99',
+        discountCents: 0,
+      },
+      items: [{ sku: 'FEMI-KIT-100', name: 'Pack FemiGlow', quantity: 1 }],
+      lead: makeLead(),
+    });
+    const payload = JSON.parse(captured.body!) as Record<string, unknown>;
+    expect(payload.coupon_code).toBe('GLOW99');
+    expect(payload).not.toHaveProperty('discount_amount');
+    expect(payload.note).toContain('promo:GLOW99');
+    expect(String(payload.note)).not.toContain('-0');
+  });
+});

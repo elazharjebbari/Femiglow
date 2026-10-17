@@ -12,12 +12,13 @@
  *
  * Voice: international English, editorial, sober. `Maison` preserved as
  * proper noun. Brand terms preserved in Latin: `Paste`, `Powder`,
- * `Step 4`, `Polish & Shine`, `FemiGlow`, `MAD`, `INCI`, `Cosmos Organic`,
- * `Ecocert`, `Vegan`, `EVE Vegan`, `DHL`.
+ * `Step 4`, `Polish & Shine`, `FemiGlow`, `MAD`, `INCI`, `DHL`.
+ * No certification is displayed (see `KIT_FACTS.certifications`).
  *
  * @see docs/i18n-content-2026-05/03-seed-data/component-bindings-en.csv
  */
 import type { KitPageContent } from '@/lib/schemas';
+import { KIT_FACTS } from '@/lib/products/kit-facts';
 
 import { mockKitPageContent } from './kit';
 import { mockRituelEn } from './rituel.en';
@@ -28,13 +29,13 @@ export const mockKitPageContentEn: KitPageContent = {
   product: {
     ...mockKitPageContent.product,
     name: 'FemiGlow pack',
-    tagline: 'Japanese manicure. Two gestures, one buffer, one quiet glow.',
+    tagline: 'Halal Japanese manicure. Four gestures, no polish. Your wudu stays intact.',
     description:
-      'The FemiGlow pack brings together two jars — a smoothing Paste and a polishing Powder — and a Step 4 Polish & Shine buffer. A Japanese manicure, formulated in Rabat by our team. No polish. No abrasion. Five minutes a day is enough.',
+      'The FemiGlow pack brings together two jars — a 15 g Paste and an 8 g Powder — and a Step 4 Polish & Shine buffer. A Japanese manicure, prepared in our Rabat atelier. No polish. Four gestures, five minutes, once a week.',
     images: [
       {
         src: '/products/kit-principale.png',
-        alt: 'Open FemiGlow pack on a pastel background — sage green Paste jar, powdered rose Powder jar, sky blue Step 4 buffer, powdered rose wave, FemiGlow typography',
+        alt: 'Open FemiGlow pack on a pastel background — sage green Paste jar, Powder jar with a powdered rose label, sky blue Step 4 buffer, powdered rose wave, FemiGlow typography',
         width: 1600,
         height: 2000,
       },
@@ -79,7 +80,7 @@ export const mockKitPageContentEn: KitPageContent = {
       volume: '15 g',
       usageHint: 'one dab covers ten fingers',
       narrative:
-        '12% beeswax melted at low temperature by the beekeeping cooperative of the Middle Atlas. Three minutes of contact, the finish is matte.',
+        '12% beeswax melted at low temperature by the beekeeping cooperative of the Middle Atlas. A brief moment of contact, the finish is matte.',
       image: {
         src: '/products/kit-base.svg',
         alt: 'Square transparent jar with faceted edges, sage green circular label "1 paste", smooth cream paste',
@@ -115,10 +116,7 @@ export const mockKitPageContentEn: KitPageContent = {
             "Plant-derived vitamin E. Protects the formula's oils from going rancid.",
         },
       ],
-      certifications: [
-        { label: 'Cosmos Organic', body: 'Ecocert' },
-        { label: 'Vegan', body: 'EVE Vegan' },
-      ],
+      certifications: [...KIT_FACTS.certifications],
     },
     {
       id: '2-powder',
@@ -166,7 +164,7 @@ export const mockKitPageContentEn: KitPageContent = {
             'Cosmetic form of silicate. Gives the glide and reveals the shine when buffed.',
         },
       ],
-      certifications: [{ label: 'Cosmos Organic', body: 'Ecocert' }],
+      certifications: [...KIT_FACTS.certifications],
     },
     {
       id: 'polissoir-step-4',
@@ -211,7 +209,7 @@ export const mockKitPageContentEn: KitPageContent = {
             'Water-based ink, without solvent or heavy metal. Marks the grain without contaminating the polishing.',
         },
       ],
-      certifications: [],
+      certifications: [...KIT_FACTS.certifications],
     },
   ],
 
@@ -236,7 +234,7 @@ export const mockKitPageContentEn: KitPageContent = {
         axis: 'Hold',
         vernis: '5 to 7 days on prepared nails, frequent touch-ups.',
         rituel:
-          'No coloured hold: the nail stays as it is, supported day by day.',
+          'No coloured hold: the natural shine stays visible for up to three weeks.',
       },
       {
         axis: 'Recovery',
@@ -247,18 +245,18 @@ export const mockKitPageContentEn: KitPageContent = {
         axis: 'Annual cost',
         vernis: 'Polish + remover + repair treatments, approx. 1,500 MAD.',
         rituel:
-          'A 199 MAD FemiGlow pack lasts four to five months. About 500 MAD per year.',
+          'A pack lasts about six months. Two packs a year, about 400 MAD.',
       },
       {
         axis: 'Material footprint',
         vernis: 'Volatile solvents, often petrochemical-based formulas.',
         rituel:
-          'Beeswax, jojoba, mineral talc, rice, kaolin. Cosmos Organic certification.',
+          'Beeswax, jojoba, mineral talc, rice, kaolin. Full INCI on every jar.',
       },
       {
-        axis: 'Daily time',
+        axis: 'Time per treatment',
         vernis: '20 min application, long drying, touch-ups.',
-        rituel: 'Five minutes a day, a slow gesture, no forced drying.',
+        rituel: 'Five minutes, once a week. A slow gesture, no drying.',
       },
     ],
   },
@@ -268,19 +266,19 @@ export const mockKitPageContentEn: KitPageContent = {
       id: 'duree-pack',
       question: 'How long does a pack last?',
       answer:
-        'In daily use, the pack lasts four to five months. The Paste runs out first, the Powder follows. The buffer lasts about a year. Refills will be available from autumn 2026.',
+        'About twenty-five treatments, at one a week: roughly six months. The buffer also lasts about six months. Refills are coming soon.',
     },
     {
       id: 'frequence',
       question: 'How often should I apply it?',
       answer:
-        'Every evening if you can, in five minutes. If you skip a day, that is fine: the maison welcomes the pause just as it welcomes the return.',
+        'Once a week, in five minutes. The shine lasts up to three weeks. If you skip a week, that is fine: the maison welcomes the pause just as it welcomes the return.',
     },
     {
       id: 'compatibilite-vernis',
       question: 'Can I keep wearing polish?',
       answer:
-        'The ritual accommodates polish, even though it is designed to do without. Apply the Paste and the Powder on the evenings without polish. The plate breathes, the ritual settles into its slowness.',
+        'The ritual accommodates polish, even though it is designed to do without. Do your weekly treatment on an evening without polish. The plate breathes, the ritual settles into its slowness.',
     },
     {
       id: 'grossesse',

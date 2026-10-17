@@ -5,42 +5,45 @@
 > **Locuteur** : éditorial
 > **Source ID suggéré** : `ks_ritual_evening`
 
-## Comment se déroule le rituel du soir ?
+## Comment se déroule le rituel ?
 
-Le rituel du soir prend environ **cinq minutes**. On nettoie les mains,
-on dépose une noisette de **paste** sur chaque ongle propre, on lustre
-lentement avec le polissoir Step 4 Polish & Shine. On applique ensuite
-la **powder**, on polit à nouveau jusqu'à ce que la brillance revienne.
+Le rituel prend **cinq minutes**, **une fois par semaine**, et compte
+**quatre gestes** :
 
-C'est la manucure japonaise dans toute sa lenteur : deux gestes, un
-polissoir, un éclat sans vernis.
+1. **Préparer** — on nettoie les mains, ongles secs, un coup de lime
+   pour la forme.
+2. **Paste** — une noisette de paste, étirée sur chaque ongle.
+3. **Powder** — une pincée de powder, déposée sur la paste.
+4. **Polir** — le polissoir Step 4 Polish & Shine, face après face,
+   jusqu'à ce que la brillance revienne.
+
+C'est la manucure japonaise dans toute sa lenteur : quatre gestes, un
+polissoir, un éclat sans vernis. La brillance tient **jusqu'à trois
+semaines**. Une démonstration vidéo de 90 secondes montre les quatre
+gestes.
 
 ### Faits liés
 - Idéalement après la douche, mains tièdes.
 - Pas besoin de retirer un vernis si la cliente n'en porte pas — le
   rituel se fait sur ongle nu.
-- Sans odeur prononcée, sans abrasion, sans lampe UV.
+- Sans odeur prononcée, sans lampe UV.
 
-## Pourquoi le soir et pas le matin ?
+## Pourquoi plutôt le soir ?
 
-Le soir, la plaque est plus réceptive : la circulation et la chaleur
-favorisent la pénétration de la paste. C'est aussi le moment où les
-ongles ne sont pas exposés à des agressions (eau, savon, produits
-ménagers).
+Le soir, on a le temps : cinq minutes posées, sans précipitation. Les
+ongles ne sont pas exposés tout de suite à l'eau, au savon ou aux
+produits ménagers.
 
 ### Variations linguistiques
-- **AR** : ليلة هي أحسن وقت — البشرة دافئة وغير معرّضة للماء.
-- **AR-MA** : f l-3achiya, l-jelda fih dafa w l-yedin makayn 3lihom ma2.
+- **AR** : المساء هو أحسن وقت — مرة واحدة في الأسبوع، خمس دقائق.
+- **AR-MA** : f l-3achiya, merra f l-ousbou3, khamsa dqayq.
 
-### Faits liés
-- Une étude maison sur 80 testeuses montre 87 % de retours positifs sur
-  la régularité du rituel quand il est associé au démaquillage du soir.
+## À quelle fréquence faire le rituel ?
 
-## Faut-il faire ce rituel tous les soirs ?
-
-L'idéal est **un passage par soir** pendant les 2 à 4 premières
-semaines pour installer la cadence. Ensuite, 3 à 4 soirs par semaine
-suffisent en entretien. La régularité fait davantage que la fréquence.
+**Une fois par semaine.** Un soir par semaine suffit : la brillance tient
+jusqu'à trois semaines. À ce rythme, un pack permet environ 25 soins,
+soit environ six mois.
 
 ### Ne JAMAIS dire
 - "Plus vous appliquez, plus vite ça marche" (faux et non sûr).
+- Conseiller un rituel quotidien ou plusieurs fois par semaine.

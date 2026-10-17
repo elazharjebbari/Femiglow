@@ -527,7 +527,7 @@ function VariantForm({
             type="text"
             value={draft.sku}
             onChange={(e) => onChange({ ...draft, sku: e.target.value })}
-            placeholder="KIT-FEMI-30ML"
+            placeholder="FEMI-KIT-100"
             className="rounded-md border border-stone-200 bg-white px-2 py-1 font-mono text-xs"
           />
         </label>
@@ -539,7 +539,7 @@ function VariantForm({
             type="text"
             value={draft.label}
             onChange={(e) => onChange({ ...draft, label: e.target.value })}
-            placeholder="30 mL"
+            placeholder="Pack complet"
             className="rounded-md border border-stone-200 bg-white px-2 py-1 text-sm"
           />
         </label>

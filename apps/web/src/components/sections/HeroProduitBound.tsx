@@ -2,16 +2,13 @@ import 'server-only';
 import type { ComponentProps } from 'react';
 import { getTranslations } from 'next-intl/server';
 import { HeroProduit, type HeroProduitFields } from './HeroProduit';
+import { StoriesVideoBound } from './StoriesVideoBound';
 import { resolveComponentFields } from '@/lib/components/field-resolver';
 import {
   getKitHeroGalleryImages,
   type HeroGalleryImage,
 } from '@/lib/products/kit-hero-gallery';
-import {
-  DEFAULT_KIT_REVIEW_STATS,
-  getProductReviewStats,
-  type ProductReviewStats,
-} from '@/lib/products/reviews';
+import { getKitReviewStats, type ProductReviewStats } from '@/lib/products/reviews';
 import type { ResolvedFields } from '@/lib/db/types';
 import { DEFAULT_LOCALE, type Locale } from '@/i18n.config';
 
@@ -21,12 +18,11 @@ type HeroProduitBoundProps = Omit<
 > & {
   componentKey: string;
   /**
-   * Override le count avis du fallback `DEFAULT_KIT_REVIEW_STATS`. Quand
-   * la table DB `product_reviews` est vide (cas actuel), on passe ici
-   * `content.handsTestimonials.length` pour afficher le count REEL des
-   * témoignages visibles plus bas dans la page — au lieu du starter 287.
+   * Stats d'avis déjà résolues par la page (`getKitReviewStats`) — même
+   * objet que le bloc pack/prix et le JSON-LD. `null` → badge masqué.
+   * `undefined` → le wrapper les résout lui-même (même source).
    */
-  reviewsCountOverride?: number;
+  reviewStats?: ProductReviewStats | null;
   /**
    * Phase 7B — Locale active. Propagée à `resolveComponentFields` pour
    * lire les bindings AR/EN. Sans valeur, défaut FR (legacy).
@@ -53,8 +49,8 @@ type HeroProduitBoundProps = Omit<
  *    via `resolveComponentFields(componentKey)`.
  *  - La galerie d'images (slot primary + contextuels + photos clientes) via
  *    `getKitHeroGalleryImages(productId)`.
- *  - Les stats reviews (rating + count) via `getProductReviewStats`, avec
- *    fallback `DEFAULT_KIT_REVIEW_STATS` (4,8 / 287 — starter rating).
+ *  - Les stats d'avis (compteur + note) via `getKitReviewStats` — source
+ *    unique ; sans donnée, le badge est masqué.
  *
  * Si la galerie résolue est vide (pas de bindings et pas de review photos),
  * on tombe sur `product.images[0]` comme image unique. Garantit que le hero
@@ -66,10 +62,11 @@ export async function HeroProduitBound({
   reassurances,
   observeId,
   commanderMode,
-  reviewsCountOverride,
+  reviewStats: reviewStatsProp,
   locale,
   displayName,
   taglineFallback,
+  initialCoupon,
 }: HeroProduitBoundProps): Promise<JSX.Element> {
   const effectiveLocale = locale ?? DEFAULT_LOCALE;
   const productFallback = product.images[0];
@@ -91,7 +88,9 @@ export async function HeroProduitBound({
           }
         : undefined,
     }),
-    getProductReviewStats(product.id),
+    reviewStatsProp !== undefined
+      ? Promise.resolve(reviewStatsProp)
+      : getKitReviewStats(product.id),
     // Phase 7E — strings UI du hero (kicker, CTA, économie) localisés.
     getTranslations({
       locale: effectiveLocale,
@@ -107,6 +106,11 @@ export async function HeroProduitBound({
     kicker: tHero('kicker'),
     ctaLabel: tHero('cta_commander'),
     savingsLabel: savings > 0 ? tHero('savings', { savings }) : undefined,
+    // Gabarits pour recalcul client quand un code promo change le montant
+    // (jeton conservé : on passe un texte, next-intl le substitue tel quel).
+    savingsLabelTemplate: tHero('savings', { savings: '{savings}' }),
+    promoAppliedLabelTemplate: tHero('promo_applied', { code: '{code}' }),
+    promoAutoAppliedLabel: tHero('promo_auto_applied'),
   };
 
   // Fields avec fallback sur defaults solides
@@ -118,7 +122,7 @@ export async function HeroProduitBound({
     tagline: pickString(
       resolvedFields.tagline,
       taglineFallback ??
-        'Manucure japonaise. Deux gestes, un polissoir. La main se révèle.',
+        'Manucure japonaise halal. Quatre gestes, sans vernis. Le woudou reste intact.',
       acceptDefault,
     ),
     description: pickString(resolvedFields.description, '', acceptDefault),
@@ -126,7 +130,12 @@ export async function HeroProduitBound({
       resolvedFields.attributeChips,
       // Phase 7E — fallback localisé (FR/AR/EN) depuis `marketing.kit.hero.chips`.
       // En FR, ces valeurs sont identiques aux anciennes constantes hardcodées.
-      [tHero('chips.no_polish'), tHero('chips.no_uv'), tHero('chips.no_acetone')],
+      [
+        tHero('chips.no_polish'),
+        tHero('chips.no_uv'),
+        tHero('chips.no_acetone'),
+        tHero('chips.wudu'),
+      ],
       acceptDefault,
     ),
     trustRow: pickStringArray(
@@ -144,30 +153,25 @@ export async function HeroProduitBound({
   // `product.images[0]` existe.
   const galleryImages: HeroGalleryImage[] = rawGalleryImages;
 
-  // Si la DB n'a pas encore de reviews et qu'un override est fourni par
-  // le parent (count des handsTestimonials CMS visibles plus bas), on
-  // l'utilise — c'est plus honnête que le starter 287 hardcodé tant que
-  // la table `product_reviews` n'existe pas. Dès que des reviews réelles
-  // entrent en DB, `statsOrNull` devient non-null et l'override est ignoré.
-  const fallbackStats: ProductReviewStats =
-    statsOrNull ??
-    (typeof reviewsCountOverride === 'number' && reviewsCountOverride > 0
-      ? { rating: DEFAULT_KIT_REVIEW_STATS.rating, reviewsCount: reviewsCountOverride }
-      : DEFAULT_KIT_REVIEW_STATS);
-  const reviewStats: ProductReviewStats = fallbackStats;
+  // Source unique (`getKitReviewStats`) : compteur des témoignages
+  // approuvés + note réelle si elle existe. Sans donnée → badge masqué.
+  const reviewStats: ProductReviewStats | null = statsOrNull;
 
-  // Phase 9bis — libellé avis localisé (« {n} avis » → « {n} تقييم »). En FR
-  // le rendu reste identique ; le badge n'a plus de "avis" hardcodé.
-  const ratingDisplay = (Math.round(reviewStats.rating * 10) / 10)
-    .toString()
-    .replace('.', ',');
-  const reviewsStrings = {
-    reviewsLabel: tHero('reviews', { count: reviewStats.reviewsCount }),
-    reviewsAriaLabel: tHero('reviews_aria', {
-      count: reviewStats.reviewsCount,
-      rating: ratingDisplay,
-    }),
-  };
+  // Phase 9bis — libellé avis localisé (« {n} avis » → « {n} تقييم »).
+  const reviewsStrings = reviewStats
+    ? {
+        reviewsLabel: tHero('reviews', { count: reviewStats.reviewsCount }),
+        reviewsAriaLabel:
+          reviewStats.rating === null
+            ? tHero('reviews', { count: reviewStats.reviewsCount })
+            : tHero('reviews_aria', {
+                count: reviewStats.reviewsCount,
+                rating: (Math.round(reviewStats.rating * 10) / 10)
+                  .toString()
+                  .replace('.', ','),
+              }),
+      }
+    : {};
 
   return (
     <HeroProduit
@@ -182,10 +186,16 @@ export async function HeroProduitBound({
       commanderMode={commanderMode}
       // Rend le badge cliquable → scroll vers le bloc « Les voix de la
       // maison » (RitualsModule, id H2="rituals-module-title"). C'est le
-      // gros bloc social proof à grande échelle (47 rituels partagés en
-      // DB courante). Si le module rituels n'est pas rendu (cas test),
+      // gros bloc social proof à grande échelle, dont le compteur est le
+      // même que celui du badge. Si le module rituels n'est pas rendu (cas test),
       // l'ancre tombe en no-op silencieux côté navigateur.
       reviewsAnchorHref="#rituals-module-title"
+      // MOBILE : bloc stories sous les images du hero, avant le titre.
+      // Desktop : masqué ici (le bloc reste après le hero dans la page).
+      storiesSlot={<StoriesVideoBound locale={locale} variant="inline" />}
+      // Code de campagne validé côté serveur : le hero porte le prix remisé
+      // dès le premier paint, sans attendre l'hydratation.
+      initialCoupon={initialCoupon}
     />
   );
 }

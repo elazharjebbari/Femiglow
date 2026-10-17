@@ -41,6 +41,7 @@ import { getTranslations } from 'next-intl/server';
 import { FAQContextuelle } from '@/components/sections';
 import { VideoPlayer4GestesKitBound } from '@/components/sections/VideoPlayer4GestesKitBound';
 import { HeroProduitBound } from '@/components/sections/HeroProduitBound';
+import { StoriesVideoBound } from '@/components/sections/StoriesVideoBound';
 import { CompositionRevealBound } from '@/components/sections/CompositionRevealBound';
 import { IngredientsDetailsBound } from '@/components/sections/IngredientsDetailsBound';
 import { resolveKitComposition } from '@/lib/kit/composition/resolver';
@@ -63,8 +64,8 @@ export async function KitPageLayoutV2({
   dbProduct,
   productJsonLd,
   reviewStats,
-  ritualSummary,
   locale,
+  initialCoupon,
 }: KitPageLayoutProps) {
   const effectiveLocale = locale ?? DEFAULT_LOCALE;
   // Phase 7E — strings de niveau layout (kicker/title JournalGrid) localisées.
@@ -120,6 +121,7 @@ export async function KitPageLayoutV2({
 
       {/* — 1. HERO — première zone de conversion (CTA → scroll wizard) */}
       <HeroProduitBound
+        initialCoupon={initialCoupon}
         product={dbProduct}
         reassurances={content.reassurances}
         componentKey="kit-hero-produit"
@@ -128,15 +130,17 @@ export async function KitPageLayoutV2({
         // remplacer le nom DB FR ("Pack FemiGlow") et la tagline FR hardcodée.
         displayName={content.product.name}
         taglineFallback={content.product.tagline}
-        // Count badge avis depuis le module rituels (47 en DB courante).
-        // Fallback handsTestimonials si rituals vide. L'ancre cliquable
-        // cible #rituals-module-title (cf. HeroProduitBound).
-        reviewsCountOverride={
-          ritualSummary.totalCount > 0
-            ? ritualSummary.totalCount
-            : (content.handsTestimonials?.length ?? 0)
-        }
+        // Avis : même objet que le bloc pack/prix et le JSON-LD
+        // (`getKitReviewStats`). Null → badge masqué.
+        reviewStats={reviewStats}
       />
+
+      {/* — 1bis. STORIES vidéo shoppables — DESKTOP uniquement ici (après le
+        Hero). Sur mobile, le bloc est rendu DANS le hero (sous les images,
+        avant le titre) via `storiesSlot`. Voir docs/stories-video-2026-08-21/. */}
+      <div className="hidden lg:block">
+        <StoriesVideoBound locale={locale} />
+      </div>
 
       {/* — 2. PREUVE 1 : Composition (qualité formule) — §4.3 */}
       <CompositionRevealBound
@@ -159,6 +163,7 @@ export async function KitPageLayoutV2({
         dessous matérialise la « 2ème zone de conversion » Kolenda §4.6.
       */}
       <ProductFeedSectionBound
+        initialCoupon={initialCoupon}
         product={dbProduct}
         content={content}
         reviewStats={reviewStats}
@@ -209,8 +214,8 @@ export async function KitPageLayoutV2({
 
       {/*
         — 8. SOCIAL PROOF À GRANDE ÉCHELLE : Voix de la maison §4.8 —
-        Module rituels (47 initiées ont partagé, 38 reprendraient). C'est
-        ce module qui alimente le compteur du badge hero et son ancre.
+        Module rituels (témoignages approuvés). Son compteur est celui du
+        badge hero, du bloc pack/prix et du JSON-LD (`getKitReviewStats`).
         Position post-wizard : capte les hésitants à grande échelle.
       */}
       <RitualsModuleBound productKey="pack-femiglow" locale={effectiveLocale} />

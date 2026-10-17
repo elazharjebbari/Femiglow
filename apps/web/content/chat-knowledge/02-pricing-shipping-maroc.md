@@ -8,13 +8,14 @@
 ## Combien coûte le pack FemiGlow ?
 
 Le pack complet (paste + powder + polissoir Step 4 Polish & Shine) est
-à **199 dh** — prix d'introduction de la maison, contre **390 dh** en
+à **199 dh** — prix d'introduction de la maison, contre **289 dh** en
 référence. Pas d'abonnement, pas de carte cachée.
 
 ### Faits liés
 - Tarifs valables au Maroc, en MAD, TVA incluse.
-- Un pack tient en moyenne 3 à 4 mois à l'usage régulier (5 minutes
-  par soir).
+- Un pack permet environ 25 soins, soit environ six mois à raison d'un
+  soin de cinq minutes par semaine. Coût annuel : environ deux packs
+  (≈ 400 dh).
 - Le pack inclut le guide papier en français, arabe et darija.
 
 ### Ne JAMAIS dire
@@ -28,10 +29,8 @@ La **livraison est offerte au Maroc**, **sans seuil de commande** et
 sans condition.
 
 ### Faits liés
-- Délai standard : 24 à 72 h selon la ville.
-- Rabat : 24 h ouvrées.
-- Casablanca, Salé : 24 à 48 h ouvrées.
-- Reste du Maroc : 48 à 72 h ouvrées.
+- Rabat : 24 h.
+- Reste du Maroc : 48 à 72 h.
 - Transporteur : Amana / Cathédis / Aramex selon ville.
 
 ## Y a-t-il des frais cachés ?

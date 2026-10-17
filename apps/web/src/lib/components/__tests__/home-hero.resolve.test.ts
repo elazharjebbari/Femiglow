@@ -34,7 +34,7 @@ describe('home-hero — cascade default ▸ binding (P12)', () => {
     expect(out.title?.value).toBe('Le rituel ongles, en cinq minutes.');
     expect(out.kicker?.value).toBe('Maison de Rabat');
     expect(out.subtitle?.value).toBe(
-      'Trois gestes, une saison. Une beauté lente, ancrée au Maroc.',
+      'Quatre gestes, une fois par semaine. Une beauté lente, ancrée au Maroc.',
     );
     expect(out.cta?.value).toEqual({
       label: 'Découvrir le rituel',

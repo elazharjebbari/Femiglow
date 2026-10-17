@@ -146,6 +146,8 @@ export async function POST(req: NextRequest): Promise<Response> {
                   : ('created' as const),
               totalCents: order.totalCents,
               currency: order.currency,
+              couponCode: order.couponCode ?? null,
+              discountCents: order.discountCents ?? 0,
             },
             resourceId: order.id,
           };
@@ -287,6 +289,10 @@ export async function POST(req: NextRequest): Promise<Response> {
       const orderId = result.resourceId;
       const totalCents = (result.body as { totalCents: number }).totalCents;
       const currency = (result.body as { currency: string }).currency;
+      // Promo — transmis au CRM pour que la carte Trello porte le code et le
+      // montant remisé à côté du total net.
+      const couponCode = (result.body as { couponCode?: string | null }).couponCode ?? null;
+      const discountCents = (result.body as { discountCents?: number }).discountCents ?? 0;
       const ip =
         req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
         req.headers.get('x-real-ip') ??
@@ -312,6 +318,8 @@ export async function POST(req: NextRequest): Promise<Response> {
               orderId,
               totalCents,
               currency,
+              couponCode,
+              discountCents,
               items: webhookItems,
               shippingMode: input.shippingMode,
               paymentMethod: input.paymentMethod,
@@ -321,7 +329,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         } catch (err) {
           logger.error('owbs.order_webhook.enqueue_failed', { orderId, error: String(err) });
           void dispatchOrderWebhook({
-            order: { id: orderId, totalCents, currency },
+            order: { id: orderId, totalCents, currency, couponCode, discountCents },
             items: webhookItems,
             lead: leadSnapshot,
             shippingMode: input.shippingMode,
@@ -331,7 +339,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         }
       } else {
         void dispatchOrderWebhook({
-          order: { id: orderId, totalCents, currency },
+          order: { id: orderId, totalCents, currency, couponCode, discountCents },
           items: webhookItems,
           lead: leadSnapshot,
           shippingMode: input.shippingMode,

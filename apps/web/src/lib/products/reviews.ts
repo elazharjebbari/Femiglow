@@ -1,38 +1,35 @@
 /**
- * Reviews aggregation — feeds the social-proof block of `<ProductFeedSection/>`
- * (rating + reviewsCount) and the `aggregateRating` of the Product JSON-LD.
+ * Avis du pack — source unique du compteur et de la note affichés partout
+ * (hero, badge social proof, bloc pack/prix, section avis, JSON-LD
+ * `aggregateRating`, flux catalogue Merchant).
  *
- * Pourquoi un module dédié plutôt qu'une lecture in-line dans le builder ?
+ * Règles :
+ *  - **Compteur** = nombre de témoignages approuvés du module rituels
+ *    (`ritual_testimonials`, agrégés dans `ritual_aggregate`). C'est le même
+ *    chiffre que la section « Les voix de la maison » plus bas dans la page.
+ *  - **Note** = moyenne réelle des avis notés (1 à 5) quand il en existe.
+ *    Les témoignages rituels ne portent pas de note : sans avis noté, la note
+ *    vaut `null` et n'est pas affichée (aucune étoile inventée).
+ *  - **Aucune donnée** (mode mémoire, base vide) → `null` : les surfaces
+ *    masquent le compteur et la note. Pas de chiffre de démarrage.
  *
- *  - **Source unique** : le rating qui s'affiche sur `/kit`, dans `/feed.xml`
- *    et dans le JSON-LD doit être strictement le même. Sans ce module, on
- *    finit par avoir 3 chiffres différents (literal hardcodé, agrégation
- *    DB, mock testimonials).
- *  - **Builder pur** : `buildKitProductFeed` reste sync + sans I/O. Le
- *    fetch des stats se fait côté caller (RSC qui peut faire `await`),
- *    puis on injecte le résultat dans le builder.
- *  - **Fallback gracieux** : tant que la DB de reviews n'a pas de
- *    données (cohorte de démarrage), on retourne `null` ici et le
- *    builder retombe sur `DEFAULT_KIT_REVIEW_STATS`. C'est ce qu'on
- *    appelle un « cached starter rating » (Kolenda Pricing #14 — chiffres
- *    précis dès le premier hit, sans afficher 0/5 sur un produit fraîchement
- *    publié).
- *  - **Mockable** : les tests d'intégration mockent ce module via
- *    `vi.mock('@/lib/products/reviews', …)` plutôt que de polluer le
- *    memoryStore avec des reviews fictives à chaque suite.
- *
- * État actuel : la table `productReviews` n'existe pas encore en DB
- * (Drizzle). On stocke les reviews dans le memoryStore via le pattern
- * `ext()` — même approche que `products.ts`. Quand le sprint « collecte
- * d'avis » ajoutera la table, il suffira d'ajouter la branche `db()`
- * ici sans toucher aux callers ni aux tests.
+ * Les callers RSC appellent `getKitReviewStats()` une fois et propagent le
+ * résultat ; le builder `buildKitProductFeed` reste pur.
  */
 import { memoryStore } from '@/lib/db/client';
+import { getRitualSummary } from '@/lib/db/queries/rituals';
+
+/** Clé produit du pack dans le module rituels (`ritual_testimonials`). */
+export const KIT_RITUAL_PRODUCT_KEY = 'pack-femiglow';
 
 /** Stat agrégée d'un produit. */
 export interface ProductReviewStats {
-  /** Note moyenne arrondie à 1 décimale (ex : 4.8). */
-  rating: number;
+  /**
+   * Note moyenne arrondie à 1 décimale (ex : 4.6), calculée sur des avis
+   * réellement notés. `null` quand aucun avis noté n'existe : on affiche
+   * alors le compteur seul, sans étoiles.
+   */
+  rating: number | null;
   /** Nombre total d'avis comptabilisés. */
   reviewsCount: number;
 }
@@ -52,25 +49,6 @@ export interface ProductReview {
   createdAt: Date;
 }
 
-/**
- * Fallback rating exposé au public quand la base de reviews est vide.
- *
- * Ces chiffres reprennent le « starter rating » historique (4,8 / 287)
- * cohérent avec :
- *  - les témoignages mains du CMS (95 avis × 3 cohortes saisonnières),
- *  - l'historique social proof imprimé sur le visuel produit officiel.
- *
- * **Important** : dès qu'au moins UNE review réelle entre en DB, le
- * fallback s'efface (cf. `getProductReviewStats` ci-dessous). On ne
- * « lisse » pas le starter avec les vraies notes — sinon on mentirait
- * sur le rating réel, et Google Merchant peut suspendre le feed pour
- * inconsistance avec les reviews remontées via Customer Reviews.
- */
-export const DEFAULT_KIT_REVIEW_STATS: ProductReviewStats = {
-  rating: 4.8,
-  reviewsCount: 287,
-};
-
 interface ReviewsStore {
   productReviews: Map<string, ProductReview>;
 }
@@ -89,8 +67,8 @@ function ext(): ReviewsStore {
 /**
  * Calcule la note moyenne (1 décimale) + le nombre d'avis pour un produit.
  *
- * Retourne `null` quand aucune review n'existe — laisse au caller le
- * choix du fallback (généralement `DEFAULT_KIT_REVIEW_STATS`).
+ * Retourne `null` quand aucune review n'existe. Préférer
+ * `getKitReviewStats()` pour l'affichage public du pack.
  *
  * La moyenne est arrondie au dixième : 4.83 → 4.8, 4.85 → 4.9. Cela
  * évite à la fois les chiffres ronds (Pricing #14) et les chiffres
@@ -98,7 +76,7 @@ function ext(): ReviewsStore {
  */
 export async function getProductReviewStats(
   productId: string,
-): Promise<ProductReviewStats | null> {
+): Promise<(ProductReviewStats & { rating: number }) | null> {
   // Drizzle path à câbler quand la table `product_reviews` arrivera. Pour
   // l'instant on lit depuis le memoryStore : c'est ce que le mock seed
   // alimente en dev local et ce que les tests vitest peuvent peupler.
@@ -115,6 +93,30 @@ export async function getProductReviewStats(
     rating: rounded,
     reviewsCount: reviews.length,
   };
+}
+
+/**
+ * Stats d'avis du pack, source unique pour toutes les surfaces publiques.
+ *
+ *  - compteur : témoignages approuvés du module rituels ;
+ *  - note : moyenne des avis notés si disponible, sinon `null` ;
+ *  - `null` si aucune donnée (les surfaces masquent alors compteur et note).
+ *
+ * Une erreur de lecture du module rituels est traitée comme « pas de
+ * donnée » : on masque plutôt que d'afficher un chiffre faux.
+ */
+export async function getKitReviewStats(
+  productId: string,
+): Promise<ProductReviewStats | null> {
+  const [rated, rituals] = await Promise.all([
+    getProductReviewStats(productId),
+    getRitualSummary(KIT_RITUAL_PRODUCT_KEY).catch(() => null),
+  ]);
+  const ritualCount = rituals?.totalCount ?? 0;
+  if (ritualCount > 0) {
+    return { reviewsCount: ritualCount, rating: rated?.rating ?? null };
+  }
+  return rated;
 }
 
 /**

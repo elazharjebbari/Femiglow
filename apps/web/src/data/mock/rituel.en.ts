@@ -26,7 +26,7 @@ export const mockRituelEn: RituelPageContent = {
   hero: {
     variant: 'editorial',
     kicker: 'The ritual',
-    title: 'Japanese manicure. Two gestures. A slow glow.',
+    title: 'Japanese manicure. Four gestures. A slow glow.',
     subtitle: 'A slow method, told in Rabat.',
     image: {
       src: '/rituel/hero-lifestyle.svg',
@@ -40,9 +40,9 @@ export const mockRituelEn: RituelPageContent = {
     kicker: 'Origin',
     titre: 'An attention from Japan, passed on in Rabat.',
     paragraphes: [
-      'In Japan, the care of the hand is not a product: it is a daily attention, slow, without declaration. The Japanese manicure — also known as kawaii or chigiri — dates back to the early 20th century. It reveals the natural shine of the nail through buffing, without polish.',
-      'Our founder brought this gesture back from a training trip. She set it within a Moroccan framework: local materials, halal certification, atelier at 25 bis avenue Patrice Lumumba, in Rabat.',
-      'The result fits in five minutes a day. No promises, no cure. A habit that settles in, as one sets a cup on a wooden table.',
+      'In Japan, the care of the hand is not a product: it is a regular attention, slow, without declaration. The Japanese manicure — also known as kawaii or chigiri — dates back to the early 20th century. It reveals the natural shine of the nail through buffing, without polish.',
+      'Our founder brought this gesture back from a training trip. She set it within a Moroccan framework: local materials, halal formula, atelier at 25 bis avenue Patrice Lumumba, in Rabat.',
+      'The treatment fits in five minutes, once a week. No promises, no cure. A habit that settles in, as one sets a cup on a wooden table.',
     ],
     photoSepia: {
       src: '/rituel/origine-sepia.svg',
@@ -69,7 +69,7 @@ export const mockRituelEn: RituelPageContent = {
       ar: '/captions/rituel-ar.vtt',
     },
     transcript:
-      'The big clean-girl trend for nails is the Japanese manicure. But there is something you absolutely need to know first.\n\nThe Japanese manicure is in fact a care applied to the nail plate that nourishes it and makes it shine for at least three weeks.\n\nOf course, if your nails are damaged, ridged, or a previous removal was poorly done, the result will not be at its best. You need to take care of your nails first so they are repaired as much as possible to reach the optimal result.\n\nThat said, since the Japanese manicure contains beeswax, silicates, pearl powder and many other beautiful things, it helps you repair the plate. It is a deep care.',
+      'The big clean-girl trend for nails is the Japanese manicure. But there is something you absolutely need to know first.\n\nThe Japanese manicure is in fact a care applied to the nail plate that nourishes it and makes it shine for up to three weeks.\n\nOf course, if your nails are damaged, ridged, or a previous removal was poorly done, the result will not be at its best. You need to take care of your nails first so they are repaired as much as possible to reach the optimal result.\n\nThat said, since the Japanese manicure contains beeswax, jojoba oil, rice powder, kaolin and many other beautiful things, it helps you repair the plate. It is a deep care.',
     chapters: [
       { key: 'paste', label: 'Paste', startSeconds: 0 },
       { key: 'powder', label: 'Powder', startSeconds: 18 },
@@ -100,7 +100,7 @@ export const mockRituelEn: RituelPageContent = {
         id: 'halal',
         titre: 'The halal framework',
         paragraphe:
-          'Material traceability, no denatured alcohol, no non-compliant animal derivatives. The label follows an audit by the Halal Cosmetics Council³.',
+          'Material traceability, no denatured alcohol, no non-compliant animal derivatives. The formula follows the public framework of the Halal Cosmetics Council³.',
         sourceRef: '[3]',
       },
     ],
@@ -143,15 +143,15 @@ export const mockRituelEn: RituelPageContent = {
       },
       {
         id: 'q4',
-        question: 'Five minutes a day is little. Why not more?',
+        question: 'Five minutes a week is little. Why not more?',
         reponse:
-          'Because the nail grows 0.1 mm a day. Five minutes is enough to keep pace. More would be useless. Less would be unfaithful.',
+          'Because the nail grows slowly, and the shine lasts up to three weeks. One treatment a week is enough to keep pace. More would be useless. Less would be unfaithful.',
       },
       {
         id: 'q5',
         question: 'What would you advise an initiate who is starting?',
         reponse:
-          'Begin with the Paste. For a week, nothing else. You will see what your nails are telling you. The buffer comes next.',
+          'Watch the video once. Then do the four gestures in order, without rushing. You will see what your nails are telling you.',
       },
     ],
   },

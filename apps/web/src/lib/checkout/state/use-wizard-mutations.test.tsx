@@ -333,6 +333,35 @@ describe('useAddressMutation — crédit de fidélité (anti-422)', () => {
     });
   });
 
+  it('S5-3 code SANS montant validé → code NON transmis (garde anti-422)', async () => {
+    // Régression « commandes à 199 sur Trello » : après un rechargement, le
+    // code pouvait être mémorisé sans son montant. Le total attendu repassait
+    // au prix plein tandis que le code partait quand même : le serveur
+    // déduisait la remise, les totaux divergeaient et la commande échouait en
+    // 422 price_mismatch. On ne transmet le code que s'il est déduit du total.
+    primeSuccess();
+    useWizardStore.setState({ couponCode: 'GLOW99', creditCents: 0, couponKind: 'promo' });
+    const { result } = renderHook(() => useAddressMutation(), { wrapper });
+    await act(async () => {
+      await result.current.execute(runInput);
+    });
+    const payload = createOrderMock.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(payload.couponCode).toBeUndefined();
+    expect(payload.expectedTotalCents).toBe(32000);
+  });
+
+  it('S5-4 code AVEC montant validé → code transmis et total remisé (cohérence)', async () => {
+    primeSuccess();
+    useWizardStore.getState().setCoupon('GLOW99', 10000, 'promo');
+    const { result } = renderHook(() => useAddressMutation(), { wrapper });
+    await act(async () => {
+      await result.current.execute(runInput);
+    });
+    const payload = createOrderMock.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(payload.couponCode).toBe('GLOW99');
+    expect(payload.expectedTotalCents).toBe(22000); // 32000 − 10000
+  });
+
   it('S5-2 sans crédit → pas de couponCode, expectedTotalCents = total (non-régression)', async () => {
     primeSuccess();
     const { result } = renderHook(() => useAddressMutation(), { wrapper });

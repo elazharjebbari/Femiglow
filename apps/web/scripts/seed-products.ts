@@ -82,14 +82,14 @@ interface ProductSeed {
 const KIT_DESCRIPTION = [
   'Le pack FemiGlow réunit deux pots — une paste lissante et une powder lustrante — et un polissoir Step 4 Polish & Shine.',
   'Une manucure japonaise halal, formulée à Rabat par notre équipe.',
-  'Sans vernis. Sans abrasion. Cinq minutes par jour suffisent.',
+  'Sans vernis. Sans abrasion. Quatre gestes, cinq minutes, une fois par semaine.',
 ].join(' ');
 
 const SEEDS: ProductSeed[] = [
   {
     slug: 'le-kit',
     title: 'Pack FemiGlow',
-    tagline: 'Manucure japonaise halal. Deux gestes, un polissoir, un éclat.',
+    tagline: 'Manucure japonaise halal. Quatre gestes, un polissoir, un éclat.',
     description: KIT_DESCRIPTION,
     category: 'kit',
     tags: ['rituel', 'manucure', 'halal', 'paste-powder', 'polissoir'],
@@ -103,7 +103,7 @@ const SEEDS: ProductSeed[] = [
         priceCents: 28900,
         promoPriceCents: 19900,
         weightG: 220,
-        attributes: { format: 'pack complet', usage: 'rituel quotidien' },
+        attributes: { format: 'pack complet', usage: 'rituel hebdomadaire' },
       },
     ],
     seo: {

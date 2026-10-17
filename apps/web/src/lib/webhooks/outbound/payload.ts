@@ -48,6 +48,15 @@ export const outboundPayloadSchema = z
     country: z.string().trim().max(80).optional(),
     email: z.string().trim().email().max(200).optional(),
     total_price: z.number().nonnegative().optional(),
+    /**
+     * Promo — montant remisé (unité monétaire, pas centimes) et code utilisé.
+     * `total_price` porte déjà le NET : ces deux champs disent à l'opérateur
+     * CRM pourquoi il est inférieur au prix catalogue. Omis quand il n'y a
+     * pas de remise (le schéma est strict : tout champ inconnu ferait
+     * échouer la validation et le webhook partirait en `skipped`).
+     */
+    discount_amount: z.number().nonnegative().optional(),
+    coupon_code: z.string().trim().max(64).optional(),
     currency: z
       .string()
       .trim()

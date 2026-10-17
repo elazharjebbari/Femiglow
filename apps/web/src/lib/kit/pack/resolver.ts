@@ -60,14 +60,30 @@ function applyOverride(feed: ProductFeed, override: KitPackOverride): ProductFee
       perUsageHint: pickPatch(override.perUsageHint, feed.hero.perUsageHint),
       ctaAccent: pickPatch(override.ctaAccent, feed.hero.ctaAccent),
     },
-    socialProof: {
-      ...feed.socialProof,
-      countLabelGeo: pickPatch(
-        override.countLabelGeo,
-        feed.socialProof.countLabelGeo,
-      ),
-    },
+    // Sans avis (`socialProof` absent), l'override géo n'a rien à habiller.
+    ...(feed.socialProof
+      ? {
+          socialProof: {
+            ...feed.socialProof,
+            countLabelGeo: withRealCount(
+              pickPatch(override.countLabelGeo, feed.socialProof.countLabelGeo),
+              feed.socialProof.reviewsCount,
+            ),
+          },
+        }
+      : {}),
   };
+}
+
+/**
+ * Le libellé géo saisi en admin ne doit jamais porter un compteur figé :
+ * le jeton `{count}` (ou un nombre figé en tête de libellé, legacy) est
+ * remplacé par le vrai compteur d'avis.
+ */
+function withRealCount(label: string | undefined, count: number): string | undefined {
+  if (!label) return label;
+  if (label.includes('{count}')) return label.split('{count}').join(String(count));
+  return label.replace(/^\s*\d[\d\s\u00A0\u202F]*/, `${count} `);
 }
 
 function resolve(

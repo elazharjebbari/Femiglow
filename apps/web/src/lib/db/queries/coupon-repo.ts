@@ -7,7 +7,7 @@
  *
  * cf. docs/coupons-qa-2026-06-02/01-data-model/.
  */
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
 import { db, memoryStore, schema } from '@/lib/db/client';
 import { createId } from '@/lib/ids';
 import type { CouponRow } from '@/lib/db/schema';
@@ -153,6 +153,30 @@ async function findByCode(code: string): Promise<CouponDef | null> {
   return row ? mapRowToDef(row) : null;
 }
 
+/**
+ * Recherche d'un coupon marketing par code, INSENSIBLE à la casse (la cliente
+ * tape « glow99 », la campagne affiche « GLOW99 »). Espaces périphériques
+ * ignorés. Retourne null si aucun coupon ne porte ce code.
+ */
+export async function findCouponByCode(code: string): Promise<CouponDef | null> {
+  const normalized = code.trim();
+  if (!normalized) return null;
+  const drizzle = db();
+  if (drizzle) {
+    const rows = await drizzle
+      .select()
+      .from(schema.coupons)
+      .where(sql`upper(${schema.coupons.code}) = upper(${normalized})`)
+      .limit(1);
+    return rows[0] ? mapRowToDef(rows[0]) : null;
+  }
+  const upper = normalized.toUpperCase();
+  const row = Array.from(ext().coupons.values()).find(
+    (c) => typeof c.code === 'string' && c.code.toUpperCase() === upper,
+  );
+  return row ? mapRowToDef(row) : null;
+}
+
 export class DuplicateCouponCodeError extends Error {
   constructor(public code: string) {
     super(`Code coupon déjà utilisé : ${code}`);
@@ -217,17 +241,18 @@ export async function setCouponStatus(
 export async function incrementUsage(id: string): Promise<void> {
   const drizzle = db();
   if (drizzle) {
-    const rows = await drizzle
-      .select()
-      .from(schema.coupons)
-      .where(eq(schema.coupons.id, id))
-      .limit(1);
-    if (rows[0]) {
-      await drizzle
-        .update(schema.coupons)
-        .set({ usageCount: rows[0].usageCount + 1 } as never)
-        .where(eq(schema.coupons.id, id));
-    }
+    // ATOMIQUE : `usage_count = usage_count + 1` est évalué par Postgres.
+    // L'ancienne version lisait puis réécrivait : deux commandes simultanées
+    // portant le même code lisaient la même valeur et n'en comptaient qu'une,
+    // ce qui rendait le plafond global (`usageCap`) contournable et le
+    // compteur affiché en admin faux.
+    await drizzle
+      .update(schema.coupons)
+      .set({
+        usageCount: sql`${schema.coupons.usageCount} + 1`,
+        updatedAt: sql`now()`,
+      } as never)
+      .where(eq(schema.coupons.id, id));
     return;
   }
   const row = ext().coupons.get(id);

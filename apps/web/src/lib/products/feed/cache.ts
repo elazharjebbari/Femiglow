@@ -34,7 +34,7 @@ import { unstable_cache } from 'next/cache';
 import { cms } from '@/lib/cms';
 import { PRODUCT_FEED_TAG, productTag } from '@/lib/products/cache';
 import { buildKitPublicProduct, KIT_PRODUCT_SLUG } from '@/lib/products/public';
-import { getProductReviewStats } from '@/lib/products/reviews';
+import { getKitReviewStats } from '@/lib/products/reviews';
 
 import { buildKitProductFeed } from './kit-feed';
 import { merchantFeedXml } from './merchant-xml';
@@ -90,11 +90,10 @@ export async function buildKitFeedXmlUncached(): Promise<CachedFeedXml> {
     cms.getKitPageContent(),
     buildKitPublicProduct(),
   ]);
-  // `getProductReviewStats` retourne null si aucune review en base — le
-  // builder retombe alors automatiquement sur `DEFAULT_KIT_REVIEW_STATS`.
-  // On passe `product.id` (et pas le slug) pour respecter le schéma DB
-  // (foreign key par id, pas par slug).
-  const stats = await getProductReviewStats(product.id);
+  // Même source que la page /kit (`getKitReviewStats`) : compteur des
+  // témoignages approuvés + note réelle. Null si aucune donnée → le feed
+  // n'expose ni compteur ni note.
+  const stats = await getKitReviewStats(product.id);
   const feed = buildKitProductFeed(product, content, stats);
   const lastModified = new Date();
   const body = merchantFeedXml(feed, { lastBuildDate: lastModified });

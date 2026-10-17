@@ -11,13 +11,13 @@ export const menuEntries: MenuEntry[] = [
   {
     label: 'Le rituel',
     href: routes.rituel,
-    description: 'Manucure japonaise halal. Deux gestes, un polissoir.',
+    description: 'Manucure japonaise halal. Quatre gestes, un polissoir.',
     vignette: { src: '/maison/cross-rituel.png', alt: '' },
   },
   {
     label: 'Le pack',
     href: routes.kit,
-    description: 'Paste, powder, polissoir Step 4. Cinq minutes par soir.',
+    description: 'Paste, powder, polissoir Step 4. Cinq minutes, une fois par semaine.',
     vignette: { src: '/maison/cross-kit.png', alt: '' },
   },
   {

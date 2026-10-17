@@ -34,7 +34,11 @@ import { expectNoAxeViolations } from '@/test/axe';
 import { ProductFeedSection } from './ProductFeedSection';
 
 const product = mockKitPageContent.product;
-const feed = buildKitProductFeed(product, mockKitPageContent);
+const feed = buildKitProductFeed(product, mockKitPageContent, {
+  rating: 4.6,
+  reviewsCount: 142,
+});
+const proof = feed.socialProof!;
 
 function renderSection() {
   return render(
@@ -81,12 +85,12 @@ describe('ProductFeedSection', () => {
   it('affiche le bandeau social proof avec rating + nombre + citation', () => {
     renderSection();
     const figure = screen.getByRole('figure', { name: /avis/i });
-    expect(within(figure).getByText(`${feed.socialProof.rating.toFixed(1)}/5`)).toBeInTheDocument();
+    expect(within(figure).getByText(`${proof.rating!.toFixed(1).replace('.', ',')}/5`)).toBeInTheDocument();
     expect(
-      within(figure).getByText(new RegExp(`${feed.socialProof.reviewsCount}\\s*avis`)),
+      within(figure).getByText(new RegExp(`${proof.reviewsCount}\\s*avis`)),
     ).toBeInTheDocument();
-    expect(within(figure).getByText(new RegExp(feed.socialProof.quote))).toBeInTheDocument();
-    expect(within(figure).getByText(new RegExp(feed.socialProof.authorLabel))).toBeInTheDocument();
+    expect(within(figure).getByText(new RegExp(proof.quote))).toBeInTheDocument();
+    expect(within(figure).getByText(new RegExp(proof.authorLabel))).toBeInTheDocument();
   });
 
   it('affiche le bloc prix avec small word (Pricing #2) et microcopy dense (#11)', () => {

@@ -203,7 +203,7 @@ export function validateMerchantFeed(feed: ProductFeed): MerchantLintReport {
   }
 
   // -------- Pricing #14 — chiffres précis (Kolenda) --------
-  if (feed.socialProof.rating === 5) {
+  if (feed.socialProof?.rating === 5) {
     warnings.push({
       code: 'rating-too-round',
       level: 'warning',
@@ -213,6 +213,7 @@ export function validateMerchantFeed(feed: ProductFeed): MerchantLintReport {
     });
   }
   if (
+    feed.socialProof &&
     feed.socialProof.reviewsCount > 0 &&
     feed.socialProof.reviewsCount % 100 === 0
   ) {

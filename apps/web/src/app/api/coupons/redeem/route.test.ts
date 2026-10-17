@@ -11,6 +11,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NextRequest } from 'next/server';
 import { resetMemoryStore } from '@/lib/db/client';
 import * as grantRepo from '@/lib/db/queries/coupon-grant-repo';
+import { createCoupon } from '@/lib/db/queries/coupon-repo';
+import type { CouponInput } from '@/lib/coupons/schemas';
 import { POST } from './route';
 
 const DAY = 24 * 3600 * 1000;
@@ -48,7 +50,7 @@ describe('F14 redeem route', () => {
     const g = await seedGrant({ valueCents: 2000, activatesAt: new Date(Date.now() - DAY) });
     const res = await POST(postReq({ code: g!.code }));
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ valid: true, valueCents: 2000 });
+    expect(await res.json()).toEqual({ valid: true, valueCents: 2000, kind: 'credit' });
   });
 
   it('F14-I002 code inconnu → 200 {valid:false, reason:not_found}', async () => {
@@ -112,5 +114,83 @@ describe('F14 redeem route', () => {
     const g = await seedGrant({ activatesAt: new Date(Date.now() - DAY) });
     const res = await POST(postReq({ code: `  ${g!.code.toLowerCase()}  ` }));
     expect((await res.json()).valid).toBe(true);
+  });
+});
+
+/** Coupon marketing de test (mode code), actif par défaut. */
+async function seedPromo(over: Partial<CouponInput> = {}) {
+  const input: CouponInput = {
+    label: 'Promo Meta 99',
+    code: 'GLOW99',
+    type: 'manual_code',
+    mode: 'code',
+    status: 'active',
+    valueKind: 'fixed_amount',
+    valueAmount: 10000,
+    target: 'product_price',
+    currency: 'MAD',
+    eligibility: {},
+    stackable: true,
+    usageScope: 'unlimited',
+    usageCap: null,
+    holdoutPct: 0,
+    priority: 10,
+    ...over,
+  };
+  return createCoupon(input, null);
+}
+
+describe('F14b redeem route — code promo marketing (coupons.mode=code)', () => {
+  it('F14b-I001 GLOW99 actif → {valid:true, valueCents:10000, kind:promo, code, label}', async () => {
+    await seedPromo();
+    const res = await POST(postReq({ code: 'glow99' }));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({
+      valid: true,
+      valueCents: 10000,
+      kind: 'promo',
+      code: 'GLOW99',
+      label: 'Promo Meta 99',
+    });
+  });
+
+  it('F14b-I002 coupon en pause → reason:inactive', async () => {
+    await seedPromo({ status: 'paused' });
+    const json = await (await POST(postReq({ code: 'GLOW99' }))).json();
+    expect(json).toEqual({ valid: false, reason: 'inactive' });
+  });
+
+  it('F14b-I003 fenêtre expirée → reason:expired', async () => {
+    await seedPromo({ startsAt: new Date(Date.now() - 10 * DAY), endsAt: new Date(Date.now() - DAY) });
+    const json = await (await POST(postReq({ code: 'GLOW99' }))).json();
+    expect(json).toEqual({ valid: false, reason: 'expired' });
+  });
+
+  it('F14b-I004 pas encore commencé → reason:not_yet_active', async () => {
+    await seedPromo({ startsAt: new Date(Date.now() + DAY) });
+    const json = await (await POST(postReq({ code: 'GLOW99' }))).json();
+    expect(json).toEqual({ valid: false, reason: 'not_yet_active' });
+  });
+
+  it('F14b-I005 plafond global atteint → reason:cap_reached', async () => {
+    const c = await seedPromo({ usageScope: 'global_cap', usageCap: 1 });
+    const { incrementUsage } = await import('@/lib/db/queries/coupon-repo');
+    await incrementUsage(c.id);
+    const json = await (await POST(postReq({ code: 'GLOW99' }))).json();
+    expect(json).toEqual({ valid: false, reason: 'cap_reached' });
+  });
+
+  it('F14b-I006 un coupon AUTO (geste d’accueil) n’est pas un code saisissable', async () => {
+    // mode=auto → code interdit ; on force une row via createCoupon avec code null
+    await seedPromo({ code: null, mode: 'auto', type: 'welcome_auto' });
+    const json = await (await POST(postReq({ code: 'GLOW99' }))).json();
+    expect(json).toEqual({ valid: false, reason: 'not_found' });
+  });
+
+  it('F14b-I007 un crédit FG- valide garde la priorité et kind:credit', async () => {
+    await seedPromo();
+    const g = await seedGrant({ valueCents: 2000, activatesAt: new Date(Date.now() - DAY) });
+    const json = await (await POST(postReq({ code: g!.code }))).json();
+    expect(json).toEqual({ valid: true, valueCents: 2000, kind: 'credit' });
   });
 });

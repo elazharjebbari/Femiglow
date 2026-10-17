@@ -26,7 +26,7 @@ import { buildKitProductFeed } from '@/lib/products/feed/kit-feed';
 import { validateMerchantFeed } from '@/lib/products/feed/merchant-linter';
 import { merchantFeedXml } from '@/lib/products/feed/merchant-xml';
 import { buildKitPublicProduct } from '@/lib/products/public';
-import { getProductReviewStats } from '@/lib/products/reviews';
+import { getKitReviewStats } from '@/lib/products/reviews';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,7 +40,7 @@ export default async function AdminProductFeedPage() {
   // reste cohérent avec la page publique pour que le preview admin ne
   // mente pas (le rating/count affiché ici doit être ce que verra Google
   // Merchant + le visiteur).
-  const reviewStats = await getProductReviewStats(product.id);
+  const reviewStats = await getKitReviewStats(product.id);
   const feed = buildKitProductFeed(product, content, reviewStats);
   const xml = merchantFeedXml(feed);
   // Audit Merchant — donne à l'admin une visibilité immédiate sur

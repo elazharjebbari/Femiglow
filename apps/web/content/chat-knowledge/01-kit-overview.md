@@ -9,32 +9,46 @@
 
 Le pack FemiGlow est un rituel complet de **manucure japonaise halal**,
 **édité et expédié depuis Rabat** (25 bis avenue Patrice Lumumba) vers
-toutes les villes du Maroc en 24 à 72 h. Il contient trois objets :
+toutes les villes du Maroc (Rabat 24 h, reste du Maroc 48 à 72 h). Il
+contient trois objets :
 
-1. **Paste FemiGlow** — base nourrissante vert sauge à la cire d'abeille
-   et au jojoba, qui filme et fortifie la kératine.
-2. **Powder FemiGlow** — poudre minérale rose poudré (talc cosmétique,
-   poudre de riz, kaolin) qui lustre et révèle l'éclat naturel.
-3. **Polissoir Step 4 Polish & Shine** — outil bleu ciel qui finalise
-   le geste, sans abrasion.
+1. **Paste FemiGlow (15 g)** — pâte crème, pot à étiquette vert sauge, à
+   la cire d'abeille et à l'huile de jojoba. Elle filme et nourrit la
+   plaque.
+2. **Powder FemiGlow (8 g)** — poudre fine **blanche**, pot à étiquette
+   rose poudré (talc cosmétique, poudre de riz, silice). Elle absorbe
+   l'excès de paste et prépare la brillance.
+3. **Polissoir Step 4 Polish & Shine** — polissoir bleu ciel de 90 mm,
+   trois faces, au kaolin. Il révèle la brillance naturelle.
 
-Le rituel prend **cinq minutes par soir** — deux gestes et un polissoir.
+Le rituel compte **quatre gestes** (préparer, paste, powder, polir) et
+prend **cinq minutes**, **une fois par semaine**. La brillance tient
+**jusqu'à trois semaines**. Une démonstration vidéo de 90 secondes
+montre les quatre gestes.
 
 > Important : FemiGlow n'est pas un institut. On ne prodigue pas de soin
 > sur place : on conçoit le pack et on le livre chez la cliente. Une
 > conseillère confirme chaque commande par WhatsApp avant l'expédition.
 
 ### Faits liés
-- Le pack tient en moyenne **trois à quatre mois** d'usage régulier.
-- Tous les ingrédients sont **halal** et d'origine naturelle.
+- Le pack permet **environ 25 soins**, soit **environ six mois** à
+  raison d'un soin par semaine. Le polissoir dure lui aussi environ six
+  mois. Les recharges arrivent prochainement (pas de date annoncée).
+- Tous les ingrédients sont **halal**. Le pack n'affiche aucune autre
+  certification (ni bio, ni végétalienne).
 - Le guide papier est rédigé en français, arabe et darija.
 
-## Comment utilise-t-on le pack au quotidien ?
+## Comment utilise-t-on le pack ?
 
-Le rituel est court et doux. On dépose une noisette de **paste** sur
-chaque ongle propre, on lustre lentement avec le polissoir Step 4. On
-applique ensuite la **powder**, on polit à nouveau jusqu'à ce que la
-lumière revienne. Pas besoin de vernis, pas de lampe UV, pas d'acétone.
+Le rituel est court et doux, une fois par semaine, en quatre gestes :
+1. **Préparer** — mains propres, ongles secs, un coup de lime pour la
+   forme.
+2. **Paste** — une noisette, étirée sur chaque ongle.
+3. **Powder** — une pincée, déposée sur la paste.
+4. **Polir** — le polissoir Step 4, face après face, jusqu'à ce que la
+   lumière revienne.
+
+Pas besoin de vernis, pas de lampe UV, pas d'acétone.
 
 ### Faits liés
 - Le pack remplace le vernis classique pour celles qui veulent un éclat
@@ -45,10 +59,10 @@ lumière revienne. Pas besoin de vernis, pas de lampe UV, pas d'acétone.
 
 ## Combien de temps avant de voir un résultat ?
 
-Le rituel demande de la régularité : la majorité des clientes voient une
-différence sur la souplesse et la brillance après **2 à 4 semaines**
-d'usage régulier. Ce n'est pas un soin instantané — c'est un changement
-de terrain.
+La brillance se voit dès le premier soin et tient **jusqu'à trois
+semaines**. La souplesse et la résistance de la plaque s'installent sur
+plusieurs semaines de soins hebdomadaires. C'est un soin patient — un
+changement de terrain.
 
 ### Faits liés
 - Cycle de pousse de l'ongle : 3 à 6 mois pour un renouvellement complet.

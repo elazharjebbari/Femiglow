@@ -22,6 +22,7 @@
  * @see docs/i18n-strategy-2026-05/08-plan-action/phases.md §T2.9
  */
 import type { Metadata } from 'next';
+import { resolveUrlCouponSeed } from '@/lib/coupons/server-url-coupon';
 import { cookies, headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
@@ -38,8 +39,8 @@ import {
   KIT_LOCALE,
   KIT_PRODUCT_SLUG,
 } from '@/lib/products/public';
-import { getProductReviewStats } from '@/lib/products/reviews';
-import { getRitualSummary } from '@/lib/db/queries/rituals';
+import { getKitReviewStats } from '@/lib/products/reviews';
+import { KIT_COPY, KIT_FACTS } from '@/lib/products/kit-facts';
 import { resolveOgImage } from '@/lib/components/og-image';
 import { resolvePageWithComponents } from '@/lib/seo/component-resolve';
 import { resolveSeoMetadata } from '@/lib/seo/resolve';
@@ -55,12 +56,17 @@ const FALLBACK_OG = {
 };
 
 const FALLBACK_TITLE = 'Le pack FemiGlow — manucure japonaise';
-const FALLBACK_DESCRIPTION =
-  'Pack FemiGlow — coffret de manucure japonaise en deux gestes. Paste verte sauge, powder rose poudré et polissoir Step 4 Polish & Shine. Pensé à Rabat par notre équipe. Sans vernis, sans abrasion. Livraison offerte au Maroc.';
+const FALLBACK_DESCRIPTION = `Pack FemiGlow — manucure japonaise en ${KIT_COPY.fr.gesturesLower}, ${KIT_COPY.fr.duration} ${KIT_COPY.fr.frequency}. Paste ${KIT_FACTS.paste.grams} g, powder ${KIT_FACTS.powder.grams} g et polissoir Step 4 Polish & Shine. Pensé à Rabat. Sans vernis, sans abrasion. Livraison offerte au Maroc.`;
 
 interface PageProps {
   params: { locale: string };
-  searchParams?: { layout?: string };
+  searchParams?: {
+    layout?: string;
+    /** Code de campagne (`/kit?code=GLOW99`) — voir resolveUrlCouponSeed. */
+    code?: string;
+    promo?: string;
+    coupon?: string;
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -197,8 +203,9 @@ export default async function KitPage({ params, searchParams }: PageProps) {
     }),
   ]);
 
-  const reviewStats = await getProductReviewStats(dbProduct.id);
-  const ritualSummary = await getRitualSummary('pack-femiglow');
+  // Avis — source unique (hero, bloc pack/prix, JSON-LD) : compteur des
+  // témoignages approuvés + note réelle si elle existe ; null → masqués.
+  const reviewStats = await getKitReviewStats(dbProduct.id);
 
   // Tracking ViewContent — CAPI server-side avec pageRoute localisé.
   const reqHeaders = headers();
@@ -268,24 +275,36 @@ export default async function KitPage({ params, searchParams }: PageProps) {
     ? seo.structuredData
     : enrichedAuto;
   const productJsonLd: Record<string, unknown> = { ...baseProductJsonLd };
+  // Note et avis toujours issus de `getKitReviewStats` : on écrase (ou on
+  // retire) ceux d'un éventuel override admin pour ne jamais publier un
+  // chiffre figé.
   if (enrichedAuto.aggregateRating !== undefined) {
     productJsonLd.aggregateRating = enrichedAuto.aggregateRating;
+  } else {
+    delete productJsonLd.aggregateRating;
   }
   if (enrichedAuto.review !== undefined) {
     productJsonLd.review = enrichedAuto.review;
+  } else {
+    delete productJsonLd.review;
   }
 
   // Délégation au layout v1 ou v2 (query param > env var > default).
+  // Code de campagne présent dans l'URL, validé côté serveur pour que le
+  // PREMIER paint porte déjà le prix remisé. Sans `?code=`, aucune requête
+  // n'est émise et le rendu est strictement identique à l'existant.
+  const initialCoupon = await resolveUrlCouponSeed(searchParams);
+
   const qsLayout = searchParams?.layout;
   const effectiveLayout: 'v1' | 'v2' =
     qsLayout === 'v2' ? 'v2' : qsLayout === 'v1' ? 'v1' : KIT_LAYOUT_VERSION;
   const layoutProps = {
+    initialCoupon,
     content,
     journalArticles,
     dbProduct: pricedProduct,
     productJsonLd,
     reviewStats,
-    ritualSummary,
     locale,
   };
   return effectiveLayout === 'v2' ? (

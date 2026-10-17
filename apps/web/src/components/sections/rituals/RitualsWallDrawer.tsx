@@ -399,7 +399,9 @@ function DrawerSurface({
             onClick={onClose}
             className="block w-full bg-encre py-4 text-center font-inter text-sm font-medium text-creme transition-colors hover:bg-encre-soft"
           >
-            Recevoir le pack — 199 dh
+            {/* Pas de prix en dur : la page promo peut afficher 99 MAD
+                (code de campagne) et ce CTA annonçait 199 dh. */}
+            Recevoir le pack
           </a>
           <p className="mt-2 text-center text-xs text-encre/60">
             Livraison offerte au Maroc

@@ -18,7 +18,7 @@ consultiez un médecin ou un dermatologue avant tout usage.
   Voulez-vous qu'une conseillère vous rappelle pour qu'on regarde si le
   rituel est adapté chez vous ?"
 - "Pour un sujet médical, le mieux est de voir un dermatologue —
-  nous, on s'occupe du soin esthétique au quotidien."
+  nous, on s'occupe du soin esthétique."
 
 ### Ne JAMAIS dire
 - "Ça va vous soigner" (interdit).

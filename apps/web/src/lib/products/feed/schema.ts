@@ -87,12 +87,13 @@ const claimSchema = z.object({
 });
 
 const socialProofSchema = z.object({
-  // Pricing #14 — chiffres précis : on n'autorise pas un comptage
-  // explicitement nul (un feed vide est un bug, pas un état valide).
+  // Pricing #14 — chiffres précis : pas de comptage nul. Sans avis, le
+  // bloc `socialProof` est absent plutôt qu'à zéro.
   reviewsCount: z.number().int().min(1),
-  rating: z.number().min(0).max(5),
-  quote: z.string().min(1),
-  authorLabel: z.string().min(1),
+  // Note réelle uniquement : `null` quand aucun avis noté n'existe.
+  rating: z.number().min(0).max(5).nullable(),
+  quote: z.string(),
+  authorLabel: z.string(),
   // Libellé géographique optionnel — fallback `reviewsCount` si absent.
   countLabelGeo: z.string().min(1).max(80).optional(),
 });
@@ -128,7 +129,8 @@ export const productFeedSchema = z.object({
   stepsPostCta: stepsPostCtaSchema.optional(),
   // 3 promesses du visuel (leaf · drop · sparkle).
   claims: z.array(claimSchema).length(3),
-  socialProof: socialProofSchema,
+  // Absent quand aucun avis n'est disponible (compteur et note masqués).
+  socialProof: socialProofSchema.optional(),
 });
 
 export type ProductFeedSchema = z.infer<typeof productFeedSchema>;

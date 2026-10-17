@@ -71,7 +71,7 @@ export function CartContents() {
           Le panier est vide.
         </Heading>
         <Text size="body" tone="secondary">
-          Le rituel commence par un kit. Trois gestes, cinq minutes.
+          Le rituel commence par un kit. Quatre gestes, cinq minutes.
         </Text>
         <div className="pt-2">
           <Link href={routes.kit}>

@@ -105,6 +105,9 @@ export interface PaymentDraft {
   paymentMethod: PaymentMethod | null;
 }
 
+/** Nature d'un code de réduction saisi/appliqué dans le wizard. */
+export type CouponKind = 'credit' | 'promo';
+
 export interface WizardState {
   // Identifiants serveur
   leadId: string | null;
@@ -132,10 +135,19 @@ export interface WizardState {
   /** Code crédit saisi (persisté pour reprise après refresh). */
   couponCode: string | null;
   /**
-   * Montant du crédit validé (centimes). NON persisté : re-validé à l'usage
-   * via /api/coupons/redeem (le serveur reste autoritaire au paiement).
+   * Montant du crédit validé (centimes). Persisté avec le code depuis le
+   * correctif « promo 199→99 » : sans lui, un rechargement laissait
+   * `couponCode` seul, le total attendu repassait au prix plein et la
+   * commande partait sans remise (ou échouait en 422). Le serveur reste
+   * autoritaire : il re-valide le code et recalcule le total à la commande.
    */
   creditCents: number;
+  /**
+   * Nature du code appliqué : `credit` (fidélité, FG-…) ou `promo` (code
+   * marketing partagé, ex. GLOW99 d'une campagne Meta). Persisté avec le code
+   * pour libeller correctement la ligne de réduction après reprise.
+   */
+  couponKind: CouponKind | null;
 
   /**
    * Code de fidélité ÉMIS pour cette commande (Phase 3), à afficher en fin de
@@ -182,8 +194,8 @@ export interface WizardState {
   mergePaymentDraft: (patch: Partial<PaymentDraft>) => void;
   setLeadId: (id: string) => void;
   setOrderId: (id: string) => void;
-  /** Phase 3 — applique un crédit validé (code + montant). */
-  setCoupon: (code: string, creditCents: number) => void;
+  /** Phase 3 — applique un code validé (code + montant + nature, `credit` par défaut). */
+  setCoupon: (code: string, creditCents: number, kind?: CouponKind) => void;
   /** Phase 3 — retire le crédit (code vidé ou ré-édité → re-validation). */
   clearCoupon: () => void;
   /** Phase 3 — mémorise le code de fidélité émis (affichage ThankYou). */
@@ -283,6 +295,7 @@ const INITIAL: Omit<
   paymentDraft: DEFAULT_PAYMENT_DRAFT,
   couponCode: null,
   creditCents: 0,
+  couponKind: null,
   loyalty: null,
   hydrated: false,
   // wizard-kit-optim W0 — tracking enrichi (non-persisté sauf flag dismiss)
@@ -311,9 +324,13 @@ export const wizardStoreCreator: StateCreator<WizardState> = (set) => ({
     set((state) => ({ paymentDraft: { ...state.paymentDraft, ...patch } })),
   setLeadId: (id) => set({ leadId: id }),
   setOrderId: (id) => set({ orderId: id }),
-  setCoupon: (code, creditCents) =>
-    set({ couponCode: code.trim().toUpperCase(), creditCents: Math.max(0, Math.round(creditCents)) }),
-  clearCoupon: () => set({ couponCode: null, creditCents: 0 }),
+  setCoupon: (code, creditCents, kind = 'credit') =>
+    set({
+      couponCode: code.trim().toUpperCase(),
+      creditCents: Math.max(0, Math.round(creditCents)),
+      couponKind: kind,
+    }),
+  clearCoupon: () => set({ couponCode: null, creditCents: 0, couponKind: null }),
   setLoyalty: (loyalty) => set({ loyalty }),
   markSyncDegraded: () => set({ syncDegraded: true }),
   clearSyncDegraded: () => set({ syncDegraded: false }),
@@ -462,9 +479,13 @@ const persistOpts: PersistOptions<WizardState, Partial<WizardState>> = {
     leadDraft: state.leadDraft,
     addressDraft: state.addressDraft,
     paymentDraft: state.paymentDraft,
-    // Phase 3 : on persiste le CODE (reprise) mais pas `creditCents`
-    // (re-validé à l'usage — le serveur reste autoritaire).
+    // Phase 3 : le CODE, son MONTANT et sa NATURE sont persistés ensemble —
+    // un code sans montant produit un total attendu incohérent (cf. garde
+    // anti-422 dans `use-wizard-mutations`). Le serveur re-valide de toute
+    // façon le code à la création de la commande.
     couponCode: state.couponCode,
+    creditCents: state.creditCents,
+    couponKind: state.couponKind,
     loyalty: state.loyalty,
     resumeBannerDismissed: state.resumeBannerDismissed,
   }),

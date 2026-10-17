@@ -186,3 +186,74 @@ describe('dispatchCartAbandonWebhook — payload', () => {
     expect(calls).toBe(0);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PROMO — un panier remisé doit annoncer au CRM le NET, pas le prix catalogue.
+// Régression : la cliente voyait 99 MAD, la carte Trello affichait 199.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('dispatchCartAbandonWebhook — panier remisé par un code promo', () => {
+  function captureNext() {
+    const captured: { body?: string } = {};
+    server.use(
+      http.post('https://hook.example.com/cart', async ({ request }) => {
+        captured.body = await request.text();
+        return HttpResponse.json({ ok: true });
+      }),
+    );
+    return captured;
+  }
+
+  const SNAP_PROMO = {
+    items: [{ sku: 'FEMI-KIT-100', name: 'Pack FemiGlow', quantity: 1, unitPriceCents: 19900 }],
+    totalCents: 19900,
+    discountCents: 10000,
+    couponCode: 'GLOW99',
+    currency: 'MAD',
+  };
+
+  it('PROMO-CA1 total_price = NET (99) et non le total panier (199)', async () => {
+    const captured = captureNext();
+    const result = await dispatchCartAbandonWebhook(makeLead({ cartSnapshot: SNAP_PROMO }));
+    expect(result.status).toBe('sent');
+    const payload = JSON.parse(captured.body!) as Record<string, unknown>;
+    expect(payload.total_price).toBe(99);
+    expect(payload.discount_amount).toBe(100);
+    expect(payload.coupon_code).toBe('GLOW99');
+  });
+
+  it('PROMO-CA2 la note porte le code et le montant remisé', async () => {
+    const captured = captureNext();
+    await dispatchCartAbandonWebhook(makeLead({ cartSnapshot: SNAP_PROMO }));
+    const payload = JSON.parse(captured.body!) as Record<string, unknown>;
+    expect(payload.note).toContain('promo:GLOW99 -100 MAD');
+  });
+
+  it('PROMO-CA3 panier sans remise → payload inchangé (non-régression)', async () => {
+    const captured = captureNext();
+    await dispatchCartAbandonWebhook(
+      makeLead({
+        cartSnapshot: {
+          items: [{ sku: 'FEMI-KIT-100', name: 'Pack FemiGlow', quantity: 1, unitPriceCents: 19900 }],
+          totalCents: 19900,
+          currency: 'MAD',
+        },
+      }),
+    );
+    const payload = JSON.parse(captured.body!) as Record<string, unknown>;
+    expect(payload.total_price).toBe(199);
+    expect(payload).not.toHaveProperty('discount_amount');
+    expect(payload).not.toHaveProperty('coupon_code');
+  });
+
+  it('PROMO-CA4 remise supérieure au panier → total plancher à 0, jamais négatif', async () => {
+    const captured = captureNext();
+    await dispatchCartAbandonWebhook(
+      makeLead({
+        cartSnapshot: { ...SNAP_PROMO, discountCents: 999999 },
+      }),
+    );
+    const payload = JSON.parse(captured.body!) as Record<string, unknown>;
+    expect(payload.total_price).toBe(0);
+  });
+});
