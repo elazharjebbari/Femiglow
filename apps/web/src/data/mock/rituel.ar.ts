@@ -65,7 +65,7 @@ export const mockRituelAr: RituelPageContent = {
     },
     poster: {
       src: '/videos/rituel-poster.svg',
-      alt: 'الحركة الأولى من الطقوس: حبّة بحجم البندقة من عجينة، موضوعة',
+      alt: 'الحركة الأولى: حبة بحجم البندق من العجينة',
       width: 1920,
       height: 1080,
     },
@@ -74,16 +74,15 @@ export const mockRituelAr: RituelPageContent = {
       ar: '/captions/rituel-ar.vtt',
     },
     transcript:
-      'الموضة الكبرى «كلين غيرل» للأظافر هي المانيكور الياباني. لكن، هناك شيء يجب أن تعرفيه قطعا.\n\nالمانيكور الياباني هو في الواقع عناية تُطبَّق على لوحة الظفر وتُغذِّيها وتُلمِّعها حتى ثلاثة أسابيع.\n\nبالطبع، إن كانت أظافرك متعَبة أو مخطّطة أو تمّت إزالة سابقة بشكل سيّئ، النتيجة لن تكون في أفضل حالاتها. عليك أوّلا أن تعتني بأظافرك حتى تُرمَّم بأقصى ما يمكن للحصول على نتيجة مُثلى.\n\nفي المقابل، بما أنّ المانيكور الياباني يحتوي على شمع نحل، زيت جوجوبا، بودرة أرزّ، كاولين وأشياء جميلة كثيرة، فإنّه يساعد على ترميم لوحتك. إنّها عناية عميقة.',
+      'المانيكور الياباني هو صيحة «كلين غيرل» في عالم الأظافر. وإليكِ ما ينبغي أن تعرفيه.\n\nالمانيكور الياباني ليس طلاءً، بل عناية تُوضع على الظفر فتُغذّيه وتمنحه لمعانًا يدوم حتى ثلاثة أسابيع.\n\nإن كانت أظافرك متعبة أو مخطّطة أو أُزيل عنها طلاء سابق بطريقة سيئة، فالنتيجة تتحسّن تدريجيًا مع كل عناية، فامنحيها بضعة أسابيع.\n\nولأنّ المانيكور الياباني يحتوي على شمع النحل وزيت الجوجوبا وبودرة الأرز والكاولين، فهو يساعد على إصلاح الظفر من العمق.',
     chapters: [
-      // Step-names de marque préservés en latin (comme FR/EN) ; le générique
-      // « polissage » reste localisé.
-      { key: 'paste', label: 'Paste', startSeconds: 0 },
-      { key: 'powder', label: 'Powder', startSeconds: 18 },
-      { key: 'step-4', label: 'Step 4', startSeconds: 42 },
-      { key: 'polissage', label: 'تلميع', startSeconds: 68 },
+      // Noms d'étapes traduits en arabe (cohérent avec kit.ar.ts, Phase 9).
+      { key: 'paste', label: 'العجينة', startSeconds: 0 },
+      { key: 'powder', label: 'البودرة', startSeconds: 18 },
+      { key: 'step-4', label: 'الخطوة 4', startSeconds: 42 },
+      { key: 'polissage', label: 'التلميع', startSeconds: 68 },
     ],
-    provenance: 'صُوِّر في ورشة الرباط، مارس 2026.',
+    provenance: 'صُوّر في ورشتنا بالرباط، مارس 2026.',
   },
 
   sciences: {
