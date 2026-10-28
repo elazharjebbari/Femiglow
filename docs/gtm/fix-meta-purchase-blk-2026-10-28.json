@@ -80,6 +80,42 @@
         ],
         "parentFolderId": "703"
       }
+    ],
+    "folder": [
+      {
+        "accountId": "6354322131",
+        "containerId": "251878414",
+        "folderId": "703",
+        "name": "01 — Events"
+      },
+      {
+        "accountId": "6354322131",
+        "containerId": "251878414",
+        "folderId": "708",
+        "name": "02 — Helpers"
+      }
+    ],
+    "variable": [
+      {
+        "accountId": "6354322131",
+        "containerId": "251878414",
+        "variableId": "1013",
+        "name": "Cookie - fg_meta_lead_purchase",
+        "type": "k",
+        "parameter": [
+          {
+            "type": "BOOLEAN",
+            "key": "decodeCookie",
+            "value": "true"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "fg_meta_lead_purchase"
+          }
+        ],
+        "parentFolderId": "708"
+      }
     ]
   }
 }
