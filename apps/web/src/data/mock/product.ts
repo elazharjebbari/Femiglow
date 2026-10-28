@@ -52,7 +52,7 @@ export const mockKit: Product = {
     },
   ],
   inStock: true,
-  estimatedShipping: 'Rabat : 24 h. Maroc : 48 à 72 h. Livraison offerte.',
+  estimatedShipping: 'Rabat : 24 h. Maroc : 48 à 72 h. Frais selon la ville.',
   primaryVariantSku: 'FEMI-KIT-100',
   primaryVariantId: 'pvar_0c01jxc1yn4kjp3b',
 };

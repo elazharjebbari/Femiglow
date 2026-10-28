@@ -198,7 +198,7 @@ export const productSchema = z.object({
   images: z.array(imageSchema).min(1),
   composition: z.array(ingredientSchema),
   inStock: z.boolean().default(true),
-  estimatedShipping: z.string().default('Rabat\u00A0: 24\u202Fh. Maroc\u00A0: 48 \u00E0 72\u202Fh. Livraison offerte.'),
+  estimatedShipping: z.string().default('Rabat\u00A0: 24\u202Fh. Maroc\u00A0: 48 \u00E0 72\u202Fh. Frais selon la ville.'),
   /**
    * CHA-233 — Identifiants de la variant primaire (DB). Optionnels car
    * le mock product n'a pas forcément de variant DB ; côté DB on les

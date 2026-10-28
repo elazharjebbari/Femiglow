@@ -71,7 +71,7 @@ export const mockKitPageContentAr: KitPageContent = {
           'مبرد أزرق بثلاثة أوجه، من الأخشن إلى الأنعم. يُبرز اللمعان الطبيعي للظفر.',
       },
     ],
-    estimatedShipping: 'توصيل مجاني: الرباط خلال 24 ساعة، وباقي المغرب خلال 2 إلى 3 أيام.',
+    estimatedShipping: 'الرباط خلال 24 ساعة، وباقي المغرب خلال 2 إلى 3 أيام. رسوم التوصيل حسب المدينة.',
   },
 
   composition: [
@@ -299,7 +299,7 @@ export const mockKitPageContentAr: KitPageContent = {
       id: 'expedition',
       question: 'كم تستغرق مدة التوصيل؟',
       answer:
-        'الرباط: خلال 24 ساعة. باقي المغرب: من 2 إلى 3 أيام. التوصيل مجاني. وخارج المغرب، ندرس كل وجهة ونرسل عبر DHL مع رقم تتبّع.',
+        'الرباط: خلال 24 ساعة. باقي المغرب: من 2 إلى 3 أيام. رسوم التوصيل حسب المدينة، وتظهر قبل تأكيد الطلب. وخارج المغرب، ندرس كل وجهة ونرسل عبر DHL مع رقم تتبّع.',
     },
     {
       id: 'retours',
@@ -384,7 +384,7 @@ export const mockKitPageContentAr: KitPageContent = {
   reassurances: [
     {
       icon: 'shipping',
-      label: 'توصيل مجاني',
+      label: 'توصيل إلى كل مدن المغرب',
       detail: 'الرباط خلال 24 ساعة، وباقي المغرب خلال 2–3 أيام',
     },
     { icon: 'return', label: 'إرجاع خلال 30 يومًا', detail: 'حتى لو كان مفتوحًا' },

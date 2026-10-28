@@ -307,7 +307,6 @@ function buildHero(product: Product): ProductFeedHero {
       valueLabel: `${polissoirVal} ${currencyUnit}`,
     },
     { label: 'Notice rituel + carte', valueLabel: 'offert', muted: true },
-    { label: 'Livraison au Maroc', valueLabel: 'offert', muted: true },
   ];
 
   // Coût par soin : le pack contient ~25 soins (un par semaine, environ
@@ -325,7 +324,7 @@ function buildHero(product: Product): ProductFeedHero {
     ctaLabel: 'Commander le rituel',
     // Microcopy serrée (Pricing #11) — chiffres précis (Pricing #14).
     ctaMicrocopy:
-      'Paste · Powder · Polissoir Step 4 inclus · Livraison offerte au Maroc · Paiement à la livraison · Retour 30 j.',
+      'Paste · Powder · Polissoir Step 4 inclus · Livraison partout au Maroc · Paiement à la livraison · Retour 30 j.',
     priceCompareAt: compareLabel,
     priceCompareAtAriaLabel: `Prix non packagé ${compareLabel}`,
     valueBreakdown,

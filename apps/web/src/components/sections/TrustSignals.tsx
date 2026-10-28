@@ -13,8 +13,8 @@ interface Signal {
 const signals: Signal[] = [
   {
     id: 'livraison',
-    title: 'Livraison offerte',
-    body: 'Rabat\u202F: 24\u202Fheures. Reste du Maroc\u202F: 48 \u00E0 72\u202Fheures. Sans seuil ni surcoût.',
+    title: 'Livraison partout au Maroc',
+    body: 'Rabat\u202F: 24\u202Fheures. Reste du Maroc\u202F: 48 \u00E0 72\u202Fheures. Frais selon la ville, affichés avant validation.',
     icon: 'truck',
   },
   {

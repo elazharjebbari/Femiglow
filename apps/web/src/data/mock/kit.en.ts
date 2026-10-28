@@ -66,7 +66,7 @@ export const mockKitPageContentEn: KitPageContent = {
           'Sky blue rectangular buffer. Three sides, three grains. Reveals the natural shine.',
       },
     ],
-    estimatedShipping: 'Rabat: 24 h. Morocco: 48 to 72 h. Free shipping.',
+    estimatedShipping: 'Rabat: 24 h. Morocco: 48 to 72 h. Fee depends on the city.',
   },
 
   composition: [
@@ -290,7 +290,7 @@ export const mockKitPageContentEn: KitPageContent = {
       id: 'expedition',
       question: 'What are the shipping times?',
       answer:
-        'Rabat: 24 h. Rest of Morocco: 48 to 72 h. Free shipping. International: we study each destination, shipping is by DHL with tracking.',
+        'Rabat: 24 h. Rest of Morocco: 48 to 72 h. Delivery fee depends on the city, shown before you confirm. International: we study each destination, shipping is by DHL with tracking.',
     },
     {
       id: 'retours',
@@ -377,7 +377,7 @@ export const mockKitPageContentEn: KitPageContent = {
   reassurances: [
     {
       icon: 'shipping',
-      label: 'Free shipping',
+      label: 'Delivery across Morocco',
       detail: 'Rabat 24 h — Morocco 48 to 72 h',
     },
     { icon: 'return', label: '30-day return', detail: 'Even opened' },

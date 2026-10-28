@@ -237,7 +237,7 @@ export const mockKitPageContent: KitPageContent = {
       id: 'expedition',
       question: 'Quels sont les d\u00e9lais de livraison\u202F?',
       answer:
-        'Rabat\u202F: 24 h. Reste du Maroc\u202F: 48 \u00e0 72 h. Livraison offerte. International\u202F: nous \u00e9tudions chaque destination, l\u2019envoi se fait par DHL avec suivi.',
+        'Rabat\u202F: 24 h. Reste du Maroc\u202F: 48 \u00e0 72 h. Frais de livraison selon la ville, affich\u00e9s avant validation. International\u202F: nous \u00e9tudions chaque destination, l\u2019envoi se fait par DHL avec suivi.',
     },
     {
       id: 'retours',
@@ -323,7 +323,7 @@ export const mockKitPageContent: KitPageContent = {
   reassurances: [
     {
       icon: 'shipping',
-      label: 'Livraison offerte',
+      label: 'Livraison partout au Maroc',
       detail: 'Rabat 24 h \u2014 Maroc 48 \u00e0 72 h',
     },
     { icon: 'return', label: 'Retour 30 jours', detail: 'M\u00eame entam\u00e9' },

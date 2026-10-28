@@ -174,7 +174,7 @@
     "kit": {
       "metadata": {
         "title_fallback": "Le pack FemiGlow — manucure japonaise",
-        "description_fallback": "Pack FemiGlow — coffret de manucure japonaise en quatre gestes. Paste (étiquette vert sauge), powder (étiquette rose poudré) et polissoir Step 4 Polish & Shine. Pensé à Rabat par notre équipe. Sans vernis, sans abrasion. Livraison offerte au Maroc.",
+        "description_fallback": "Pack FemiGlow — coffret de manucure japonaise en quatre gestes. Paste (étiquette vert sauge), powder (étiquette rose poudré) et polissoir Step 4 Polish & Shine. Pensé à Rabat par notre équipe. Sans vernis, sans abrasion. Livraison partout au Maroc, paiement à la livraison.",
         "og_alt": "Le pack FemiGlow — paste, powder, polissoir Step 4"
       },
       "product": {
@@ -183,7 +183,7 @@
         "description": "Le pack FemiGlow réunit deux pots — une paste lissante de 15 g et une powder lustrante de 8 g — et un polissoir Step 4 Polish & Shine. Une manucure japonaise, formulée à Rabat par notre équipe. Sans vernis. Sans abrasion. Cinq minutes, une fois par semaine, suffisent.",
         "image_alt_primary": "Pack FemiGlow ouvert sur fond pastel — pot paste à l’étiquette vert sauge, pot powder à l’étiquette rose poudré, polissoir Step 4 bleu ciel, vague rose poudré, typographie FemiGlow",
         "image_alt_secondary": "Mains aux ongles nus, courts à moyens, naturellement brillants après le rituel paste-powder-polish",
-        "shipping_estimate": "Rabat : 24 h. Maroc : 48 à 72 h. Livraison offerte."
+        "shipping_estimate": "Rabat : 24 h. Maroc : 48 à 72 h. Frais selon la ville."
       },
       "composition": {
         "paste": {
@@ -331,7 +331,7 @@
         },
         "expedition": {
           "question": "Quels sont les délais de livraison ?",
-          "answer": "Rabat : 24 h. Reste du Maroc : 48 à 72 h. Livraison offerte. International : nous étudions chaque destination, l’envoi se fait par DHL avec suivi."
+          "answer": "Rabat : 24 h. Reste du Maroc : 48 à 72 h. Frais de livraison selon la ville, affichés avant validation. International : nous étudions chaque destination, l’envoi se fait par DHL avec suivi."
         },
         "retours": {
           "question": "Puis-je retourner le pack ?",
@@ -371,7 +371,7 @@
       },
       "reassurances": {
         "shipping": {
-          "label": "Livraison offerte",
+          "label": "Livraison partout au Maroc",
           "detail": "Rabat 24 h — Maroc 48 à 72 h"
         },
         "return": {
@@ -422,14 +422,14 @@
           "wudu": "Compatible woudou"
         },
         "trust": {
-          "delivery": "Livraison offerte",
+          "delivery": "Livraison partout au Maroc",
           "cod": "Paiement à la livraison"
         }
       },
       "commander": {
         "kicker_default": "Commander le rituel",
         "title_default": "Quatre gestes, livrés chez vous.",
-        "subtitle_default": "Quelques coordonnées, une adresse au Maroc, et nous nous occupons du reste. Livraison offerte : Rabat 24 h, reste du Maroc 48 à 72 h."
+        "subtitle_default": "Quelques coordonnées, une adresse au Maroc, et nous nous occupons du reste. Livraison : Rabat 24 h, reste du Maroc 48 à 72 h."
       },
       "sticky": {
         "aria_region": "Achat rapide"
@@ -467,7 +467,7 @@
           "lead": "Trois objets dans la main, quatre gestes en cinq minutes. On prépare l’ongle, la paste filme, la powder lustre, le polissoir Step 4 révèle — manucure japonaise, pensée à Rabat.",
           "price_prefix": "Tout compris :",
           "cta_label": "Commander le rituel",
-          "cta_microcopy": "Paste · Powder · Polissoir Step 4 inclus · Livraison offerte au Maroc · Paiement à la livraison · Retour 30 j."
+          "cta_microcopy": "Paste · Powder · Polissoir Step 4 inclus · Livraison partout au Maroc · Paiement à la livraison · Retour 30 j."
         },
         "compare_at_aria": "Prix non packagé {price}",
         "value": {
@@ -906,7 +906,7 @@
         },
         "livraison": {
           "question": "Quels sont les délais de livraison ?",
-          "answer": "Rabat : 24 heures. Reste du Maroc : 48 à 72 heures. Livraison offerte au Maroc, sans seuil. À l’international, écrivez-nous, nous étudions chaque envoi à la main."
+          "answer": "Rabat : 24 heures. Reste du Maroc : 48 à 72 heures. Frais de livraison selon la ville, affichés avant validation de la commande. À l’international, écrivez-nous, nous étudions chaque envoi à la main."
         },
         "formation": {
           "question": "Comment suivre une formation avec notre équipe ?",
@@ -1134,7 +1134,7 @@
         "kicker": "Réassurance",
         "title": "Trois engagements simples.",
         "livraison": {
-          "title": "Livraison offerte",
+          "title": "Livraison partout au Maroc",
           "body": "Rabat : 24 heures. Reste du Maroc : 48 à 72 heures. Sans seuil ni surcoût."
         },
         "retour": {

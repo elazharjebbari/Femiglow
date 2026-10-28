@@ -31,7 +31,7 @@ const FALLBACK_OG = {
 };
 
 const FALLBACK_TITLE = 'Le pack FemiGlow — manucure japonaise';
-const FALLBACK_DESCRIPTION = `Pack FemiGlow — manucure japonaise en ${KIT_COPY.fr.gesturesLower}, ${KIT_COPY.fr.duration} ${KIT_COPY.fr.frequency}. Paste ${KIT_FACTS.paste.grams} g, powder ${KIT_FACTS.powder.grams} g et polissoir Step 4 Polish & Shine. Pensé à Rabat. Sans vernis, sans abrasion. Livraison offerte au Maroc.`;
+const FALLBACK_DESCRIPTION = `Pack FemiGlow — manucure japonaise en ${KIT_COPY.fr.gesturesLower}, ${KIT_COPY.fr.duration} ${KIT_COPY.fr.frequency}. Paste ${KIT_FACTS.paste.grams} g, powder ${KIT_FACTS.powder.grams} g et polissoir Step 4 Polish & Shine. Pensé à Rabat. Sans vernis, sans abrasion. Livraison partout au Maroc, paiement à la livraison.`;
 
 export async function generateMetadata(): Promise<Metadata> {
   const og = (await resolveOgImage('kit-og')) ?? FALLBACK_OG;

@@ -773,7 +773,7 @@ export const SITE_COMPONENT_REGISTRY: SiteComponentSeed[] = [
         type: 'list',
         required: false,
         defaultValue: [
-          'Livraison offerte',
+          'Livraison partout au Maroc',
           'Paiement à la livraison',
         ],
         description:

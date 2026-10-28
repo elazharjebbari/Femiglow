@@ -58,7 +58,7 @@ const CLAIM_KEY_BY_ICON: Record<string, string> = {
 };
 
 // Le `valueBreakdown` du hero (kit-feed.ts `buildHero`) est ordonné :
-// [paste, powder, buffer, notice(muted), shipping(muted)]. On mappe la
+// [paste, powder, buffer, notice(muted)]. On mappe la
 // position vers la clé du namespace `value_breakdown.*` pour traduire le
 // `label`. La logique numérique (`valueLabel` prix) est préservée pour les
 // items non `muted` ; pour les items `muted` (offert), on bascule le
@@ -68,7 +68,6 @@ const VALUE_BREAKDOWN_KEY_BY_INDEX: Record<number, string> = {
   1: 'powder',
   2: 'buffer',
   3: 'notice',
-  4: 'shipping',
 };
 
 /**

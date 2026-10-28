@@ -404,7 +404,7 @@ function DrawerSurface({
             Recevoir le pack
           </a>
           <p className="mt-2 text-center text-xs text-encre/60">
-            Livraison offerte au Maroc
+            Livraison partout au Maroc · paiement à la livraison
           </p>
         </footer>
           </>

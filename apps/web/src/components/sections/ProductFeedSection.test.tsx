@@ -101,7 +101,7 @@ describe('ProductFeedSection', () => {
     // Microcopy dense : on cherche un fragment caractéristique au lieu du
     // littéral entier (séparateurs typographiques + espaces fins peuvent
     // varier).
-    expect(screen.getByText(/livraison offerte au maroc/i)).toBeInTheDocument();
+    expect(screen.getByText(/livraison partout au maroc/i)).toBeInTheDocument();
   });
 
   it('rend le CTA `CommanderAnchorButton` avec le label custom du feed (CHA-246)', () => {
