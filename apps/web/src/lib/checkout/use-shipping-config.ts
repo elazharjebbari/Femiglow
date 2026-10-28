@@ -7,10 +7,10 @@
  * `{ freeShipping, loading }`. Cache mémoire global au module (évite
  * de re-fetch dans chaque composant qui en a besoin).
  *
- * Défaut optimiste : `freeShipping = true` avant la résolution du fetch —
- * cohérent avec la valeur par défaut côté serveur. Si l'admin a désactivé
- * l'offre, le 1er paint affichera "offerte" pendant ~200ms puis le vrai
- * prix une fois la config résolue (acceptable, non-destructif).
+ * Défaut : `freeShipping = false` avant la résolution du fetch — cohérent
+ * avec la valeur par défaut côté serveur (livraison payante). Si l'admin
+ * active l'offre, le 1er paint affiche le prix pendant ~200ms puis
+ * « offerte » une fois la config résolue (jamais l'inverse).
  */
 import { useEffect, useState } from 'react';
 
@@ -41,13 +41,13 @@ async function fetchConfig(): Promise<ShippingConfigResponse> {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = (await res.json()) as ShippingConfigResponse;
     const value: ShippingConfigResponse = {
-      freeShipping: typeof data.freeShipping === 'boolean' ? data.freeShipping : true,
+      freeShipping: typeof data.freeShipping === 'boolean' ? data.freeShipping : false,
     };
     cache = { kind: 'ready', value };
     notify(value);
     return value;
   } catch {
-    const fallback: ShippingConfigResponse = { freeShipping: true };
+    const fallback: ShippingConfigResponse = { freeShipping: false };
     cache = { kind: 'ready', value: fallback };
     notify(fallback);
     return fallback;
@@ -67,7 +67,7 @@ export function useShippingConfig(): {
 } {
   const [value, setValue] = useState<ShippingConfigResponse>(() => {
     if (cache.kind === 'ready') return cache.value;
-    return { freeShipping: true };
+    return { freeShipping: false };
   });
   const [loading, setLoading] = useState<boolean>(() => cache.kind !== 'ready');
 

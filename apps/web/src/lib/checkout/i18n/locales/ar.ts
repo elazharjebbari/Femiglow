@@ -48,7 +48,7 @@ export const dictionaryAr: WizardDictionary = {
     notesLabel: 'ملاحظة لعامل التوصيل (اختياري)',
     notesPlaceholder: 'رمز الإنتركوم، الوقت المفضل، تعليمات…',
     shippingTitle: 'طريقة التوصيل',
-    shippingFreeBody: 'توصيل مجاني: الرباط 24 ساعة، باقي المغرب 48 إلى 72 ساعة.',
+    shippingFreeBody: 'رسوم التوصيل حسب مدينتك، تُدفع عند الاستلام مع طلبك.',
     shippingDynamicFreeBody: (eta) =>
       `توصيل مجاني خلال ${eta} — الدفع عند الاستلام.`,
     shippingDynamicPaidBody: (price, eta) =>
@@ -59,7 +59,7 @@ export const dictionaryAr: WizardDictionary = {
   thankYou: {
     title: 'تم استلام طلبك، سنتصل بك.',
     subtitle:
-      'سنتصل بك خلال 24 ساعة لتأكيد التوصيل. الدفع يتم عند الاستلام بدون أي رسوم إضافية.',
+      'سنتصل بك خلال 24 ساعة لتأكيد التوصيل. الدفع يتم عند الاستلام.',
     orderRefLabel: 'رقم الطلب',
     emailConfirmationTitle: 'تلقي تأكيد الطلب عبر البريد الإلكتروني (اختياري)',
     emailConfirmationSubtitle:
@@ -138,6 +138,8 @@ export const dictionaryAr: WizardDictionary = {
     ariaLabel: 'ملخص طلبك',
     packLabel: (quantity) => `${quantity} × مجموعة FemiGlow`,
     shippingIncluded: 'التوصيل مشمول',
+    shippingPending: '+ التوصيل حسب المدينة',
+    shippingAmount: (amount) => `منها التوصيل ${amount}`,
     currency: 'درهم',
   },
   packThumb: {

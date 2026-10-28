@@ -53,7 +53,7 @@ export const flagsDefault: FlagsConfig = {
     betaSeo: false,
     productsCmsEnabled: true,
     appConfigUiEnabled: true,
-    freeShipping: true,
+    freeShipping: false,
     // Indice animé « ↑ Voir le pack ci-dessous » près du menu (header).
     // OFF par défaut : il chevauche la barre promo sticky sur mobile.
     menuHintEnabled: false,

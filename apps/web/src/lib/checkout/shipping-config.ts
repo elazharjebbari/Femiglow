@@ -2,7 +2,8 @@
  * CHA-232 — Configuration livraison (server-side helper).
  *
  * Lit le flag `freeShipping` depuis la cascade admin-config (`flags` section).
- * Par défaut (et si le flag absent), la livraison est **offerte** : `true`.
+ * Par défaut (et si le flag absent), la livraison est **payante** au tarif
+ * de la ville (`delivery_cities`) : `false`.
  *
  * Surfaces qui consomment :
  *   - `/api/checkout/shipping-config` → expose au client via `useShippingConfig()`.
@@ -17,7 +18,7 @@ export interface ShippingConfig {
   freeShipping: boolean;
 }
 
-const DEFAULT_FREE_SHIPPING = true;
+const DEFAULT_FREE_SHIPPING = false;
 
 export async function getShippingConfig(): Promise<ShippingConfig> {
   try {

@@ -89,6 +89,12 @@ export interface CreateOrderInput {
   currency: string;
   paymentMethod: 'cod' | 'bank_transfer' | 'card';
   shippingMode: 'standard' | 'express' | 'pickup';
+  /**
+   * Ville de livraison du lead. Les frais (tarif de la ville, cf.
+   * `resolveShippingCents`) s'AJOUTENT au total produit vérifié :
+   * `expectedTotalCents` reste le net produit (après remises).
+   */
+  shippingCity?: string | null;
   formContext: {
     formId: string;
     formMode: 'wizard_embed' | 'wizard_cart' | 'legacy_cart';
@@ -281,6 +287,11 @@ export const orderRepo = {
       throw new PriceMismatchError(input.expectedTotalCents, computedTotal);
     }
 
+    // Frais de livraison — serveur autoritaire, hors contrôle anti-mismatch
+    // (une ville saisie en frappe libre ne doit jamais bloquer la commande).
+    const { resolveShippingCents } = await import('@/lib/checkout/shipping-fee-server');
+    const shippingCents = await resolveShippingCents(input.shippingCity);
+
     // 2. Réserve le stock pour chaque variant (CAS). Rollback partiel
     //    si l'un échoue.
     const reservations: StockSnapshot[] = [];
@@ -311,10 +322,11 @@ export const orderRepo = {
         id: orderId,
         leadId: legacyLeadId,
         chatLeadId: input.chatLeadId,
-        totalCents: input.expectedTotalCents,
+        totalCents: input.expectedTotalCents + shippingCents,
         currency: input.currency,
         couponCode: appliedCouponCode,
         discountCents,
+        shippingCents,
         shippingMode: input.shippingMode,
         paymentMethod: input.paymentMethod,
         formId: input.formContext.formId,

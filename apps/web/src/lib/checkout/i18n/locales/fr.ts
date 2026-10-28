@@ -45,7 +45,8 @@ export const dictionaryFr: WizardDictionary = {
     notesLabel: 'Note pour le livreur (optionnel)',
     notesPlaceholder: 'Code interphone, créneau préféré, instructions…',
     shippingTitle: 'Mode de livraison',
-    shippingFreeBody: 'Livraison offerte : Rabat 24 h, reste du Maroc 48 à 72 h.',
+    shippingFreeBody:
+      'Frais de livraison selon votre ville, réglés à la livraison avec votre commande.',
     shippingDynamicFreeBody: (eta) =>
       `Livraison gratuite en ${eta} — paiement à la livraison.`,
     shippingDynamicPaidBody: (price, eta) =>
@@ -56,7 +57,7 @@ export const dictionaryFr: WizardDictionary = {
   thankYou: {
     title: 'Commande reçue, on vous rappelle.',
     subtitle:
-      'Nous vous contactons sous 24 h pour confirmer la livraison. Le paiement se fait à la livraison, sans frais.',
+      'Nous vous contactons sous 24 h pour confirmer la livraison. Le paiement se fait à la livraison.',
     orderRefLabel: 'Référence de votre commande',
     emailConfirmationTitle: 'Recevoir la confirmation par email (optionnel)',
     emailConfirmationSubtitle:
@@ -135,6 +136,8 @@ export const dictionaryFr: WizardDictionary = {
     ariaLabel: 'Récapitulatif de votre commande',
     packLabel: (quantity) => `${quantity} × Pack FemiGlow`,
     shippingIncluded: 'livraison incluse',
+    shippingPending: '+ livraison selon la ville',
+    shippingAmount: (amount) => `dont livraison ${amount}`,
     currency: 'MAD',
   },
   packThumb: {

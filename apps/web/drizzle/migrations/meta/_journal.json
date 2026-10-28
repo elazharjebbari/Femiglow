@@ -603,6 +603,13 @@
       "when": 1788847198039,
       "tag": "0085_promo_order_discount",
       "breakpoints": true
+    },
+    {
+      "idx": 86,
+      "version": "7",
+      "when": 1793221274022,
+      "tag": "0086_order_shipping_cents",
+      "breakpoints": true
     }
   ]
 }

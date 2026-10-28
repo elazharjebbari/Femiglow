@@ -44,7 +44,7 @@
  */
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useId, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -255,6 +255,21 @@ export function AddressStep({ cta }: AddressStepProps) {
     });
   };
 
+  // Texte saisi = nom exact d'une ville (sans clic dans le listbox) : on
+  // applique son tarif sans toucher au texte. Le serveur fait le même match.
+  const onCityMatched = useCallback(
+    (city: PublicCity) => {
+      if (useWizardStore.getState().addressDraft.citySlug === city.slug) return;
+      mergeAddressDraft({
+        citySlug: city.slug,
+        cityNameAr: city.nameAr,
+        cityDeliveryPriceMad: city.deliveryPriceMad,
+        cityDeliveryEta: city.deliveryEta,
+      });
+    },
+    [mergeAddressDraft],
+  );
+
   // Si l'utilisateur modifie le champ texte SANS passer par le listbox
   // (frappe libre), on invalide les champs cached pour éviter qu'un prix
   // stale soit affiché alors que le texte ne correspond plus.
@@ -376,6 +391,7 @@ export function AddressStep({ cta }: AddressStepProps) {
               onChange={field.onChange}
               onBlur={field.onBlur}
               onCitySelected={onCitySelected}
+              onExactMatch={onCityMatched}
               testId="wizard-address-city"
             />
           )}

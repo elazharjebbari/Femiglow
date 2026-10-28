@@ -4,7 +4,7 @@
  * Couvre :
  *  - Fetch /api/checkout/shipping-config au premier mount.
  *  - Cache mémoire partagé : un seul fetch même avec plusieurs hooks.
- *  - Fallback `freeShipping: true` en cas d'erreur réseau.
+ *  - Fallback `freeShipping: false` (livraison payante) en cas d'erreur réseau.
  *  - Respect du payload serveur (true/false).
  */
 import { renderHook, waitFor } from '@testing-library/react';
@@ -78,7 +78,7 @@ describe('useShippingConfig', () => {
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('fallback freeShipping=true en cas d\'erreur réseau', async () => {
+  it('fallback freeShipping=false en cas d\'erreur réseau', async () => {
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('network down'));
 
     const { result } = renderHook(() => useShippingConfig());
@@ -86,10 +86,10 @@ describe('useShippingConfig', () => {
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
-    expect(result.current.freeShipping).toBe(true);
+    expect(result.current.freeShipping).toBe(false);
   });
 
-  it('fallback freeShipping=true en cas de payload invalide', async () => {
+  it('fallback freeShipping=false en cas de payload invalide', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       jsonResponse({ unrelated: 1 }),
     );
@@ -99,6 +99,6 @@ describe('useShippingConfig', () => {
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
-    expect(result.current.freeShipping).toBe(true);
+    expect(result.current.freeShipping).toBe(false);
   });
 });

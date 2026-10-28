@@ -163,6 +163,10 @@ export interface WizardDictionary {
     /** Préfixe quantité + nom pack ("× Pack FemiGlow"). */
     packLabel: (quantity: number) => string;
     shippingIncluded: string;
+    /** Ville pas encore saisie : frais à venir selon la ville. */
+    shippingPending: string;
+    /** Frais connus (montant déjà formaté avec devise). */
+    shippingAmount: (amount: string) => string;
     /** Libellé devise affiché (MAD en fr/en, درهم en ar). Phase 9. */
     currency: string;
   };

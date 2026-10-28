@@ -45,7 +45,7 @@ export const dictionaryEn: WizardDictionary = {
     notesLabel: 'Note for the courier (optional)',
     notesPlaceholder: 'Intercom code, preferred time slot, instructions…',
     shippingTitle: 'Delivery method',
-    shippingFreeBody: 'Free delivery: Rabat 24 h, rest of Morocco 48 to 72 h.',
+    shippingFreeBody: 'Delivery fee depends on your city, paid on delivery with your order.',
     shippingDynamicFreeBody: (eta) =>
       `Free delivery in ${eta} — pay on delivery.`,
     shippingDynamicPaidBody: (price, eta) =>
@@ -56,7 +56,7 @@ export const dictionaryEn: WizardDictionary = {
   thankYou: {
     title: 'Order received, we will call you back.',
     subtitle:
-      'We will contact you within 24 h to confirm delivery. Payment is made on delivery, at no extra cost.',
+      'We will contact you within 24 h to confirm delivery. Payment is made on delivery.',
     orderRefLabel: 'Your order reference',
     emailConfirmationTitle: 'Receive the confirmation by email (optional)',
     emailConfirmationSubtitle:
@@ -132,6 +132,8 @@ export const dictionaryEn: WizardDictionary = {
     ariaLabel: 'Summary of your order',
     packLabel: (quantity) => `${quantity} × FemiGlow Pack`,
     shippingIncluded: 'delivery included',
+    shippingPending: '+ delivery by city',
+    shippingAmount: (amount) => `incl. delivery ${amount}`,
     currency: 'MAD',
   },
   packThumb: {

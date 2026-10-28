@@ -32,6 +32,14 @@ export interface WizardCartRecapProps {
   packLabel?: (quantity: number) => string;
   shippingIncludedLabel?: string;
   /**
+   * Frais de livraison (centimes) ajoutés au total affiché. `undefined` →
+   * rendu historique « livraison incluse » ; `null` → ville pas encore
+   * connue (`shippingPendingLabel`) ; `0` → offerte ; `> 0` → montant.
+   */
+  shippingCents?: number | null;
+  shippingPendingLabel?: string;
+  shippingAmountLabel?: (amount: string) => string;
+  /**
    * Phase 9 — libellé devise localisé (MAD en fr/en, درهم en ar). Remplace le
    * code `cart.currency` brut dans le total ET le prix barré. Défaut FR = code.
    */
@@ -72,6 +80,9 @@ export function WizardCartRecap({
   ariaLabel = 'Récapitulatif de votre commande',
   packLabel = (quantity) => `${quantity} × Pack FemiGlow`,
   shippingIncludedLabel = 'livraison incluse',
+  shippingCents,
+  shippingPendingLabel = '+ livraison selon la ville',
+  shippingAmountLabel = (amount) => `dont livraison ${amount}`,
   currencyLabel,
   appliedCreditCents = 0,
   creditLabel = (amount) => `Crédit fidélité −${amount}`,
@@ -89,7 +100,14 @@ export function WizardCartRecap({
   const currencyDisplay = currencyLabel ?? cart.currency;
   // Phase 3 — crédit fidélité plafonné au total (jamais négatif).
   const credit = Math.max(0, Math.min(appliedCreditCents, cart.totalCents));
-  const totalAfterCredit = cart.totalCents - credit;
+  const shippingFee = typeof shippingCents === 'number' ? Math.max(0, shippingCents) : 0;
+  const totalAfterCredit = cart.totalCents - credit + shippingFee;
+  const shippingText =
+    shippingCents === null
+      ? shippingPendingLabel
+      : shippingFee > 0
+        ? shippingAmountLabel(`${(shippingFee / 100).toFixed(0)} ${currencyDisplay}`)
+        : shippingIncludedLabel;
   const totalLabel = `${(totalAfterCredit / 100).toFixed(0)} ${currencyDisplay}`;
   const creditLineLabel =
     credit > 0 ? creditLabel(`${(credit / 100).toFixed(0)} ${currencyDisplay}`) : null;
@@ -140,8 +158,16 @@ export function WizardCartRecap({
         <div className="space-y-0.5">
           <p className="text-sm font-medium text-encre">{headLabel}</p>
           <p className="hidden text-xs text-encre/60 sm:block">
-            {productDetailLabel} · {shippingIncludedLabel}
+            {productDetailLabel} · {shippingText}
           </p>
+          {shippingCents !== undefined && (
+            <p
+              className="text-xs text-encre/60 sm:hidden"
+              data-testid="wizard-cart-recap-shipping"
+            >
+              {shippingText}
+            </p>
+          )}
           {/* Coupon d'accueil — état « appliqué » explicite : coche fine sauge
               (signal de succès) + économie absolue (Kolenda Pricing §6) en
               accent terracotta. « 90 MAD » insécable (anti-casse mobile). Pas

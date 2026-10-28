@@ -98,6 +98,12 @@ export interface CityAutocompleteProps {
    * décider (ex: matching server-side ou validation Zod).
    */
   onCitySelected?: (city: PublicCity) => void;
+  /**
+   * Émis quand le texte saisi correspond exactement à une ville (sans
+   * sélection dans le listbox) — permet au parent d'appliquer son tarif de
+   * livraison sans réécrire le texte en cours de frappe.
+   */
+  onExactMatch?: (city: PublicCity) => void;
   /** Callback blur — délégué à RHF si besoin. */
   onBlur?: (e: FocusEvent<HTMLInputElement>) => void;
   /** Marque le champ requis (étoile visuelle + `required` côté input). */
@@ -168,6 +174,7 @@ export function CityAutocomplete(props: CityAutocompleteProps) {
     value,
     onChange,
     onCitySelected,
+    onExactMatch,
     onBlur,
     required,
     disabled,
@@ -222,6 +229,10 @@ export function CityAutocomplete(props: CityAutocompleteProps) {
       }) ?? null
     );
   }, [items, value]);
+
+  useEffect(() => {
+    if (exactMatch) onExactMatch?.(exactMatch);
+  }, [exactMatch, value, onExactMatch]);
 
   const effectiveHint =
     exactMatch && matchedHint ? matchedHint(exactMatch.nameFr) : hint;

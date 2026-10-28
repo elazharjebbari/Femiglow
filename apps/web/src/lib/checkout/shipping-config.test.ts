@@ -56,7 +56,7 @@ describe('getShippingConfig', () => {
     });
   });
 
-  it('fallback freeShipping=true si le flag est absent du payload', async () => {
+  it('fallback freeShipping=false si le flag est absent du payload', async () => {
     vi.mocked(getSection).mockResolvedValue({
       section: 'flags',
       payload: { flags: { other: true } },
@@ -68,14 +68,14 @@ describe('getShippingConfig', () => {
       },
     } as never);
     await expect(getShippingConfig()).resolves.toEqual({
-      freeShipping: true,
+      freeShipping: false,
     });
   });
 
-  it('fallback freeShipping=true si la cascade throw', async () => {
+  it('fallback freeShipping=false si la cascade throw', async () => {
     vi.mocked(getSection).mockRejectedValue(new Error('db down'));
     await expect(getShippingConfig()).resolves.toEqual({
-      freeShipping: true,
+      freeShipping: false,
     });
   });
 });

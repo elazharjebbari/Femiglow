@@ -126,6 +126,7 @@ export async function POST(req: NextRequest): Promise<Response> {
             currency: input.currency,
             paymentMethod: input.paymentMethod,
             shippingMode: input.shippingMode,
+            shippingCity: lead.shippingCity ?? null,
             formContext: {
               formId: input.formContext.formId,
               formMode:

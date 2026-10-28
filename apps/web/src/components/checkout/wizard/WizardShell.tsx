@@ -46,6 +46,8 @@ import { LeadCaptureStep } from './steps/LeadCaptureStep';
 import { DEFAULT_WIZARD_FEATURES } from '@/lib/checkout/copy/wizard-copy';
 import { formatCartCompareAt } from '@/lib/checkout/helpers/cart-compare-at-format';
 import { useWizardTranslation } from '@/lib/checkout/i18n/use-wizard-translation';
+import { useShippingConfig } from '@/lib/checkout/use-shipping-config';
+import { shippingCentsFromPrice } from '@/lib/checkout/shipping-fee';
 import {
   getWizardDictionary,
   type DictionaryLanguage,
@@ -177,6 +179,9 @@ export function WizardShell({
   const appliedCreditCents = useWizardStore((s) => s.creditCents);
   const appliedCouponCode = useWizardStore((s) => s.couponCode);
   const appliedCouponKind = useWizardStore((s) => s.couponKind);
+  const draftCity = useWizardStore((s) => s.addressDraft.city);
+  const draftCityPriceMad = useWizardStore((s) => s.addressDraft.cityDeliveryPriceMad);
+  const { freeShipping } = useShippingConfig();
   const setFormContext = useWizardStore((s) => s.setFormContext);
   const setCartSnapshot = useWizardStore((s) => s.setCartSnapshot);
   const goToStep = useWizardStore((s) => s.goToStep);
@@ -315,6 +320,14 @@ export function WizardShell({
   // celui du store (hydraté). Empêche le clignotement « pas de cart »
   // pendant l'hydration.
   const cartForRecap = initialCart ?? storedCart ?? null;
+  // Livraison payante au tarif de la ville — même règle que le serveur
+  // (`shipping-fee.ts`). Avant hydratation ou sans ville : « selon la ville ».
+  const recapShippingCents =
+    hydrated && (draftCity ?? '').trim()
+      ? shippingCentsFromPrice(draftCityPriceMad, freeShipping)
+      : freeShipping
+        ? 0
+        : null;
 
   return (
     <div className="space-y-6" data-testid="wizard-shell" dir={dir}>
@@ -331,6 +344,9 @@ export function WizardShell({
           ariaLabel={t.cartRecap.ariaLabel}
           packLabel={t.cartRecap.packLabel}
           shippingIncludedLabel={t.cartRecap.shippingIncluded}
+          shippingCents={recapShippingCents}
+          shippingPendingLabel={t.cartRecap.shippingPending}
+          shippingAmountLabel={t.cartRecap.shippingAmount}
           currencyLabel={t.cartRecap.currency}
           appliedCreditCents={appliedCreditCents}
           creditLabel={(amount) =>

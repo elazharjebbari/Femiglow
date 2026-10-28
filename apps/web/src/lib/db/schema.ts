@@ -94,6 +94,9 @@ export const orders = pgTable(
     // `discount_cents = 0` pour toutes les commandes sans code.
     couponCode: text('coupon_code'),
     discountCents: integer('discount_cents').notNull().default(0),
+    // Frais de livraison facturés (centimes), au tarif de la ville. Déjà
+    // inclus dans `total_cents` ; 0 pour les commandes en livraison offerte.
+    shippingCents: integer('shipping_cents').notNull().default(0),
     shippingMode: text('shipping_mode').notNull(),
     paymentMethod: text('payment_method').notNull(),
     // CHA-230 — Form context (taxonomie tracking, cohérent avec chat_lead)
