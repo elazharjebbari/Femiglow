@@ -49,11 +49,10 @@ const COPY = {
     invitation: 'J’ai un code d’invitation',
   },
   ar: {
-    // D-5 : copie arabe indicative, à valider par la rédaction maison.
-    title: 'لقد تم تطبيق هدية الترحيب الخاصة بك.',
+    title: 'طُبّقت هدية الترحيب على طلبكِ.',
     finalPrefix: 'السعر النهائي اليوم:',
-    nonCumul: 'غير قابل للجمع.',
-    invitation: 'لدي رمز دعوة',
+    nonCumul: 'لا تُجمع مع عرض آخر.',
+    invitation: 'لديّ رمز دعوة',
   },
 } as const;
 

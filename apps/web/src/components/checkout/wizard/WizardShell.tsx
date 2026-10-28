@@ -345,7 +345,7 @@ export function WizardShell({
           welcomeCoupon={welcomeCoupon}
           welcomeLabel={
             dir === 'rtl'
-              ? 'لقد تم تطبيق هدية الترحيب الخاصة بك'
+              ? 'طُبّقت هدية الترحيب على طلبكِ'
               : 'Votre geste d’accueil est appliqué'
           }
           welcomeLabelShort={dir === 'rtl' ? 'هدية الترحيب' : 'Geste d’accueil'}

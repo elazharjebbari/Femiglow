@@ -22,16 +22,16 @@ interface SeedStory {
   durationMs: number;
 }
 
-const CTA_LABEL: I18n = { fr: 'Commander le pack', ar: 'اطلبي الطقم', en: 'Order the pack' };
+const CTA_LABEL: I18n = { fr: 'Commander le pack', ar: 'اطلبي الكيت', en: 'Order the pack' };
 const CTA_TARGET = '#commander-femiglow';
 const DUR: Record<number, number> = { 1: 39381, 2: 49018, 3: 44490, 4: 58143, 5: 50852, 6: 11774 };
 
 const STORIES: SeedStory[] = [
-  { slug: 'kit-rituel-soir', title: { fr: 'Le rituel du soir', ar: 'طقوس المساء', en: 'Evening ritual' }, video: 1, durationMs: DUR[1]! },
-  { slug: 'kit-4-gestes', title: { fr: 'Les 4 gestes', ar: 'الخطوات الأربع', en: 'The 4 steps' }, video: 2, durationMs: DUR[2]! },
+  { slug: 'kit-rituel-soir', title: { fr: 'Le rituel du soir', ar: 'روتين المساء', en: 'Evening ritual' }, video: 1, durationMs: DUR[1]! },
+  { slug: 'kit-4-gestes', title: { fr: 'Les 4 gestes', ar: 'الحركات الأربع', en: 'The 4 steps' }, video: 2, durationMs: DUR[2]! },
   { slug: 'kit-avant-apres', title: { fr: 'Avant / Après', ar: 'قبل / بعد', en: 'Before / After' }, video: 3, durationMs: DUR[3]! },
-  { slug: 'kit-temoignage', title: { fr: 'Témoignage', ar: 'شهادة', en: 'Testimonial' }, video: 4, durationMs: DUR[4]! },
-  { slug: 'kit-le-pack', title: { fr: 'Le pack FemiGlow', ar: 'طقم FemiGlow', en: 'The FemiGlow pack' }, video: 5, durationMs: DUR[5]! },
+  { slug: 'kit-temoignage', title: { fr: 'Témoignage', ar: 'رأي زبونة', en: 'Testimonial' }, video: 4, durationMs: DUR[4]! },
+  { slug: 'kit-le-pack', title: { fr: 'Le pack FemiGlow', ar: 'محتوى الكيت', en: 'The FemiGlow pack' }, video: 5, durationMs: DUR[5]! },
   { slug: 'kit-ingredients', title: { fr: 'Nos ingrédients', ar: 'مكوّناتنا', en: 'Our ingredients' }, video: 6, durationMs: DUR[6]! },
 ];
 

@@ -119,7 +119,7 @@ export const SEED_RITUALS: SeedRitual[] = [
   // (paste→العجينة, polish→المُلمِّع) et prénoms/villes translittérés en arabe.
   // Seul `FemiGlow` reste en latin. Repli FR géré côté listRituals si absents.
   {
-    body: 'بعد ثلاثة أشهر استعاد الظفر تموجه الطبيعي، وكففت عن إجهاده. هدأت الأظافر شيئا فشيئا دون أن أنتبه. في الصباح أمرر المبرد، وفي المساء أصقل بالمُلمِّع. صار الأمر طقسا أكثر منه مجرد عناية.',
+    body: 'بعد ثلاثة أشهر استعاد ظفري صحّته، وتوقّفت عن إرهاقه. هدأ الجلد حول الأظافر تدريجيًا دون أن أنتبه. في الصباح أمرّر المبرد، وفي المساء ألمّع. صارت عادة أكثر منها مجرّد عناية.',
     wouldRecommend: 'oui',
     ritualTags: ['plus-de-casse', 'cuticules-apaisees', 'rituel-devenu-habitude'],
     authorFirstName: 'أمل',
@@ -134,7 +134,7 @@ export const SEED_RITUALS: SeedRitual[] = [
     photos: [PHOTO_R2],
   },
   {
-    body: 'كان ظفري ينشطر عند أي حركة. جربت ست قواعد صلبة وسبعة زيوت دون فائدة. علمني الطقس أن أغذي الظفر لا أن أغطيه. بعد ستة أسابيع صارت الصفيحة متجانسة، ولن أعود إلى الوراء.',
+    body: 'كان ظفري يتقشّر عند أي حركة. جرّبت ست قواعد صلبة وسبعة زيوت دون فائدة. علّمتني هذه العناية أن أغذّي الظفر لا أن أغطّيه. بعد ستة أسابيع صار ظفري متماسكًا، ولن أعود إلى الوراء.',
     wouldRecommend: 'oui',
     ritualTags: ['plaque-souple', 'plus-de-casse'],
     authorFirstName: 'سعاد',
@@ -149,7 +149,7 @@ export const SEED_RITUALS: SeedRitual[] = [
     photos: [PHOTO_R10],
   },
   {
-    body: 'يعجبني صدق هذه الدار، فهي لا تعد بشيء بل ترافق. رائحة العجينة رائحة عناية لا كيمياء. يمنح المُلمِّع لمعانا ناعما بلا تلك الطبقة القاسية. سألتني بناتي عن سر لمعان يدي.',
+    body: 'يعجبني صدق هذه العلامة: لا تَعِد بالمعجزات، بل ترافقكِ. رائحة العجينة رائحة عناية لا مواد كيميائية، ومبرد التلميع يمنح لمعانًا ناعمًا بلا طبقة قاسية كالطلاء. سألتني بناتي عن سرّ لمعان يديّ.',
     wouldRecommend: 'oui',
     ritualTags: ['eclat-naturel', 'fini-brillant', 'rituel-devenu-habitude'],
     authorFirstName: 'خديجة',

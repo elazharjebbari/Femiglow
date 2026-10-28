@@ -128,7 +128,7 @@ describe('F12 — CouponWelcomeNote (angles complémentaires)', () => {
     expect(note).toHaveAttribute('dir', 'rtl');
     const txt = note.textContent ?? '';
     expect(txt).toContain('هدية الترحيب');
-    expect(txt).toContain('غير قابل للجمع.');
+    expect(txt).toContain('لا تُجمع مع عرض آخر.');
   });
 
   it('F12-V008 charte : aucun caractère interdit', () => {
