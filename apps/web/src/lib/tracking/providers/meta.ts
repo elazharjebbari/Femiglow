@@ -1,7 +1,7 @@
 import { decryptCapiToken } from '@/lib/db/queries/tracking/providers';
 import type { TrackingProvider, TrackingProviderResult } from '@/lib/db/types';
 import { enrichPurchase } from './_enrich-purchase';
-import { hashIdentity, sha256Hex } from './hashing';
+import { hashIdentity, normalizeName, sha256Hex } from './hashing';
 import { isEventSupported } from './event-mapping';
 import { getMappedName, isMetaCustomEvent } from './get-mapped-name';
 import { fetchWithRetry } from './retry';
@@ -13,14 +13,33 @@ import { pushToBatch } from '@/lib/tracking/server/capi-buffer';
 const GRAPH_API_VERSION = 'v19.0';
 const PURCHASE_EVENT_NAMES = new Set(['purchase', 'purchase_server']);
 
+/**
+ * `user_data` Meta CAPI. Meta exige l'IP et le User-Agent EN CLAIR : un UA
+ * haché ou une IP tronquée ne matchent rien, et sans pixel navigateur l'achat
+ * ne peut alors pas être rattaché au clic publicitaire.
+ *
+ * Identité : `ctx.userData` (déjà hachée dans le navigateur, ex. téléphone du
+ * formulaire COD) sert de base ; `ctx.identity` (en clair, hachée ici) prime.
+ */
 function buildUserData(ctx: DispatchContext): Record<string, unknown> {
   const hashed = hashIdentity(ctx.identity ?? {});
+  const browser = ctx.userData ?? {};
+  const address = browser.address ?? {};
+  const fromBrowser: Record<string, string> = {};
+  if (browser.sha256_email_address) fromBrowser.em = browser.sha256_email_address;
+  if (browser.sha256_phone_number) fromBrowser.ph = browser.sha256_phone_number;
+  if (address.sha256_first_name) fromBrowser.fn = address.sha256_first_name;
+  if (address.sha256_last_name) fromBrowser.ln = address.sha256_last_name;
+  if (address.city) fromBrowser.ct = sha256Hex(normalizeName(address.city));
+  if (address.country) fromBrowser.country = sha256Hex(normalizeName(address.country));
   const externalId = ctx.externalId ?? ctx.userId ?? ctx.anonymousId;
+  const ip = ctx.clientIp ?? (ctx.ipAnonymized !== '0.0.0.0' ? ctx.ipAnonymized : undefined);
   return {
+    ...fromBrowser,
     ...hashed,
     external_id: sha256Hex(externalId),
-    client_ip_address: ctx.ipAnonymized,
-    client_user_agent: ctx.uaHash,
+    ...(ip ? { client_ip_address: ip } : {}),
+    ...(ctx.userAgent ? { client_user_agent: ctx.userAgent } : {}),
     fbp: ctx.fbp,
     fbc: ctx.fbc,
   };

@@ -188,6 +188,16 @@ export async function POST(request: Request): Promise<Response> {
 
     const enrichment = enrichRequest(request, ip);
     const result: IngestResult = { accepted: 0, rejected: 0, duplicates: 0 };
+    // Cookies Meta pour le matching CAPI (`_fbc` est reconstruit depuis le
+    // fbclid par le middleware). Sans eux, un achat envoyé côté serveur ne
+    // peut pas être rattaché au clic publicitaire.
+    const requestCookies = request.headers.get('cookie') ?? '';
+    const readRequestCookie = (name: string): string | undefined => {
+      const match = requestCookies.match(new RegExp(`(?:^|;\\s*)${name}=([^;]+)`));
+      return match ? decodeURIComponent(match[1]!) : undefined;
+    };
+    const metaFbp = readRequestCookie('_fbp');
+    const metaFbc = readRequestCookie('_fbc');
 
     for (const event of parsed.data.events) {
       // AN-03 — normalise les alias de clic CTA vers `cta_click` avant tout
@@ -244,9 +254,12 @@ export async function POST(request: Request): Promise<Response> {
         uaHash: enrichment.uaHash,
         userAgent: request.headers.get('user-agent') ?? undefined,
         ipAnonymized: enrichment.ipAnonymized,
+        clientIp: ip && ip !== '0.0.0.0' ? ip : undefined,
         device: enrichment.device,
         locale: event.page.locale || enrichment.locale,
         params: paramsParsed.data as Record<string, unknown>,
+        ...(metaFbp ? { fbp: metaFbp } : {}),
+        ...(metaFbc ? { fbc: metaFbc } : {}),
         userData: event.user_data,
         attribution: event.attribution,
       }).catch((err) => {

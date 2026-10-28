@@ -501,6 +501,14 @@ export function CheckoutFlow({ onLeaveModalChange }: CheckoutFlowProps) {
       // ledger serveur a été perdu (restart). Achat direct (sans lead) : pas de
       // jpid → event_id client (dédup Pixel↔CAPI standard).
       const purchaseJpid = readJourneyPurchaseId();
+      // Identité hachée (téléphone, prénom, ville) : sans elle, l'achat envoyé
+      // à la CAPI Meta ne peut pas être rattaché au clic publicitaire.
+      const purchaseUserData = await buildUserDataForEvent('purchase', {
+        firstName: values.contact.firstName.trim(),
+        phone: values.contact.phone,
+        city: values.address.city.trim(),
+        country: 'MA',
+      });
       emit('purchase', {
         transaction_id: orderRes.orderId,
         currency: 'MAD',
@@ -517,7 +525,7 @@ export function CheckoutFlow({ onLeaveModalChange }: CheckoutFlowProps) {
           price: it.unitPriceCents / 100,
           quantity: it.quantity,
         })),
-      });
+      }, { userData: purchaseUserData });
 
       // 4) Opt-in email (best-effort — l'échec n'empêche pas la conversion).
       const recapEmail = (values.recapEmail ?? '').trim();

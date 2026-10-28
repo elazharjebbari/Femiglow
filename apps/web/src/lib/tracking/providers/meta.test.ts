@@ -219,6 +219,61 @@ describe('meta provider', () => {
     expect(event.custom_data.order_id).toBe('order-42');
   });
 
+  it('user_data : IP et User-Agent en clair (jamais le hash du UA)', async () => {
+    await metaAdapter.dispatch(
+      provider(),
+      ctx({ clientIp: '197.230.12.34', userAgent: 'Mozilla/5.0 (Linux; Android 14)' }),
+    );
+    const body = JSON.parse(vi.mocked(fetchWithRetry).mock.calls[0]![1].body as string);
+    const ud = body.data[0].user_data;
+    expect(ud.client_ip_address).toBe('197.230.12.34');
+    expect(ud.client_user_agent).toBe('Mozilla/5.0 (Linux; Android 14)');
+  });
+
+  it('user_data : sans UA en clair, aucun client_user_agent (pas le hash)', async () => {
+    await metaAdapter.dispatch(provider(), ctx({ userAgent: undefined }));
+    const body = JSON.parse(vi.mocked(fetchWithRetry).mock.calls[0]![1].body as string);
+    expect(body.data[0].user_data.client_user_agent).toBeUndefined();
+  });
+
+  it('user_data : IP serveur par défaut (0.0.0.0) jamais envoyée', async () => {
+    await metaAdapter.dispatch(provider(), ctx({ ipAnonymized: '0.0.0.0', clientIp: undefined }));
+    const body = JSON.parse(vi.mocked(fetchWithRetry).mock.calls[0]![1].body as string);
+    expect(body.data[0].user_data.client_ip_address).toBeUndefined();
+  });
+
+  it('user_data : reprend le téléphone et le prénom hachés du navigateur', async () => {
+    await metaAdapter.dispatch(
+      provider(),
+      ctx({
+        identity: undefined,
+        userData: {
+          sha256_phone_number: 'a'.repeat(64),
+          address: { sha256_first_name: 'b'.repeat(64), city: 'Rabat', country: 'MA' },
+        },
+      }),
+    );
+    const body = JSON.parse(vi.mocked(fetchWithRetry).mock.calls[0]![1].body as string);
+    const ud = body.data[0].user_data;
+    expect(ud.ph).toBe('a'.repeat(64));
+    expect(ud.fn).toBe('b'.repeat(64));
+    expect(ud.ct).toMatch(/^[0-9a-f]{64}$/);
+    expect(ud.country).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('user_data : l’identité serveur prime sur celle du navigateur', async () => {
+    await metaAdapter.dispatch(
+      provider(),
+      ctx({
+        identity: { phone: '+212600000000' },
+        userData: { sha256_phone_number: 'a'.repeat(64) },
+      }),
+    );
+    const body = JSON.parse(vi.mocked(fetchWithRetry).mock.calls[0]![1].body as string);
+    expect(body.data[0].user_data.ph).not.toBe('a'.repeat(64));
+    expect(body.data[0].user_data.ph).toMatch(/^[0-9a-f]{64}$/);
+  });
+
   it('maps items array to Meta contents format', async () => {
     await metaAdapter.dispatch(provider(), ctx());
 

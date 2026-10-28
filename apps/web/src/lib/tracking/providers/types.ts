@@ -21,6 +21,12 @@ export interface DispatchContext {
   /** User-Agent string en clair (pour Snap CAPI qui exige le UA non-hashé). */
   userAgent?: string;
   ipAnonymized: string;
+  /**
+   * IP client en clair, réservée aux CAPI qui l'exigent pour le matching
+   * (Meta `client_ip_address`). Jamais persistée : les logs gardent
+   * `ipAnonymized`.
+   */
+  clientIp?: string;
   device: 'mobile' | 'tablet' | 'desktop';
   locale: string;
   params: Record<string, unknown>;
