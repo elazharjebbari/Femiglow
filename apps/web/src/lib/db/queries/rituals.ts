@@ -15,6 +15,7 @@ import type {
   RitualTestimonialPublic,
   RitualPhotoPublic,
 } from '@/lib/schemas/rituals';
+import { translateFallbackRitual } from '@/lib/rituals/translations';
 
 /**
  * Queries Drizzle + memory store pour le composant Rituels partagés.
@@ -330,6 +331,8 @@ export async function listRituals(query: RitualListQuery): Promise<RitualListRes
     }
 
     const conditions = [...baseConditions];
+    // Langue demandée sans avis publié → repli FR, affiché traduit si possible.
+    let translateTo: RitualTestimonial['language'] | null = null;
     // Phase 7E-11 — filtre langue avec repli FR. Si la locale demandée n'a aucun
     // témoignage (mêmes filtres), on retombe sur FR pour ne jamais vider le module.
     if (query.language) {
@@ -340,7 +343,10 @@ export async function listRituals(query: RitualListQuery): Promise<RitualListRes
           .from(schema.ritualTestimonials)
           .where(and(...baseConditions, eq(schema.ritualTestimonials.language, query.language)))
           .limit(1)) as Array<{ id: string }>;
-        if (probe.length === 0) effectiveLanguage = 'fr';
+        if (probe.length === 0) {
+          effectiveLanguage = 'fr';
+          translateTo = query.language;
+        }
       }
       conditions.push(eq(schema.ritualTestimonials.language, effectiveLanguage));
     }
@@ -361,7 +367,9 @@ export async function listRituals(query: RitualListQuery): Promise<RitualListRes
       .limit(limit + 1)) as RitualTestimonial[];
 
     const hasMore = rows.length > limit;
-    const items = rows.slice(0, limit);
+    const items = rows
+      .slice(0, limit)
+      .map((r) => (translateTo ? translateFallbackRitual(r, translateTo) : r));
     const ids = items.map((i) => i.id);
     const photosRows =
       ids.length > 0
@@ -417,9 +425,11 @@ export async function listRituals(query: RitualListQuery): Promise<RitualListRes
   // Phase 7E-11 — filtre langue avec repli FR (miroir de la branche Drizzle).
   // Si la locale demandée n'a aucun témoignage (mêmes filtres), on retombe sur
   // FR (`language === 'fr'` ou langue absente) pour ne jamais vider le module.
+  let translateTo: RitualTestimonial['language'] | null = null;
   if (query.language) {
     const isFr = (r: RitualTestimonial) => r.language === 'fr' || r.language == null;
     const inRequested = rows.filter((r) => r.language === query.language);
+    if (query.language !== 'fr' && inRequested.length === 0) translateTo = query.language;
     const effective =
       query.language === 'fr' || inRequested.length > 0
         ? rows.filter((r) =>
@@ -449,7 +459,7 @@ export async function listRituals(query: RitualListQuery): Promise<RitualListRes
     const photos = Array.from(store.ritualTestimonialPhotos.values()).filter(
       (p) => p.testimonialId === r.id,
     );
-    return toPublicTestimonial(r, photos);
+    return toPublicTestimonial(translateTo ? translateFallbackRitual(r, translateTo) : r, photos);
   });
 
   const last = slice[slice.length - 1];

@@ -53,6 +53,12 @@ export interface SeedRitual {
   daysAgo: number;
   photos?: SeedRitualPhoto[];
   autoFlags?: string[];
+  /**
+   * Relie les versions fr/ar/en d'un même avis (traductions éditoriales).
+   * Sert à afficher la traduction quand la locale demandée n'a pas d'avis
+   * publié, sans dupliquer l'avis en base (cf. `rituals/translations.ts`).
+   */
+  mirrorKey?: string;
 }
 
 const PHOTO_R2 = { url: '/reviews/reviews2.jpg', width: 1000, height: 900, alt: 'Mains, ongles French naturels' } as const;
@@ -73,6 +79,7 @@ export const SEED_RITUALS: SeedRitual[] = [
     wouldRecommend: 'oui',
     ritualTags: ['plus-de-casse', 'cuticules-apaisees', 'rituel-devenu-habitude'],
     authorFirstName: 'Amal',
+    mirrorKey: 'featured-amal',
     authorCity: 'Rabat',
     initiatedSince: '3 mois',
     language: 'fr',
@@ -88,6 +95,7 @@ export const SEED_RITUALS: SeedRitual[] = [
     wouldRecommend: 'oui',
     ritualTags: ['plaque-souple', 'plus-de-casse'],
     authorFirstName: 'Souad',
+    mirrorKey: 'featured-souad',
     authorCity: 'Casablanca',
     initiatedSince: '6 semaines',
     language: 'fr',
@@ -103,6 +111,7 @@ export const SEED_RITUALS: SeedRitual[] = [
     wouldRecommend: 'oui',
     ritualTags: ['eclat-naturel', 'fini-brillant', 'rituel-devenu-habitude'],
     authorFirstName: 'Khadija',
+    mirrorKey: 'featured-khadija',
     authorCity: 'Salé',
     initiatedSince: '2 mois',
     language: 'fr',
@@ -123,8 +132,9 @@ export const SEED_RITUALS: SeedRitual[] = [
     wouldRecommend: 'oui',
     ritualTags: ['plus-de-casse', 'cuticules-apaisees', 'rituel-devenu-habitude'],
     authorFirstName: 'أمل',
+    mirrorKey: 'featured-amal',
     authorCity: 'الرباط',
-    initiatedSince: '3 mois',
+    initiatedSince: '3 أشهر',
     language: 'ar',
     source: 'email_j45',
     verifiedPurchase: true,
@@ -138,8 +148,9 @@ export const SEED_RITUALS: SeedRitual[] = [
     wouldRecommend: 'oui',
     ritualTags: ['plaque-souple', 'plus-de-casse'],
     authorFirstName: 'سعاد',
+    mirrorKey: 'featured-souad',
     authorCity: 'الدار البيضاء',
-    initiatedSince: '6 semaines',
+    initiatedSince: '6 أسابيع',
     language: 'ar',
     source: 'email_j45',
     verifiedPurchase: true,
@@ -153,8 +164,9 @@ export const SEED_RITUALS: SeedRitual[] = [
     wouldRecommend: 'oui',
     ritualTags: ['eclat-naturel', 'fini-brillant', 'rituel-devenu-habitude'],
     authorFirstName: 'خديجة',
+    mirrorKey: 'featured-khadija',
     authorCity: 'سلا',
-    initiatedSince: '2 mois',
+    initiatedSince: 'شهران',
     language: 'ar',
     source: 'email_j45',
     verifiedPurchase: true,
@@ -170,6 +182,7 @@ export const SEED_RITUALS: SeedRitual[] = [
     wouldRecommend: 'oui',
     ritualTags: ['plus-de-casse', 'cuticules-apaisees', 'rituel-devenu-habitude'],
     authorFirstName: 'Amal',
+    mirrorKey: 'featured-amal',
     authorCity: 'Rabat',
     initiatedSince: '3 mois',
     language: 'en',
@@ -185,6 +198,7 @@ export const SEED_RITUALS: SeedRitual[] = [
     wouldRecommend: 'oui',
     ritualTags: ['plaque-souple', 'plus-de-casse'],
     authorFirstName: 'Souad',
+    mirrorKey: 'featured-souad',
     authorCity: 'Casablanca',
     initiatedSince: '6 semaines',
     language: 'en',
@@ -200,6 +214,7 @@ export const SEED_RITUALS: SeedRitual[] = [
     wouldRecommend: 'oui',
     ritualTags: ['eclat-naturel', 'fini-brillant', 'rituel-devenu-habitude'],
     authorFirstName: 'Khadija',
+    mirrorKey: 'featured-khadija',
     authorCity: 'Salé',
     initiatedSince: '2 mois',
     language: 'en',

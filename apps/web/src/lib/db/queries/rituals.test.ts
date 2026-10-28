@@ -4,6 +4,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { resetMemoryStore } from '@/lib/db/client';
+import { SEED_RITUALS } from '@/lib/rituals/seed-data';
 import {
   decodeCursor,
   encodeCursor,
@@ -170,6 +171,48 @@ describe('listRituals', () => {
     });
     expect(en.items).toHaveLength(15);
     expect(en.items.every((i) => i.language === 'fr')).toBe(true);
+  });
+
+  it('repli FR : un avis mis en avant est affiché traduit (même id, aucun avis ajouté)', async () => {
+    const amalFr = SEED_RITUALS.find((s) => s.mirrorKey === 'featured-amal' && s.language === 'fr')!;
+    const amalAr = SEED_RITUALS.find((s) => s.mirrorKey === 'featured-amal' && s.language === 'ar')!;
+    const inserted = await insertRitual({
+      ...baseRitual,
+      body: amalFr.body,
+      authorFirstName: amalFr.authorFirstName,
+      authorCity: amalFr.authorCity,
+      initiatedSince: amalFr.initiatedSince,
+      publishedAt: new Date('2026-06-09'),
+    });
+    const ar = await listRituals({
+      productKey: 'pack-femiglow',
+      language: 'ar',
+      sort: 'recommended',
+      limit: 24,
+    });
+    // Même volume qu'en FR : la traduction ne crée pas d'avis.
+    expect(ar.items).toHaveLength(16);
+    const translated = ar.items.find((i) => i.publicSlug === inserted.publicSlug)!;
+    expect(translated.body).toBe(amalAr.body);
+    expect(translated.signature.firstName).toBe(amalAr.authorFirstName);
+    expect(translated.signature.city).toBe(amalAr.authorCity);
+    expect(translated.language).toBe('ar');
+    // Les avis sans traduction éditoriale restent en français.
+    expect(ar.items.filter((i) => i.publicSlug !== inserted.publicSlug).every((i) => i.language === 'fr')).toBe(true);
+  });
+
+  it('pas de traduction quand la locale a ses propres avis', async () => {
+    const amalFr = SEED_RITUALS.find((s) => s.mirrorKey === 'featured-amal' && s.language === 'fr')!;
+    await insertRitual({ ...baseRitual, body: amalFr.body, publishedAt: new Date('2026-06-09') });
+    await insertRitual({ ...baseRitual, language: 'ar', publishedAt: new Date('2026-06-02') });
+    const ar = await listRituals({
+      productKey: 'pack-femiglow',
+      language: 'ar',
+      sort: 'recommended',
+      limit: 24,
+    });
+    expect(ar.items).toHaveLength(1);
+    expect(ar.items[0]!.body).toBe(baseRitual.body);
   });
 
   it('language=fr renvoie exactement le résultat sans filtre (byte-identique)', async () => {
