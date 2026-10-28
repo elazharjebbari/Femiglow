@@ -38,11 +38,11 @@ export const DEFAULT_GEO_PROMO_CONFIG: GeoPromoAdminConfig = {
   dismissMode: 'session',
   tagsEnabled: true,
   // Kolenda UX §1 : ≤ 4 options visibles. On garde 2 tags fonctionnels —
-  // le `-XX%` (`discount`), `inspect_before_pay` et `morocco_delivery` sont
-  // retirés des défauts (anti-pattern Pricing §16 « pas de "-49 %" seul »
-  // et redondance « partout au Maroc » avec le message principal).
-  // L'admin peut toujours les réactiver via le CMS pour une campagne.
-  tagOrder: ['free_shipping', 'cod'],
+  // le `-XX%` (`discount`) et `inspect_before_pay` sont retirés des défauts
+  // (anti-pattern Pricing §16 « pas de "-49 %" seul »). `free_shipping`
+  // aussi : la livraison est payante au tarif de la ville (oct. 2026) ; à
+  // réactiver via le CMS seulement si le flag admin `freeShipping` repasse à true.
+  tagOrder: ['morocco_delivery', 'cod'],
   routesInclude: [GEO_PROMO_ROUTE],
   routesExclude: ['/checkout', '/admin', '/api'],
   campaignKey: 'geo_promo_kit_default',

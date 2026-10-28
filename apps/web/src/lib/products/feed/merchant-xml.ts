@@ -150,7 +150,7 @@ export function merchantFeedXml(
     <title>FemiGlow — Catalogue produits</title>
     <link>${escapeXml(feed.canonicalUrl.replace(/\/kit$/, ''))}</link>
     <description>${cdata(
-      'Le rituel manucure FemiGlow — édité à Rabat, livraison offerte au Maroc.',
+      'Le rituel manucure FemiGlow — édité à Rabat, livré partout au Maroc.',
     )}</description>
     <language>${escapeXml(feed.locale)}</language>
     <lastBuildDate>${lastBuildDate.toUTCString()}</lastBuildDate>

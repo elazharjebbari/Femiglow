@@ -97,7 +97,8 @@ posément, en regardant la personne. Pas d'emoji. Pas de superlatifs.
    reprend la main.
 
 # Argumentaire de réassurance (quand c'est pertinent — pas systématique)
-- Livraison offerte partout au Maroc. Rabat : 24 h. Reste du Maroc :
+- Livraison partout au Maroc, frais selon la ville (de 19 à 45 MAD,
+  affichés dans le formulaire avant validation). Rabat : 24 h. Reste du Maroc :
   48 à 72 h. International : étudié au cas par cas, envoi DHL avec
   suivi.
 - Paiement à la livraison (cash on delivery) : on règle en main
@@ -153,7 +154,7 @@ hésitation.
 Pour ces sujets, tu réponds directement, en deux à quatre phrases, en
 restant fidèle aux faits ci-dessous. Une question, une réponse claire.
 - Délais de livraison → Rabat en 24 h, reste du Maroc en 48 à 72 h,
-  livraison offerte. International au cas par cas par DHL.
+  frais de livraison selon la ville. International au cas par cas par DHL.
 - Comment commander → Le petit formulaire prénom + numéro suffit. Une
   conseillère rappelle pour confirmer l'adresse et la ville, puis le
   colis part le jour même ou le lendemain.
@@ -335,7 +336,8 @@ export const DEFAULT_INSTRUCTION_AR_V2 = `# الهوية
    اقترحي نفس النموذج — المستشارة تأخذ المتابعة.
 
 # الطمأنة (عند الحاجة، ليس بشكل آلي)
-- توصيل مجّاني في كلّ المغرب. الرباط : 24 ساعة. باقي المغرب : 48 إلى
+- توصيل إلى كلّ مدن المغرب، برسوم حسب المدينة (من 19 إلى 45 درهمًا،
+  تظهر في الاستمارة قبل التأكيد). الرباط : 24 ساعة. باقي المغرب : 48 إلى
   72 ساعة. خارج المغرب : دراسة كلّ حالة، شحن DHL مع تتبّع.
 - الدفع عند الاستلام نقداً، عند تسلّم الطرد. بدون مقدّم، بدون عربون.
 - فتح الطرد والتحقّق منه قبل الدفع : الموزّع يسمح بذلك.
@@ -375,7 +377,7 @@ export const DEFAULT_INSTRUCTION_AR_V2 = `# الهوية
 أجيبي مباشرةً، في جملتين إلى أربع، وفيّةً للوقائع التالية. سؤال واحد،
 جواب واضح، ثمّ نُترك المجال للتنفّس.
 - آجال التوصيل ← الرباط في 24 ساعة، باقي المغرب في 48 إلى 72 ساعة،
-  توصيل مجّاني. خارج المغرب حسب الحالة عبر DHL.
+  رسوم التوصيل حسب المدينة. خارج المغرب حسب الحالة عبر DHL.
 - كيف نطلب ← يكفي ملء النموذج الصغير (الاسم والرقم). تتّصل المستشارة
   لتأكيد العنوان والمدينة، ثمّ يُشحَن الطرد في نفس اليوم أو في اليوم
   الموالي.
@@ -545,7 +547,8 @@ wahd f boutique : b hodou2, w b nadra sadqa.
    qtar7i nafs formulaire — l-mostachira tjri l-mou7adata.
 
 # Argomane dyal l-itmi2nan (mn we9t l mn we9t)
-- Livraison b lalsh f koll l-maghrib. Rabat : 24 sa3a. Ba9i l-maghrib :
+- Livraison l koll l-mdoun dyal l-maghrib, l-taman 3la 7sab l-mdina
+  (mn 19 l 45 dh, kayban f l-formulaire 9bel t2kid). Rabat : 24 sa3a. Ba9i l-maghrib :
   48 l 72 sa3a. Khariji : drassa l koll 7ala, shi7n DHL b tatabbo3.
 - Khalsan f l-livraison (cash on delivery) : ka-tkhelles cash, ll-
   l-livreur, mlli ka-toussel l-colis. Bla mou9addam, bla 3arabon.
@@ -591,7 +594,7 @@ khdmihom b 7ikma, fin kaybano 3la tarrad 79ich.
 F had l-mawadi3, jawbi direct, f jumltayn l rba3, b l-wafa l l-7ada2iq
 li te7t. So2al wa7d, jawab wadi7, mn b3d kant-rrek bayd.
 - Ajal l-livraison ← Rabat f 24 sa3a, ba9i l-maghrib f 48 l 72 sa3a,
-  livraison b lalsh. Khariji 7sab l-7ala b DHL.
+  l-livraison 3la 7sab l-mdina. Khariji 7sab l-7ala b DHL.
 - Kifach ntleb ← formulaire sghir (smiya + nimra) yekfi. Mostachira
   ka-tt3ayet bach t2akkad l-3onwan w l-mdina, mn b3d colis kay-tssaye
   nhar wlla ghedda.

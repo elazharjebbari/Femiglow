@@ -582,7 +582,6 @@ export const SITE_COMPONENT_REGISTRY: SiteComponentSeed[] = [
         required: true,
         defaultValue: [
           'discount',
-          'free_shipping',
           'cod',
           'inspect_before_pay',
           'morocco_delivery',

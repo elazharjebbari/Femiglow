@@ -6,7 +6,7 @@ exports[`merchantFeedXml > snapshot XML complet pour le kit mock (golden) 1`] = 
   <channel>
     <title>FemiGlow — Catalogue produits</title>
     <link>https://femiglow-maroc.com</link>
-    <description><![CDATA[Le rituel manucure FemiGlow — édité à Rabat, livraison offerte au Maroc.]]></description>
+    <description><![CDATA[Le rituel manucure FemiGlow — édité à Rabat, livré partout au Maroc.]]></description>
     <language>fr-MA</language>
     <lastBuildDate>__DATE__</lastBuildDate>
     <generator>femiglow-feed/1.0</generator>

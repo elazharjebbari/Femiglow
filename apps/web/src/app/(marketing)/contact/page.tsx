@@ -51,7 +51,7 @@ const faqs: FAQAccordionItem[] = [
     id: 'delais-livraison',
     question: 'Quels sont les d\u00E9lais de livraison\u202F?',
     answer:
-      'Rabat\u00A0: 24 heures. Reste du Maroc\u00A0: 48 \u00E0 72 heures. Livraison offerte au Maroc, sans seuil. \u00C0 l\u2019international, \u00E9crivez-nous, nous \u00E9tudions chaque envoi \u00E0 la main.',
+      'Rabat\u00A0: 24 heures. Reste du Maroc\u00A0: 48 \u00E0 72 heures. Frais de livraison selon la ville, affich\u00E9s avant validation de la commande. \u00C0 l\u2019international, \u00E9crivez-nous, nous \u00E9tudions chaque envoi \u00E0 la main.',
   },
   {
     id: 'formation-fondatrice',
