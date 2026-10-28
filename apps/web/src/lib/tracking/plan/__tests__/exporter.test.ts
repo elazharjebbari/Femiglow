@@ -823,6 +823,12 @@ describe('exportPlan — structure GTM', () => {
     );
     expect(blk.name).toContain('BLK');
     expect(JSON.stringify(blk.filter)).toContain('Cookie - fg_meta_lead_purchase');
+    // Bug 2026-10-28 : cookie absent = « undefined » pour GTM → `.+` bloquait
+    // tous les achats. Le filtre ne doit matcher qu'un vrai jpid (uuid).
+    const pattern = new RegExp(blk.filter[0].parameter[1].value);
+    expect(pattern.test('undefined')).toBe(false);
+    expect(pattern.test('1')).toBe(false);
+    expect(pattern.test('01a18465-647a-7718-855c-970aa426a3d1')).toBe(true);
     // La variable 1st-party cookie (type 'k') est émise.
     const cookieVar = json.containerVersion.variable.find(
       (v: any) => v.name === 'Cookie - fg_meta_lead_purchase' && v.type === 'k',

@@ -212,6 +212,13 @@ const META_VALUE_EVENTS: ReadonlySet<string> = new Set([
 // Même allowlist que le pont Meta lead→Purchase (LEAD_PURCHASE_SOURCES).
 const LEAD_ADS_METHODS = ['chat', 'abandoned_cart'] as const;
 
+/**
+ * Valeur du cookie `fg_meta_lead_purchase` qui bloque le pixel Purchase : un
+ * jpid uuid (cf. `getJourneyPurchaseId`). Exclut « undefined » (cookie absent)
+ * et la valeur legacy `1`.
+ */
+export const LEAD_PURCHASE_JPID_REGEX = '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
+
 // Built-in variables that ship with every GTM container by default.
 // Note: AD_STORAGE / ANALYTICS_STORAGE are NOT built-in variable types
 // (those are consent storage keys, surfaced via the Consent built-in
@@ -706,13 +713,15 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
           ],
         },
       ],
-      // Cookie non vide → bloque (fire de l'exception). MATCH_REGEX `.+`.
+      // Cookie = jpid (uuid) → bloque. PAS `.+` : un cookie absent est lu par
+      // GTM comme la chaîne « undefined », qui matche `.+` → le pixel Purchase
+      // était bloqué pour TOUS les achats (bug 2026-10-28, Achat Meta = CAPI seul).
       filter: [
         {
           type: 'MATCH_REGEX',
           parameter: [
             { type: 'TEMPLATE', key: 'arg0', value: `{{${cookieVar}}}` },
-            { type: 'TEMPLATE', key: 'arg1', value: '.+' },
+            { type: 'TEMPLATE', key: 'arg1', value: LEAD_PURCHASE_JPID_REGEX },
           ],
         },
       ],
