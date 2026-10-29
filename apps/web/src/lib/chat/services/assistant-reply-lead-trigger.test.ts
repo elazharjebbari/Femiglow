@@ -97,3 +97,24 @@ describe('detectAssistantReplyLeadTrigger', () => {
     expect(result.shouldOffer).toBe(false);
   });
 });
+
+describe('réponses scriptées qui demandent le contact (GLOW99 / livraison)', () => {
+  it.each([
+    ['fr', "La livraison n'est pas offerte, mais son tarif est très doux : il dépend de votre ville, et une conseillère vous le confirme avec votre commande. Laissez-moi votre prénom et votre numéro : elle vous rappelle dans la journée."],
+    ['fr', 'Je vous réserve le Pack à 99 dh ? Laissez-moi votre prénom et votre numéro.'],
+    ['ar', 'هل أحجز لكِ الطقم بـ 99 درهم؟ اتركي لي اسمك ورقم هاتفك.'],
+    ['ar-MA', 'N-hjz lik l-pack b 99 dh ? Khalli liya smitk w r-ra9m dyalk.'],
+  ] as const)('propose le formulaire (%s)', (language, assistantReply) => {
+    const result = detectAssistantReplyLeadTrigger({ assistantReply, currentIntent: 'pricing', language });
+    expect(result.shouldOffer).toBe(true);
+  });
+
+  it('ne déclenche pas sur une réponse purement informative', () => {
+    const result = detectAssistantReplyLeadTrigger({
+      assistantReply: 'Rabat : livraison en 24 h. Reste du Maroc : 48 à 72 h. Vous payez à la réception.',
+      currentIntent: 'shipping',
+      language: 'fr',
+    });
+    expect(result.shouldOffer).toBe(false);
+  });
+});

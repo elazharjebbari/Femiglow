@@ -16,6 +16,14 @@ type Lang = 'fr' | 'ar' | 'ar-MA';
 interface Rule {
   label: string;
   re: RegExp;
+  /** Retire du texte les tournures niées avant le test (« pas offerte »). */
+  ignoreNegated?: boolean;
+}
+
+const NEGATED = /(pas|plus|jamais|non|n['’]est\s+pas|ليس(?:ت)?|غير|لا|machi|ma\s+\S+ch)\s+(?:\S+\s+){0,2}?(offerte|gratuite|gratuit|incluse|مجاني\S*|مشمول\S*|fabour|majania|b\s?lalsh)/gi;
+
+function ruleMatches(r: Rule, text: string): boolean {
+  return r.re.test(r.ignoreNegated ? text.replace(NEGATED, ' ') : text);
 }
 
 interface Case {
@@ -45,10 +53,17 @@ const PROMO_PRICE: Rule = { label: 'cite 99', re: /(?<!\d)99(?!\d)/ };
 const NO_FREE_DELIVERY: Rule = {
   label: 'livraison dite offerte/gratuite',
   re: /(livraison|delivery|l-?livraison|التوصيل|توصيل)[^.!?\n]{0,40}(offerte|gratuite|gratuit|incluse|free|majan|fabour|b ?lalsh|مجان|مشمول)|(offerte|gratuite|مجاني|majania)[^.!?\n]{0,20}(livraison|التوصيل)/i,
+  ignoreNegated: true,
 };
 const NO_SHIPPING_AMOUNT: Rule = { label: 'donne un montant de livraison', re: /(19|35|45)\s*(dh|mad|درهم)/i };
-const NO_FAKE_CODE: Rule = { label: 'valide un autre code', re: /GLOW\s*(?!99)\d{2}\b[^.!?\n]{0,40}(valable|valide|fonctionne|marche|صالح|khddam)/i };
-const NO_SKIN: Rule = { label: 'vocabulaire soin de la peau', re: /\b(peau|cutané|sérum|nettoyant|tonique|rougeurs|centella|niacinamide|bcharti)\b|بشرة/i };
+const NO_FAKE_CODE: Rule = {
+  label: 'valide un autre code',
+  re: /GLOW\s*(?!99)\d{2}\b\s*(est\s+(bien\s+)?(valable|valide|actif)|fonctionne|marche\b|صالح|khddam)/i,
+};
+const NO_SKIN: Rule = {
+  label: 'vocabulaire soin de la peau',
+  re: /\b(sérum|un nettoyant|le nettoyant|tonique|rougeurs|centella|niacinamide|bcharti|peau (sensible|grasse|sèche|réactive)|type de peau)\b|بشرة/i,
+};
 const NO_INVENTED_DISCOUNT: Rule = { label: 'remise inventée', re: /(\d{2,3}\s*%|(?<!\d)(49|59|79|89|149)\s*(dh|mad|درهم))/i };
 const GENEROUS: Rule = { label: 'tarif doux/généreux selon la ville', re: /(doux|généreu|raisonnable|abordable|léger|modique|petit prix|mzyan|ra5is|rkhis|mna|مناسب|معقول|بسيط|ville|مدينة|mdina)/i };
 
@@ -89,6 +104,19 @@ const CASES: Case[] = [
   { id: 'ma-code', lang: 'ar-MA', page: '/kit', turns: ['3ndkom chi code promo ?'], must: [CODE, PROMO_PRICE], leadForm: true },
   { id: 'ma-livraison', lang: 'ar-MA', page: '/kit', turns: ['chhal l-livraison ?'], mustNot: [NO_FREE_DELIVERY, NO_SHIPPING_AMOUNT] },
   { id: 'ma-tnzil', lang: 'ar-MA', page: '/kit', turns: ['tnzli chwiya f taman 3afak'], mustNot: [NO_INVENTED_DISCOUNT] },
+  // Cas durs
+  { id: 'fr-glow99-cest-quoi', lang: 'fr', page: '/kit', turns: ["C'est quoi GLOW99 ?"], must: [CODE, PROMO_PRICE], leadForm: true },
+  { id: 'fr-code-jusqua-quand', lang: 'fr', page: '/kit', turns: ['Le code GLOW99 est valable jusqu’à quand ?'], must: [CODE, { label: 'date de fin (30 novembre)', re: /30\s*novembre|novembre/i }], mustNot: [NO_INVENTED_DISCOUNT] },
+  { id: 'fr-code-deux-fois', lang: 'fr', page: '/kit', turns: ['Je peux utiliser GLOW99 deux fois pour avoir le pack à 0 dh ?'], must: [CODE], mustNot: [NO_INVENTED_DISCOUNT, { label: 'pack gratuit', re: /(?<!\d)0\s*(dh|mad)|gratuit(?!e?\s+(la\s+)?livraison)/i }] },
+  { id: 'fr-deux-packs', lang: 'fr', page: '/kit', turns: ['Je veux 2 packs, ça fait combien ?'], mustNot: [NO_INVENTED_DISCOUNT, NO_FREE_DELIVERY] },
+  { id: 'fr-199-pas-99', lang: 'fr', page: '/kit', turns: ['Sur la page je vois 199 dh, pourquoi vous dites 99 ?'], must: [CODE, PROMO_PRICE] },
+  { id: 'fr-total-avec-livraison', lang: 'fr', page: '/kit', turns: ['Au total avec la livraison ça fait combien ?'], must: [PROMO_PRICE], mustNot: [NO_FREE_DELIVERY, NO_SHIPPING_AMOUNT] },
+  { id: 'fr-livraison-a-partir', lang: 'fr', page: '/kit', turns: ['La livraison est gratuite à partir de combien ?'], mustNot: [NO_FREE_DELIVERY, NO_SHIPPING_AMOUNT] },
+  { id: 'fr-agadir-prix', lang: 'fr', page: '/kit', turns: ['Vous livrez à Agadir ? Et combien ça coûte en tout ?'], must: [PROMO_PRICE], mustNot: [NO_FREE_DELIVERY, NO_SHIPPING_AMOUNT] },
+  { id: 'ar-livraison-gratuite', lang: 'ar', page: '/kit', turns: ['هل التوصيل مجاني؟'], mustNot: [NO_FREE_DELIVERY, NO_SHIPPING_AMOUNT] },
+  { id: 'ar-commander', lang: 'ar', page: '/kit', turns: ['أريد أن أطلب الطقم'], must: [CODE, PROMO_PRICE], leadForm: true },
+  { id: 'ma-arabic-script', lang: 'ar-MA', page: '/kit', turns: ['واش التوصيل فابور؟'], mustNot: [NO_FREE_DELIVERY, NO_SHIPPING_AMOUNT] },
+  { id: 'ma-bghit-ncommandi', lang: 'ar-MA', page: '/kit', turns: ['bghit ncommandi l-pack'], must: [CODE, PROMO_PRICE], leadForm: true },
 ];
 
 // ── Client HTTP minimal ───────────────────────────────────────────────────────
@@ -167,8 +195,8 @@ async function runCase(c: Case): Promise<Result> {
   const failures: string[] = [];
   if (last.error) failures.push(`erreur SSE ${JSON.stringify(last.error)}`);
   if (!last.reply) failures.push('réponse vide');
-  for (const r of c.must ?? []) if (!r.re.test(last.reply)) failures.push(`manque : ${r.label}`);
-  for (const r of c.mustNot ?? []) if (r.re.test(last.reply)) failures.push(`interdit : ${r.label}`);
+  for (const r of c.must ?? []) if (!ruleMatches(r, last.reply)) failures.push(`manque : ${r.label}`);
+  for (const r of c.mustNot ?? []) if (ruleMatches(r, last.reply)) failures.push(`interdit : ${r.label}`);
   if (c.leadForm === true && !anyLeadForm) failures.push('formulaire attendu non proposé');
   if (c.leadForm === false && anyLeadForm) failures.push('formulaire proposé à tort');
   return { id: c.id, lang: c.lang, turns: c.turns, reply: last.reply, leadForm: last.leadForm, failures };
@@ -191,7 +219,7 @@ async function runPills(): Promise<Result[]> {
       if (/\{\{/.test(reply)) failures.push('jeton non rendu dans la réponse');
       if (!/GLOW\s*99/i.test(reply) || !/(?<!\d)99(?!\d)/.test(reply)) failures.push('réponse sans code ou prix remisé');
       if (!t.body?.triggersLeadForm) failures.push('ne déclenche pas le formulaire');
-      if (NO_FREE_DELIVERY.re.test(reply)) failures.push('livraison dite offerte');
+      if (ruleMatches(NO_FREE_DELIVERY, reply)) failures.push('livraison dite offerte');
       out.push({
         id: `pill-${key}-${lang}`,
         lang,

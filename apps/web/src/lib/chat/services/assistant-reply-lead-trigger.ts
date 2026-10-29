@@ -72,6 +72,15 @@ const RULES: TriggerRule[] = [
       /(اتركي|اترك|ضعي)\s+(رقمك|رقم الهاتف)/,
       /(سنتصل|سأتصل|تتصل)\s+بك/,
       /مستشارة/,
+      // Réponses scriptées (FAQ / questions rapides) et LLM : « Laissez-moi
+      // votre prénom et votre numéro : elle vous rappelle » ne matchait aucun
+      // motif (tiret de « laissez-moi », « : » après « numéro »).
+      /\blaissez[-\s]?(?:moi|nous)?\s*(?:votre|vos)\s+(?:pr[eé]nom|num[eé]ro|coordonn[eé]es|contact)/i,
+      /\bvotre\s+pr[eé]nom\s+et\s+(?:votre\s+)?num[eé]ro/i,
+      /\b(?:elle|une\s+conseill[eè]re|la\s+conseill[eè]re|notre\s+conseill[eè]re)\s+vous\s+(?:rappelle|r[eé]serve|appelle|recontacte|confirme)\b/i,
+      /(اتركي|اترك)\s+(?:لي\s+|لنا\s+)?(اسمك|رقمك|رقم\s+هاتفك)/,
+      /\b(?:khalli|khelli)\s+(?:liya|lina)?\s*(?:smitk|smiytek|smitha|r-?ra9m|numero|num[eé]ro)/i,
+      /\bl-?mostachara\s+(?:kat-?hjz|kat-?3ayyet|kat-?2akked|ghadi\s+t3yt)/i,
     ],
   },
   {
