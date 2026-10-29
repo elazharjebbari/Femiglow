@@ -40,6 +40,9 @@ const nextConfig = {
     ignoreBuildErrors: false,
   },
   experimental: {
+    // Serveur partagé et serré en RAM : bin/deploy-prod.sh limite le nombre de
+    // workers de build (NEXT_BUILD_CPUS) pour ne pas se faire tuer par l'OOM.
+    ...(process.env.NEXT_BUILD_CPUS ? { cpus: Number(process.env.NEXT_BUILD_CPUS) } : {}),
     optimizePackageImports: ['framer-motion'],
     serverComponentsExternalPackages: ['@node-rs/argon2', 'sharp', 'fluent-ffmpeg', 'ffmpeg-static', 'isomorphic-dompurify', 'jsdom'],
     instrumentationHook: true,

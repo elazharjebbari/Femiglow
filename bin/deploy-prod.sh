@@ -40,9 +40,14 @@ rm -rf .next-build
 mkdir -p .next-build/cache
 # Réutilise le cache webpack (builds plus rapides) ; jamais le fetch-cache.
 if [ -d .next/cache/webpack ]; then cp -a .next/cache/webpack .next-build/cache/; fi
+free -m | awk '/^Mem:/ {printf "[deploy] RAM disponible : %s Mo\n", $7}'
 
 log "build dans .next-build (le site reste servi)…"
-NEXT_DIST_DIR=.next-build NODE_OPTIONS=--max-old-space-size=8192 pnpm build
+# Serveur partagé (≈ 3 Go libres) : 2 workers et un tas plafonné, sinon l'OOM
+# killer tue le build (code 137). Le site en ligne n'est pas touché tant que
+# le build n'a pas réussi.
+NEXT_DIST_DIR=.next-build NEXT_BUILD_CPUS="${NEXT_BUILD_CPUS:-2}" \
+  NODE_OPTIONS="--max-old-space-size=${BUILD_HEAP_MB:-3072}" nice -n 10 pnpm build
 test -s .next-build/BUILD_ID || { log "build incomplet : pas de BUILD_ID"; exit 1; }
 chown -R --reference=.next .next-build 2>/dev/null || true
 
