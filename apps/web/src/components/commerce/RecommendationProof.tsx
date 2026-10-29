@@ -114,10 +114,10 @@ export function RecommendationProof({
               <span className="tabular-nums">{strings.verified}</span>
             </>
           ) : null}
-          {/* Séparateur collé au lien : à la ligne, ils passent ensemble
-              (pas de « · » orphelin en fin de ligne sur mobile). */}
-          <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-            <span aria-hidden="true" className="text-encre/30">
+          {/* Mobile : « Lire les avis » sur sa propre ligne, sans séparateur ;
+              ≥ sm : même ligne, séparé par « · » (jamais orphelin). */}
+          <span className="inline-flex basis-full items-center gap-1.5 whitespace-nowrap sm:basis-auto">
+            <span aria-hidden="true" className="hidden text-encre/30 sm:inline">
               ·
             </span>
             <span className="inline-flex items-center gap-1 font-medium text-sauge-dark underline-offset-4 group-hover:underline">
