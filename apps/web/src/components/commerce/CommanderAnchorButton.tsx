@@ -15,6 +15,7 @@
 import { useCallback, type ReactNode } from 'react';
 
 import { useAppliedCoupon } from '@/lib/checkout/state/use-applied-coupon';
+import { arriveAtCommander } from '@/lib/checkout/wizard-arrival';
 
 import { Button, type ButtonSize } from '@/components/ui/Button';
 import { useTracking } from '@/lib/tracking/use-tracking';
@@ -85,26 +86,12 @@ interface CommanderAnchorButtonProps {
 }
 
 /**
- * Scroll vers le funnel embarqué et focus du wizard (sans casser la lecture
- * d'écran). Partagé avec le flag promo de la sticky (`StickyPromoFlag`).
+ * Arrivée sur le funnel embarqué : step actif centré dans la bande visible,
+ * puis accueil très doux (cf. `wizard-arrival`). Partagé avec le flag promo
+ * de la sticky (`StickyPromoFlag`).
  */
 export function scrollToCommander(anchorId = 'commander-femiglow'): void {
-  const target = document.getElementById(anchorId);
-  if (!target) return;
-  const reduceMotion =
-    typeof window !== 'undefined' &&
-    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-  target.scrollIntoView({
-    behavior: reduceMotion ? 'auto' : 'smooth',
-    block: 'start',
-  });
-  // Focus le wizard : on cible le shell s'il existe pour que la lecture
-  // reprenne au step actif (tabindex=-1 transitoire pour `focus()`).
-  const shell = target.querySelector('[data-testid="wizard-shell"]');
-  if (shell instanceof HTMLElement) {
-    shell.setAttribute('tabindex', '-1');
-    shell.focus({ preventScroll: true });
-  }
+  arriveAtCommander(anchorId);
 }
 
 export function CommanderAnchorButton({

@@ -254,3 +254,21 @@
   .fg-coupon-eco { animation: none; }
   .fg-coupon-check { animation: none; stroke-dashoffset: 0; }
 }
+
+/* ─────────────────────────────────────────────────────────────────────
+   Arrivée sur le formulaire /kit (lib/checkout/wizard-arrival.ts).
+   Une seule passe, très douce : halo sauge autour de la carte (« c'est
+   ici »), puis le premier champ vide se teinte de sauge (« commencez là »).
+   Vert = rassurant, jamais une couleur d'erreur. Les étapes 0 % / 100 % sont
+   omises : le navigateur part de l'état réel et y revient sans à-coup.
+   ───────────────────────────────────────────────────────────────────── */
+@keyframes fgArrivalHalo {
+  40% { box-shadow: 0 0 0 8px rgba(197, 219, 196, 0.55), 0 16px 40px -16px rgba(79, 109, 82, 0.28); }
+}
+@keyframes fgArrivalField {
+  40% { border-color: rgba(79, 109, 82, 0.55); background-color: rgba(224, 237, 224, 0.5); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  [data-fg-arrival='card'] { animation: fgArrivalHalo 1600ms cubic-bezier(0.65, 0, 0.35, 1) both; }
+  [data-fg-arrival='field'] { animation: fgArrivalField 1400ms 350ms cubic-bezier(0.65, 0, 0.35, 1) both; }
+}
