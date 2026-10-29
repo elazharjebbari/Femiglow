@@ -21,6 +21,9 @@
  *
  * Positionné en `left` PHYSIQUE (comme le lanceur du chat est forcé à droite
  * physique) : en RTL l'onglet reste loin du lanceur.
+ *
+ * Couleurs translucides en valeurs littérales : les tokens `var(--…)` ne
+ * supportent pas le modificateur d’opacité Tailwind (`/20` ne génère rien).
  */
 
 import { useCallback, useState } from 'react';
@@ -99,10 +102,10 @@ export function StickyPromoFlag({
         // Onglet posé sur le filet supérieur de la barre (-1px : il recouvre le
         // filet, l'onglet semble pousser de la barre).
         'group/flag absolute bottom-full left-4 -mb-px lg:left-3',
-        'inline-flex h-7 items-center gap-1.5 rounded-t-lg border border-b-0 border-sauge-dark/20 bg-creme ps-1.5 pe-2.5',
+        'inline-flex h-7 items-center gap-1.5 rounded-t-lg border border-b-0 border-[rgba(79,109,82,0.22)] bg-creme ps-1.5 pe-2.5',
         'shadow-[0_-6px_14px_-8px_rgba(79,109,82,0.35)]',
         'transition-[transform,background-color,border-color,box-shadow] duration-fast ease-out-soft',
-        'hover:-translate-y-px hover:border-sauge-dark/40 hover:bg-sauge-soft/60 hover:shadow-[0_-8px_18px_-8px_rgba(79,109,82,0.45)]',
+        'hover:-translate-y-px hover:border-[rgba(79,109,82,0.45)] hover:bg-[#EEF4EC] hover:shadow-[0_-8px_18px_-8px_rgba(79,109,82,0.45)]',
         'active:translate-y-0 active:scale-[0.97] active:duration-instant',
         'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sauge-dark',
         // Entrée rejouée à chaque apparition de la barre (data-visible du parent).
@@ -114,7 +117,7 @@ export function StickyPromoFlag({
         <span
           className={cn(
             'absolute inset-y-0 left-0 w-1/3 -translate-x-[120%] -skew-x-12',
-            'bg-gradient-to-r from-transparent via-champagne-soft/80 to-transparent',
+            'bg-gradient-to-r from-transparent via-[rgba(232,217,188,0.85)] to-transparent',
             'motion-safe:group-data-[visible=true]/sticky:animate-promo-sheen',
             'motion-safe:group-hover/flag:animate-promo-sheen-hover',
           )}
@@ -167,7 +170,7 @@ export function StickyPromoFlag({
         height="10"
         aria-hidden="true"
         focusable="false"
-        className="relative -me-0.5 text-sauge-dark/60 transition-transform duration-fast ease-out-soft group-hover/flag:translate-x-0.5 group-hover/flag:text-sauge-dark rtl:rotate-180 rtl:group-hover/flag:-translate-x-0.5"
+        className="relative -me-0.5 text-[rgba(79,109,82,0.6)] transition-transform duration-fast ease-out-soft group-hover/flag:translate-x-0.5 group-hover/flag:text-sauge-dark rtl:rotate-180 rtl:group-hover/flag:-translate-x-0.5"
       >
         <path
           d="M6 3.5L10.5 8 6 12.5"

@@ -44,10 +44,11 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={{ show }}>
       {children}
+      {/* 108 px en mobile : au-dessus de la sticky /kit ET de son flag promo. */}
       <div
         aria-live="polite"
         aria-atomic="true"
-        className="pointer-events-none fixed inset-x-0 bottom-24 mx-auto flex w-full max-w-sm flex-col items-center gap-2 px-4 lg:bottom-8"
+        className="pointer-events-none fixed inset-x-0 bottom-[108px] mx-auto flex w-full max-w-sm flex-col items-center gap-2 px-4 lg:bottom-8"
         style={{ zIndex: 'var(--z-toast)' }}
       >
         {items.map((item) => (
