@@ -84,6 +84,29 @@ interface CommanderAnchorButtonProps {
   label?: string;
 }
 
+/**
+ * Scroll vers le funnel embarqué et focus du wizard (sans casser la lecture
+ * d'écran). Partagé avec le flag promo de la sticky (`StickyPromoFlag`).
+ */
+export function scrollToCommander(anchorId = 'commander-femiglow'): void {
+  const target = document.getElementById(anchorId);
+  if (!target) return;
+  const reduceMotion =
+    typeof window !== 'undefined' &&
+    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  target.scrollIntoView({
+    behavior: reduceMotion ? 'auto' : 'smooth',
+    block: 'start',
+  });
+  // Focus le wizard : on cible le shell s'il existe pour que la lecture
+  // reprenne au step actif (tabindex=-1 transitoire pour `focus()`).
+  const shell = target.querySelector('[data-testid="wizard-shell"]');
+  if (shell instanceof HTMLElement) {
+    shell.setAttribute('tabindex', '-1');
+    shell.focus({ preventScroll: true });
+  }
+}
+
 export function CommanderAnchorButton({
   anchorId = 'commander-femiglow',
   size = 'md',
@@ -113,25 +136,7 @@ export function CommanderAnchorButton({
         : priceCents;
 
   const onClick = useCallback(() => {
-    const target = document.getElementById(anchorId);
-    const reduceMotion =
-      typeof window !== 'undefined' &&
-      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-
-    if (target) {
-      target.scrollIntoView({
-        behavior: reduceMotion ? 'auto' : 'smooth',
-        block: 'start',
-      });
-      // Focus le wizard sans casser la lecture d'écran : on cible le shell
-      // s'il existe pour que la lecture reprenne au step actif.
-      const shell = target.querySelector('[data-testid="wizard-shell"]');
-      if (shell instanceof HTMLElement) {
-        // tabindex=-1 transitoire pour permettre `focus()` programmatique
-        shell.setAttribute('tabindex', '-1');
-        shell.focus({ preventScroll: true });
-      }
-    }
+    scrollToCommander(anchorId);
 
     if (trackedPriceCents !== undefined && productId && productName) {
       emit('add_to_cart', {

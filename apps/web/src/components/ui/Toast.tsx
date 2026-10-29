@@ -71,3 +71,11 @@ export function useToast(): ToastContextValue {
   }
   return ctx;
 }
+
+/**
+ * Variante tolérante : `null` hors provider (tests unitaires, surfaces
+ * montées hors layout /kit) au lieu de lever.
+ */
+export function useOptionalToast(): ToastContextValue | null {
+  return useContext(ToastContext);
+}

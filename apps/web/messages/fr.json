@@ -436,7 +436,12 @@
         "subtitle_default": "Quelques coordonnées, une adresse au Maroc, et nous nous occupons du reste. Livraison : Rabat 24 h, reste du Maroc 48 à 72 h."
       },
       "sticky": {
-        "aria_region": "Achat rapide"
+        "aria_region": "Achat rapide",
+        "promo_flag": {
+          "label": "Code {code} appliqué",
+          "toast": "Votre code {code} est déjà appliqué : −{amount} sur votre commande. Il ne reste qu’à la confirmer.",
+          "aria": "Code {code} appliqué, {amount} déduits. Aller au formulaire de commande."
+        }
       },
       "pivot_final": {
         "kicker": "Le geste",

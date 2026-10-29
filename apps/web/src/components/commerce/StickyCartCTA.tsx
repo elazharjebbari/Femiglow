@@ -2,6 +2,10 @@
 
 import { useEffect, useState, type ReactNode } from 'react';
 import { PriceDisplay } from '@/components/commerce/PriceDisplay';
+import {
+  StickyPromoFlag,
+  type StickyPromoFlagStrings,
+} from '@/components/commerce/StickyPromoFlag';
 import { useChatStore } from '@/components/chat/chat-store';
 import { useWizardStore } from '@/lib/checkout/state/wizard-store';
 import type { Currency } from '@/lib/products/currency';
@@ -23,6 +27,10 @@ interface StickyCartCTAProps {
   promoPriceCents?: number | null;
   currency: Currency;
   observeId: string;
+  /** Locale active (formatage du montant du flag promo). */
+  locale?: string;
+  /** Libellés localisés du flag « Code X appliqué » (défaut FR). */
+  promoFlagStrings?: StickyPromoFlagStrings;
   children: ReactNode;
 }
 
@@ -33,6 +41,8 @@ export function StickyCartCTA({
   promoPriceCents = null,
   currency,
   observeId,
+  locale,
+  promoFlagStrings,
   children,
 }: StickyCartCTAProps) {
   const [visible, setVisible] = useState(false);
@@ -79,8 +89,11 @@ export function StickyCartCTA({
       data-chat-open={chatOpen ? 'true' : 'false'}
       aria-hidden={chatOpen}
       style={{ zIndex: 'var(--z-sticky)' }}
-      className="fixed inset-x-0 bottom-0 border-t border-encre/10 bg-creme/95 px-4 py-3 backdrop-blur transition-[transform,opacity] duration-base ease-out-soft data-[visible=false]:translate-y-full data-[chat-open=true]:opacity-0 data-[chat-open=true]:pointer-events-none motion-reduce:transition-none motion-reduce:data-[visible=false]:opacity-0 motion-reduce:data-[visible=false]:translate-y-0 lg:bottom-6 lg:start-auto lg:end-6 lg:w-[340px] lg:rounded-md lg:border"
+      className="group/sticky fixed inset-x-0 bottom-0 border-t border-encre/10 bg-creme/95 px-4 py-3 backdrop-blur transition-[transform,opacity] duration-base ease-out-soft data-[visible=false]:translate-y-full data-[chat-open=true]:opacity-0 data-[chat-open=true]:pointer-events-none motion-reduce:transition-none motion-reduce:data-[visible=false]:opacity-0 motion-reduce:data-[visible=false]:translate-y-0 lg:bottom-6 lg:start-auto lg:end-6 lg:w-[340px] lg:rounded-md lg:border"
     >
+      {/* Onglet « Code X appliqué » : rendu seulement si un code promo réduit
+          le prix (sinon `null`, barre inchangée). */}
+      <StickyPromoFlag currency={currency} locale={locale} strings={promoFlagStrings} />
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-[11px] uppercase tracking-[0.18em] text-encre/70">

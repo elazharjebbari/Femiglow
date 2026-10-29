@@ -431,7 +431,12 @@
         "subtitle_default": "A few details, an address in Morocco, and we take care of the rest. Delivery: Rabat 24 h, rest of Morocco 48 to 72 h."
       },
       "sticky": {
-        "aria_region": "Quick purchase"
+        "aria_region": "Quick purchase",
+        "promo_flag": {
+          "label": "Code {code} applied",
+          "toast": "Your code {code} is already applied: −{amount} off your order. All that’s left is to confirm it.",
+          "aria": "Code {code} applied, {amount} off. Go to the order form."
+        }
       },
       "pivot_final": {
         "kicker": "The gesture",

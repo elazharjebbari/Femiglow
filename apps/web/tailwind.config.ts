@@ -124,10 +124,39 @@ const config: Config = {
           '0%': { opacity: '0', transform: 'translateY(2px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
+        // Flag « Code appliqué » de la sticky : l'onglet sort du bord de la
+        // barre, la coche se trace, puis UN reflet unique traverse la puce.
+        // Jamais en boucle (NN/g : une animation qui se répète distrait).
+        'promo-flag-in': {
+          '0%': { opacity: '0', transform: 'translateY(8px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        'promo-check-draw': {
+          '0%': { strokeDashoffset: '12' },
+          '100%': { strokeDashoffset: '0' },
+        },
+        'promo-sheen': {
+          '0%': { transform: 'translateX(-120%)' },
+          '100%': { transform: 'translateX(220%)' },
+        },
+        // Même tracé, autre nom : changer de nom relance l'animation au survol.
+        'promo-sheen-hover': {
+          '0%': { transform: 'translateX(-120%)' },
+          '100%': { transform: 'translateX(220%)' },
+        },
+        'promo-ring': {
+          '0%': { opacity: '0.55', transform: 'scale(1)' },
+          '100%': { opacity: '0', transform: 'scale(2.2)' },
+        },
       },
       animation: {
         'soft-pulse': 'soft-pulse 3.5s ease-in-out infinite',
         'fade-in': 'fade-in 0.2s ease-out',
+        'promo-flag-in': 'promo-flag-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0.18s backwards',
+        'promo-check-draw': 'promo-check-draw 0.32s cubic-bezier(0.22, 1, 0.36, 1) 0.5s backwards',
+        'promo-sheen': 'promo-sheen 0.9s cubic-bezier(0.65, 0, 0.35, 1) 0.85s both',
+        'promo-sheen-hover': 'promo-sheen-hover 0.8s cubic-bezier(0.65, 0, 0.35, 1) both',
+        'promo-ring': 'promo-ring 0.6s cubic-bezier(0.22, 1, 0.36, 1) both',
       },
     },
   },

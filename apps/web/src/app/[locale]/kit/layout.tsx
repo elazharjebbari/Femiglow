@@ -46,6 +46,12 @@ export default async function LocaleKitLayout({
   const effectivePriceCents = product.promoPriceCents ?? product.priceCents;
   const localizedProductName = tKit('product.name');
   const stickyAriaRegion = tKit('sticky.aria_region');
+  // Gabarits bruts : `{code}` / `{amount}` sont remplis côté client.
+  const promoFlagStrings = {
+    label: tKit.raw('sticky.promo_flag.label') as string,
+    toast: tKit.raw('sticky.promo_flag.toast') as string,
+    aria: tKit.raw('sticky.promo_flag.aria') as string,
+  };
 
   return (
     <ToastProvider>
@@ -62,6 +68,8 @@ export default async function LocaleKitLayout({
         promoPriceCents={product.promoPriceCents}
         currency={product.currency}
         observeId="hero-produit-anchor"
+        locale={locale}
+        promoFlagStrings={promoFlagStrings}
       >
         <CommanderAnchorButton
           size="md"
