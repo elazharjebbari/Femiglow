@@ -16,16 +16,10 @@ import { RecommendationProof } from '@/components/commerce/RecommendationProof';
 import { TrustRow } from '@/components/commerce/TrustRow';
 import { ViewItemTracker } from '@/components/tracking/ViewItemTracker';
 import { HeroGallery } from './hero/HeroGallery';
-import {
-  useAppliedCoupon,
-  type AppliedCouponSeed,
-} from '@/lib/checkout/state/use-applied-coupon';
+import { useAppliedCoupon, type AppliedCouponSeed } from '@/lib/checkout/state/use-applied-coupon';
 import { cn } from '@/lib/utils/cn';
 import { computePromo } from '@/lib/utils/promo';
-import type {
-  Product,
-  Reassurance as ReassuranceData,
-} from '@/lib/schemas';
+import type { Product, Reassurance as ReassuranceData } from '@/lib/schemas';
 import type { HeroGalleryImage } from '@/lib/products/hero-gallery-types';
 import type { ProductReviewStats } from '@/lib/products/reviews';
 
@@ -173,7 +167,7 @@ export function HeroProduit({
       )
     : null;
   const heroPromoAutoLabel = isPromoApplied
-    ? strings?.promoAutoAppliedLabel ?? 'Remise appliquée automatiquement, rien à saisir.'
+    ? (strings?.promoAutoAppliedLabel ?? 'Remise appliquée automatiquement, rien à saisir.')
     : null;
 
   return (
@@ -196,10 +190,7 @@ export function HeroProduit({
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-16">
           {/* Colonne gauche — Galerie */}
           <div className="-mx-4 lg:mx-0">
-            <HeroGallery
-              images={galleryImages}
-              ariaLabel={`Galerie ${heroName}`}
-            />
+            <HeroGallery images={galleryImages} ariaLabel={`Galerie ${heroName}`} />
           </div>
 
           {/* MOBILE : bloc « découverte vidéos » sous les images, avant le titre.
@@ -207,155 +198,159 @@ export function HeroProduit({
             dans la page (disposition desktop inchangée). */}
           {storiesSlot ? <div className="min-w-0 lg:hidden">{storiesSlot}</div> : null}
 
-          {/* Colonne droite — Contenu */}
-          <div className="space-y-5 lg:pt-4">
-            <Kicker>{heroKicker}</Kicker>
-            <Heading id="hero-kit-title" as="h1" size="display-md">
-              {heroName}
-            </Heading>
+          {/* Colonne droite — Contenu.
+            MOBILE : la colonne s'efface (`contents`) pour que son bloc
+            d'ouverture (kicker, titre, preuve sociale) passe AVANT la galerie
+            (`order-first`) : on lit ce qu'est le produit et qu'on le recommande
+            avant de faire défiler les images. DESKTOP (lg+) : colonne
+            classique, ordre inchangé. Un seul h1 dans le DOM (pas de doublon). */}
+          <div className="contents lg:block lg:space-y-5 lg:pt-4">
+            <div className="order-first space-y-5 lg:order-none" data-testid="hero-intro">
+              <Kicker>{heroKicker}</Kicker>
+              <Heading id="hero-kit-title" as="h1" size="display-md">
+                {heroName}
+              </Heading>
 
-            {/* Sans note par étoiles collectée, la preuve sociale montre la part
+              {/* Sans note par étoiles collectée, la preuve sociale montre la part
                 RÉELLE de clientes qui recommandent le Pack (jamais d'étoiles
                 inventées) ; une vraie note bascule sur le badge étoilé. */}
-            {fields.reviewBadgeEnabled &&
-            reviewStats &&
-            reviewStats.reviewsCount > 0 &&
-            reviewStats.rating === null &&
-            (reviewStats.recommendCount ?? 0) > 0 &&
-            strings?.reviewsRecommend &&
-            strings.reviewsReadReviews ? (
-              <RecommendationProof
-                recommendCount={reviewStats.recommendCount ?? 0}
-                reviewsCount={reviewStats.reviewsCount}
-                verifiedCount={reviewStats.verifiedCount}
-                href={reviewsAnchorHref ?? '#rituals-module-title'}
-                strings={{
-                  recommend: strings.reviewsRecommend,
-                  reviews: strings.reviewsLabel ?? `${reviewStats.reviewsCount} avis`,
-                  verified: strings.reviewsVerified,
-                  readReviews: strings.reviewsReadReviews,
-                  ariaLabel: strings.reviewsRecommendAria ?? strings.reviewsRecommend,
-                }}
-              />
-            ) : fields.reviewBadgeEnabled && reviewStats && reviewStats.reviewsCount > 0 ? (
-              <SocialProofBadge
-                rating={reviewStats.rating}
-                reviewsCount={reviewStats.reviewsCount}
-                href={reviewsAnchorHref}
-                reviewsLabel={strings?.reviewsLabel}
-                ariaLabel={strings?.reviewsAriaLabel}
-              />
-            ) : null}
+              {fields.reviewBadgeEnabled &&
+              reviewStats &&
+              reviewStats.reviewsCount > 0 &&
+              reviewStats.rating === null &&
+              (reviewStats.recommendCount ?? 0) > 0 &&
+              strings?.reviewsRecommend &&
+              strings.reviewsReadReviews ? (
+                <RecommendationProof
+                  recommendCount={reviewStats.recommendCount ?? 0}
+                  reviewsCount={reviewStats.reviewsCount}
+                  verifiedCount={reviewStats.verifiedCount}
+                  href={reviewsAnchorHref ?? '#rituals-module-title'}
+                  strings={{
+                    recommend: strings.reviewsRecommend,
+                    reviews: strings.reviewsLabel ?? `${reviewStats.reviewsCount} avis`,
+                    verified: strings.reviewsVerified,
+                    readReviews: strings.reviewsReadReviews,
+                    ariaLabel: strings.reviewsRecommendAria ?? strings.reviewsRecommend,
+                  }}
+                />
+              ) : fields.reviewBadgeEnabled && reviewStats && reviewStats.reviewsCount > 0 ? (
+                <SocialProofBadge
+                  rating={reviewStats.rating}
+                  reviewsCount={reviewStats.reviewsCount}
+                  href={reviewsAnchorHref}
+                  reviewsLabel={strings?.reviewsLabel}
+                  ariaLabel={strings?.reviewsAriaLabel}
+                />
+              ) : null}
+            </div>
 
-            <Text size="lead" tone="secondary" prose>
-              {fields.tagline}
-            </Text>
+            <div className="space-y-5">
+              <Text size="lead" tone="secondary" prose>
+                {fields.tagline}
+              </Text>
 
-            <AttributeChips items={fields.attributeChips} />
+              <AttributeChips items={fields.attributeChips} />
 
-            {/* Bloc prix : gap horizontal généreux (Müller-Lyer).
+              {/* Bloc prix : gap horizontal généreux (Müller-Lyer).
                 `showSavings={false}` désactive le micro-libellé CAPS posé
                 par `PriceDisplay` — on lui préfère la version sauge ci-dessous
                 (cohérent avec Kolenda Color §1 « pas de pop chaud sauf CTA »
                 + Copywriting §13 « zéro caps d'emphase »). */}
-            <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 pt-2">
-              <PriceDisplay
-                priceCents={product.priceCents}
-                promoPriceCents={
-                  effectivePriceCents < product.priceCents ? effectivePriceCents : null
-                }
-                currency={product.currency}
-                size="xl"
-                showSavings={false}
-              />
-              {savings > 0 ? (
-                <span
-                  className="text-[15px] font-medium tabular-nums tracking-[0.005em]"
-                  style={{ color: SAGE_LIGHT }}
+              <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 pt-2">
+                <PriceDisplay
+                  priceCents={product.priceCents}
+                  promoPriceCents={
+                    effectivePriceCents < product.priceCents ? effectivePriceCents : null
+                  }
+                  currency={product.currency}
+                  size="xl"
+                  showSavings={false}
+                />
+                {savings > 0 ? (
+                  <span
+                    className="text-[15px] font-medium tabular-nums tracking-[0.005em]"
+                    style={{ color: SAGE_LIGHT }}
+                  >
+                    {heroSavingsLabel}
+                  </span>
+                ) : null}
+              </div>
+              {heroPromoAppliedLabel ? (
+                <p
+                  data-testid="hero-promo-applied"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-encre"
                 >
-                  {heroSavingsLabel}
-                </span>
+                  <svg
+                    viewBox="0 0 16 16"
+                    width="12"
+                    height="12"
+                    aria-hidden
+                    style={{ color: SAGE_LIGHT }}
+                  >
+                    <path
+                      d="M4 8.4l2.6 2.6 5.4-6"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.9"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  {heroPromoAppliedLabel}
+                </p>
+              ) : null}
+              {heroPromoAutoLabel ? (
+                <p data-testid="hero-promo-auto" className="text-sm text-encre/65">
+                  {heroPromoAutoLabel}
+                </p>
+              ) : null}
+
+              {/* Trust row AU-DESSUS du CTA — mots positifs collés à la décision */}
+              <TrustRow items={fields.trustRow} className="pt-1" />
+
+              {/* CTA principal — sauge profond + micro-pulse optionnel */}
+              <div
+                className={cn('pt-1 hero-cta-wrapper', fields.ctaPulseEnabled && 'hero-cta-pulse')}
+              >
+                {commanderMode === 'wizard-anchor' ? (
+                  <CommanderAnchorButton
+                    size="lg"
+                    fullWidth
+                    productId={product.id}
+                    productName={product.name}
+                    priceCents={effectivePriceCents}
+                    currency={product.currency}
+                  >
+                    {heroCtaLabel}
+                  </CommanderAnchorButton>
+                ) : (
+                  <AddToCartButton product={product} size="lg" fullWidth redirectTo="/panier">
+                    {heroCtaLabel}
+                  </AddToCartButton>
+                )}
+              </div>
+
+              {/* Description longue — sous le CTA, lecture optionnelle */}
+              {fields.description ? (
+                <Text size="body" tone="secondary" prose className="pt-3">
+                  {fields.description}
+                </Text>
+              ) : null}
+
+              {reassurances.length > 0 ? (
+                <ul
+                  aria-label="Réassurances"
+                  className="grid grid-cols-1 gap-4 border-t border-encre/10 pt-5 sm:grid-cols-3"
+                >
+                  {reassurances.map((r) => (
+                    <li key={r.label}>
+                      <Reassurance icon={r.icon} label={r.label} detail={r.detail} />
+                    </li>
+                  ))}
+                </ul>
               ) : null}
             </div>
-            {heroPromoAppliedLabel ? (
-              <p
-                data-testid="hero-promo-applied"
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-encre"
-              >
-                <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden style={{ color: SAGE_LIGHT }}>
-                  <path
-                    d="M4 8.4l2.6 2.6 5.4-6"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.9"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                {heroPromoAppliedLabel}
-              </p>
-            ) : null}
-            {heroPromoAutoLabel ? (
-              <p
-                data-testid="hero-promo-auto"
-                className="text-sm text-encre/65"
-              >
-                {heroPromoAutoLabel}
-              </p>
-            ) : null}
-
-            {/* Trust row AU-DESSUS du CTA — mots positifs collés à la décision */}
-            <TrustRow items={fields.trustRow} className="pt-1" />
-
-            {/* CTA principal — sauge profond + micro-pulse optionnel */}
-            <div
-              className={cn(
-                'pt-1 hero-cta-wrapper',
-                fields.ctaPulseEnabled && 'hero-cta-pulse',
-              )}
-            >
-              {commanderMode === 'wizard-anchor' ? (
-                <CommanderAnchorButton
-                  size="lg"
-                  fullWidth
-                  productId={product.id}
-                  productName={product.name}
-                  priceCents={effectivePriceCents}
-                  currency={product.currency}
-                >
-                  {heroCtaLabel}
-                </CommanderAnchorButton>
-              ) : (
-                <AddToCartButton
-                  product={product}
-                  size="lg"
-                  fullWidth
-                  redirectTo="/panier"
-                >
-                  {heroCtaLabel}
-                </AddToCartButton>
-              )}
-            </div>
-
-            {/* Description longue — sous le CTA, lecture optionnelle */}
-            {fields.description ? (
-              <Text size="body" tone="secondary" prose className="pt-3">
-                {fields.description}
-              </Text>
-            ) : null}
-
-            {reassurances.length > 0 ? (
-              <ul
-                aria-label="Réassurances"
-                className="grid grid-cols-1 gap-4 border-t border-encre/10 pt-5 sm:grid-cols-3"
-              >
-                {reassurances.map((r) => (
-                  <li key={r.label}>
-                    <Reassurance icon={r.icon} label={r.label} detail={r.detail} />
-                  </li>
-                ))}
-              </ul>
-            ) : null}
           </div>
         </div>
       </Container>
