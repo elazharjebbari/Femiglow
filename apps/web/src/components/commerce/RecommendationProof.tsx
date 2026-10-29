@@ -64,7 +64,10 @@ export function RecommendationProof({
         className,
       )}
     >
-      <span aria-hidden="true" className="relative flex h-10 w-10 shrink-0 items-center justify-center">
+      <span
+        aria-hidden="true"
+        className="relative flex h-10 w-10 shrink-0 items-center justify-center"
+      >
         <svg viewBox="0 0 40 40" width="40" height="40" className="-rotate-90" focusable="false">
           <circle cx="20" cy="20" r={r} fill="none" stroke="var(--color-sauge)" strokeWidth="3.5" />
           <circle
@@ -79,7 +82,13 @@ export function RecommendationProof({
             data-testid="recommendation-gauge"
           />
         </svg>
-        <svg viewBox="0 0 16 16" width="14" height="14" className="absolute text-sauge-dark" focusable="false">
+        <svg
+          viewBox="0 0 16 16"
+          width="14"
+          height="14"
+          className="absolute text-sauge-dark"
+          focusable="false"
+        >
           <path
             d="M4 8.4l2.6 2.6 5.4-6"
             fill="none"
@@ -92,7 +101,9 @@ export function RecommendationProof({
       </span>
 
       <span className="flex min-w-0 flex-col gap-0.5 leading-tight">
-        <span className="text-[15px] font-semibold tabular-nums text-encre">{strings.recommend}</span>
+        <span className="text-[15px] font-semibold tabular-nums text-encre">
+          {strings.recommend}
+        </span>
         <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[12.5px] text-encre/70">
           <span className="tabular-nums">{strings.reviews}</span>
           {verifiedCount && verifiedCount > 0 && strings.verified ? (
@@ -103,21 +114,32 @@ export function RecommendationProof({
               <span className="tabular-nums">{strings.verified}</span>
             </>
           ) : null}
-          <span aria-hidden="true" className="text-encre/30">
-            ·
-          </span>
-          <span className="inline-flex items-center gap-1 font-medium text-sauge-dark underline-offset-4 group-hover:underline">
-            {strings.readReviews}
-            <svg
-              viewBox="0 0 16 16"
-              width="12"
-              height="12"
-              aria-hidden="true"
-              focusable="false"
-              className="transition-transform duration-200 group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5"
-            >
-              <path d="M3 8h9M8.5 4.5L12 8l-3.5 3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+          {/* Séparateur collé au lien : à la ligne, ils passent ensemble
+              (pas de « · » orphelin en fin de ligne sur mobile). */}
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+            <span aria-hidden="true" className="text-encre/30">
+              ·
+            </span>
+            <span className="inline-flex items-center gap-1 font-medium text-sauge-dark underline-offset-4 group-hover:underline">
+              {strings.readReviews}
+              <svg
+                viewBox="0 0 16 16"
+                width="12"
+                height="12"
+                aria-hidden="true"
+                focusable="false"
+                className="transition-transform duration-200 group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5"
+              >
+                <path
+                  d="M3 8h9M8.5 4.5L12 8l-3.5 3.5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </span>
           </span>
         </span>
       </span>
