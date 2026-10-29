@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type MouseEvent } from 'react';
 import { usePathname } from 'next/navigation';
+import { arriveAtCommander } from '@/lib/checkout/wizard-arrival';
 import { useTracking } from '@/lib/tracking/use-tracking';
 import type {
   GeoPromoLocationPayload,
@@ -105,12 +106,20 @@ export function GeoPromoSlideHeader() {
     });
   };
 
-  const clickCta = () => {
+  const clickCta = (event: MouseEvent<HTMLAnchorElement>) => {
     emit('geo_promo_header_click', {
       campaign_key: payload.campaignKey,
       route: '/kit',
       discount_pct: payload.discountPct ?? undefined,
     });
+    // Ancre du formulaire déjà sur la page (/kit) : même arrivée que la sticky
+    // (step centré + accueil doux) au lieu du saut natif sur le titre.
+    // Ailleurs (autre page, clic molette/Cmd), navigation normale.
+    const hash = payload.ctaHref?.split('#')[1];
+    if (!hash || event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+    if (!document.getElementById(hash)?.querySelector('[data-testid="wizard-shell"]')) return;
+    event.preventDefault();
+    arriveAtCommander(hash);
   };
 
   const density =

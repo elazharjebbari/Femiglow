@@ -21,8 +21,6 @@
 const BAND_GAP_PX = 12;
 /** Durée totale de l'accueil (halo 1,6 s ; champ 0,35 s + 1,4 s). */
 const ARRIVAL_MS = 2000;
-/** Repli si `scrollend` n'est pas supporté (Safari < 18). */
-const SCROLL_FALLBACK_MS = 900;
 
 export interface CenterInput {
   /** Haut absolu (document) et hauteur de la zone à montrer. */
@@ -63,15 +61,38 @@ function isPinned(el: Element): boolean {
   return pos === 'fixed' || pos === 'sticky';
 }
 
-/** Hauteur couverte en haut par le header fixe / la barre d'annonce. */
-function measureTopInset(): number {
+/** Élément fixe/sticky (lui ou un ancêtre) sous le point, s'il y en a un. */
+function pinnedAt(x: number, y: number): Element | null {
+  // `?.` : absent en jsdom (tests).
+  let el = document.elementFromPoint?.(x, y) ?? null;
+  while (el && el !== document.body && el !== document.documentElement) {
+    if (isPinned(el)) return el;
+    el = el.parentElement;
+  }
+  return null;
+}
+
+/**
+ * Hauteur couverte en haut : on empile les éléments collés depuis le haut de
+ * l'écran (header, barre d'annonce `geo-promo-slide-header`, futurs bandeaux)
+ * — sans liste figée. Plus le récap panier du wizard, `sticky top-0` en
+ * mobile : une fois arrivée dans le formulaire, il se colle lui aussi.
+ */
+function measureTopInset(shell: Element): number {
   let inset = 0;
-  document.querySelectorAll('header, [role="banner"]').forEach((el) => {
-    // Un header sticky n'est collé qu'une fois défilé : on prend sa hauteur.
-    if (!isPinned(el)) return;
-    const r = el.getBoundingClientRect();
-    if (r.height > 0 && r.height < window.innerHeight / 3) inset = Math.max(inset, r.height + Math.max(0, r.top));
-  });
+  const x = window.innerWidth / 2;
+  for (let i = 0; i < 6; i += 1) {
+    const el = pinnedAt(x, inset + 1);
+    if (!el || shell.contains(el)) break;
+    const bottom = el.getBoundingClientRect().bottom;
+    if (bottom <= inset || bottom > window.innerHeight / 2) break;
+    inset = bottom;
+  }
+  const recap = shell.querySelector('[data-testid="wizard-cart-recap"]');
+  if (recap && getComputedStyle(recap).position === 'sticky') {
+    const stickyTop = parseFloat(getComputedStyle(recap).top) || 0;
+    inset = Math.max(inset, stickyTop + recap.getBoundingClientRect().height);
+  }
   return inset;
 }
 
@@ -98,7 +119,12 @@ function firstEmptyField(zone: Element): HTMLInputElement | null {
   return null;
 }
 
+/** Incrémenté à chaque arrivée : un double clic annule la précédente. */
+let arrivalToken = 0;
+let arrivalCleanup: (() => void) | null = null;
+
 function playArrival(card: HTMLElement | null, field: HTMLElement | null): void {
+  arrivalCleanup?.();
   const marked = [card, field].filter((el): el is HTMLElement => !!el);
   marked.forEach((el) => {
     // Relance propre si on clique deux fois de suite.
@@ -106,19 +132,40 @@ function playArrival(card: HTMLElement | null, field: HTMLElement | null): void 
     void el.offsetWidth;
     el.setAttribute('data-fg-arrival', el === card ? 'card' : 'field');
   });
-  window.setTimeout(() => marked.forEach((el) => el.removeAttribute('data-fg-arrival')), ARRIVAL_MS);
+  const clear = () => marked.forEach((el) => el.removeAttribute('data-fg-arrival'));
+  const timer = window.setTimeout(() => {
+    clear();
+    arrivalCleanup = null;
+  }, ARRIVAL_MS);
+  arrivalCleanup = () => {
+    window.clearTimeout(timer);
+    clear();
+  };
 }
 
-function whenScrollSettles(done: () => void): void {
-  let finished = false;
-  const finish = () => {
-    if (finished) return;
-    finished = true;
-    window.removeEventListener('scrollend', finish);
-    done();
+/**
+ * Appelle `done` quand le défilement est VRAIMENT fini : position atteinte,
+ * ou position stable 250 ms (cible bornée par le bas de page), plafond 3 s.
+ * `scrollend` n'est pas fiable ici : un défilement intermédiaire (clic sur
+ * l'onglet, focus) le déclenche avant la fin du trajet.
+ */
+function whenScrollSettles(targetTop: number, token: number, done: () => void): void {
+  const start = performance.now();
+  let lastY = window.scrollY;
+  let stableSince = start;
+  const tick = (now: number) => {
+    if (token !== arrivalToken) return;
+    const y = window.scrollY;
+    if (Math.abs(y - lastY) >= 1) {
+      lastY = y;
+      stableSince = now;
+    }
+    const reached = Math.abs(y - targetTop) < 3;
+    const stalled = now - stableSince > 250 && now - start > 400;
+    if (reached || stalled || now - start > 3000) done();
+    else window.requestAnimationFrame(tick);
   };
-  window.addEventListener('scrollend', finish, { once: true });
-  window.setTimeout(finish, SCROLL_FALLBACK_MS);
+  window.requestAnimationFrame(tick);
 }
 
 /**
@@ -128,6 +175,7 @@ function whenScrollSettles(done: () => void): void {
 export function arriveAtCommander(anchorId = 'commander-femiglow'): void {
   const target = document.getElementById(anchorId);
   if (!target) return;
+  const token = (arrivalToken += 1);
   const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
   const behavior: ScrollBehavior = reduceMotion ? 'auto' : 'smooth';
 
@@ -147,7 +195,7 @@ export function arriveAtCommander(anchorId = 'commander-femiglow'): void {
     fallbackTop: formRect ? formRect.top + window.scrollY : undefined,
     fallbackHeight: formRect?.height,
     viewportHeight: window.innerHeight,
-    topInset: measureTopInset(),
+    topInset: measureTopInset(shell),
     bottomInset: measureBottomInset(),
   });
 
@@ -156,6 +204,7 @@ export function arriveAtCommander(anchorId = 'commander-femiglow'): void {
 
   const field = firstEmptyField(zone);
   const onArrived = () => {
+    if (token !== arrivalToken) return;
     // Pointeur fin (souris) : on place le curseur dans le premier champ vide.
     // Tactile : jamais (le clavier masquerait la page et la rassurance) — on
     // focus le shell pour que la lecture d'écran reprenne au step actif.
@@ -170,5 +219,5 @@ export function arriveAtCommander(anchorId = 'commander-femiglow'): void {
   };
 
   if (alreadyThere || reduceMotion) onArrived();
-  else whenScrollSettles(onArrived);
+  else whenScrollSettles(top, token, onArrived);
 }

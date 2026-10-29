@@ -40,7 +40,11 @@ describe('arriveAtCommander', () => {
   let matches: Record<string, boolean>;
 
   beforeEach(() => {
-    vi.useFakeTimers();
+    // rAF + performance.now pilotés par l'horloge simulée (attente de fin de scroll).
+    vi.useFakeTimers({
+      toFake: ['setTimeout', 'clearTimeout', 'requestAnimationFrame', 'cancelAnimationFrame', 'performance'],
+    });
+    Object.defineProperty(window, 'scrollY', { value: 0, configurable: true, writable: true });
     matches = { '(prefers-reduced-motion: reduce)': false, '(pointer: fine)': false };
     window.matchMedia = vi.fn((q: string) => ({ matches: matches[q] ?? false })) as never;
     window.scrollTo = vi.fn() as never;
@@ -69,7 +73,6 @@ describe('arriveAtCommander', () => {
   const phone = () => document.querySelector<HTMLInputElement>('input[name="phone"]')!;
 
   it('défile (smooth) puis, une fois arrivé, halo sur la carte et teinte du 1er champ vide', () => {
-    window.scrollY = 0;
     // jsdom : rects à 0 → cible 0 = déjà en place, l'accueil part tout de suite.
     arriveAtCommander();
     expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
@@ -81,13 +84,42 @@ describe('arriveAtCommander', () => {
     expect(phone().hasAttribute('data-fg-arrival')).toBe(false);
   });
 
-  it('attend la fin du défilement avant l’accueil (repli sans scrollend)', () => {
-    Object.defineProperty(window, 'scrollY', { value: 500, configurable: true });
+  it('attend que le défilement soit fini avant l’accueil (jamais en plein trajet)', () => {
+    let y = 900;
+    Object.defineProperty(window, 'scrollY', { get: () => y, configurable: true });
     arriveAtCommander();
-    expect(card().hasAttribute('data-fg-arrival')).toBe(false);
-    vi.advanceTimersByTime(950);
+    const { top } = vi.mocked(window.scrollTo).mock.calls[0]![0] as ScrollToOptions;
+    // Le défilement progresse : pas d'accueil tant que la cible n'est pas atteinte.
+    for (const step of [800, 700, 600]) {
+      y = step;
+      vi.advanceTimersByTime(100);
+      expect(card().hasAttribute('data-fg-arrival')).toBe(false);
+    }
+    y = top!;
+    vi.advanceTimersByTime(50);
     expect(card().getAttribute('data-fg-arrival')).toBe('card');
-    Object.defineProperty(window, 'scrollY', { value: 0, configurable: true });
+    Object.defineProperty(window, 'scrollY', { value: 0, configurable: true, writable: true });
+  });
+
+  it('défilement bloqué (bas de page) : accueil quand la position est stable', () => {
+    Object.defineProperty(window, 'scrollY', { value: 500, configurable: true, writable: true });
+    arriveAtCommander();
+    vi.advanceTimersByTime(300);
+    expect(card().hasAttribute('data-fg-arrival')).toBe(false);
+    vi.advanceTimersByTime(300);
+    expect(card().getAttribute('data-fg-arrival')).toBe('card');
+    Object.defineProperty(window, 'scrollY', { value: 0, configurable: true, writable: true });
+  });
+
+  it('double clic : une seule animation en cours, relancée proprement', () => {
+    arriveAtCommander();
+    vi.advanceTimersByTime(1500);
+    arriveAtCommander();
+    // L'ancien minuteur (2 s) ne doit pas couper la nouvelle passe.
+    vi.advanceTimersByTime(700);
+    expect(card().getAttribute('data-fg-arrival')).toBe('card');
+    vi.advanceTimersByTime(1400);
+    expect(card().hasAttribute('data-fg-arrival')).toBe(false);
   });
 
   it('tactile : le clavier ne s’ouvre pas (focus du shell, pas du champ)', () => {
