@@ -14,7 +14,7 @@ INSERT INTO faq_new (key, reply, enabled) VALUES
 ('price-pack-ar-ma', 'L-Pack FemiGlow b {{list_price}} dh. B l-code {{promo_code}} kayweli b {{promo_price}} dh, htal {{promo_end}}. Fih l-paste (15 g), l-powder (8 g) w l-polissoir Step 4 : 9rib 6 chhour dyal s-soin, mra f s-simana. L-livraison katzad b taman mzyan 3la 7sab l-mdina dyalk. N-hjz lik l-pack b {{promo_price}} dh ? Khalli liya smitk w r-ra9m dyalk.', true),
 -- Prix « à l'unité » d'un ancien produit de soin de la peau : n'existe pas pour le kit.
 ('price-unit-fr', NULL, false),
-('shipping-cost-fr', 'La livraison n''est pas offerte, mais son tarif est très doux : il dépend de votre ville, et une conseillère vous le confirme avec votre commande. Laissez-moi votre prénom et votre numéro : elle vous rappelle dans la journée.', true),
+('shipping-cost-fr', 'Avec le code {{promo_code}}, le Pack est à {{promo_price}} dh. La livraison s''ajoute : elle n''est pas offerte, mais son tarif est très doux. Il dépend de votre ville, et une conseillère vous le confirme avec votre commande. Laissez-moi votre prénom et votre numéro : elle vous rappelle dans la journée.', true),
 ('shipping-time-fr', 'Rabat : livraison en 24 h. Reste du Maroc : 48 à 72 h. Vous payez à la réception, après avoir ouvert et vérifié le colis.', true),
 ('shipping-time-ar', 'الرباط : التوصيل خلال 24 ساعة. باقي المغرب : من 48 إلى 72 ساعة. تدفعين عند الاستلام، بعد فتح الطرد والتحقّق منه.', true),
 ('shipping-time-ar-ma', 'Rabat : l-livraison f 24 sa3a. Ba9i l-maghrib : 48 l 72 sa3a. Katkhelssi 3and l-istilam, mn b3d ma t7elli l-colis w tchoufih.', true),
