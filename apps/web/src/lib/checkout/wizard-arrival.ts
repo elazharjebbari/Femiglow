@@ -174,7 +174,19 @@ function whenScrollSettles(targetTop: number, token: number, done: () => void): 
  * Défile jusqu'au formulaire, centré, puis joue l'accueil. Sans wizard dans
  * l'ancre (ex. page sans funnel), retombe sur l'ancien `scrollIntoView`.
  */
-export function arriveAtCommander(anchorId = 'commander-femiglow'): void {
+export interface ArriveOptions {
+  /**
+   * Hauteur à réserver en plus au-dessus de la sticky (ex. le toast « code
+   * déjà appliqué » du flag promo, rendu juste après le clic et qui sinon
+   * masquerait le bouton du formulaire pendant 4 s).
+   */
+  extraBottomInset?: number;
+}
+
+export function arriveAtCommander(
+  anchorId = 'commander-femiglow',
+  { extraBottomInset = 0 }: ArriveOptions = {},
+): void {
   const target = document.getElementById(anchorId);
   if (!target) return;
   const token = (arrivalToken += 1);
@@ -198,7 +210,7 @@ export function arriveAtCommander(anchorId = 'commander-femiglow'): void {
     fallbackHeight: formRect?.height,
     viewportHeight: window.innerHeight,
     topInset: measureTopInset(shell),
-    bottomInset: measureBottomInset(),
+    bottomInset: measureBottomInset() + extraBottomInset,
   });
 
   const alreadyThere = Math.abs(window.scrollY - top) < 2;

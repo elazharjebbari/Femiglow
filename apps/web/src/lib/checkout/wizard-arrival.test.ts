@@ -31,6 +31,12 @@ describe('centeredScrollTop', () => {
     expect(centeredScrollTop({ ...base, zoneTop: 2000, zoneHeight: 900 })).toBe(1932);
   });
 
+  it('réserve en bas (toast) : la zone remonte de la moitié de la réserve', () => {
+    const plain = centeredScrollTop({ ...base, zoneTop: 2000, zoneHeight: 431 });
+    const reserved = centeredScrollTop({ ...base, bottomInset: base.bottomInset + 96, zoneTop: 2000, zoneHeight: 431 });
+    expect(plain - reserved).toBe(-48);
+  });
+
   it('jamais négatif', () => {
     expect(centeredScrollTop({ ...base, zoneTop: 10, zoneHeight: 100 })).toBe(0);
   });

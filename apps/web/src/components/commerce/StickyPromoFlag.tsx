@@ -58,6 +58,9 @@ interface StickyPromoFlagProps {
   anchorId?: string;
 }
 
+/** Toast mobile (3 lignes ≈ 84 px) + marge : laissé libre au-dessus de la sticky. */
+const TOAST_RESERVE_PX = 96;
+
 function fill(template: string, code: string, amount: string): string {
   return template.replace('{code}', code).replace('{amount}', amount);
 }
@@ -89,7 +92,7 @@ export function StickyPromoFlag({
     // Défilement lancé DANS le geste : différé (setTimeout), un défilement
     // `smooth` peut être ignoré par certains navigateurs. L'onde reste visible
     // (la sticky ne bouge pas pendant le trajet).
-    scrollToCommander(anchorId);
+    scrollToCommander(anchorId, toast ? { extraBottomInset: TOAST_RESERVE_PX } : undefined);
   }, [toast, strings.toast, code, amount, emit, anchorId]);
 
   if (!coupon.hasDiscount || !coupon.isPromo || !code) return null;

@@ -73,8 +73,9 @@ describe('StickyPromoFlag', () => {
       destination: '#commander-femiglow',
       component_id: 'sticky_promo_flag',
     });
-    // Lancé dans le geste (jamais différé : un smooth différé peut être ignoré).
-    expect(scrollToCommander).toHaveBeenCalledWith('commander-femiglow');
+    // Lancé dans le geste (jamais différé : un smooth différé peut être ignoré),
+    // en réservant la place du toast pour qu'il ne masque pas le bouton.
+    expect(scrollToCommander).toHaveBeenCalledWith('commander-femiglow', { extraBottomInset: 96 });
   });
 
   it('hors ToastProvider : le clic ne lève pas et scrolle quand même', () => {

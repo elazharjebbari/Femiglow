@@ -15,7 +15,7 @@
 import { useCallback, type ReactNode } from 'react';
 
 import { useAppliedCoupon } from '@/lib/checkout/state/use-applied-coupon';
-import { arriveAtCommander } from '@/lib/checkout/wizard-arrival';
+import { arriveAtCommander, type ArriveOptions } from '@/lib/checkout/wizard-arrival';
 
 import { Button, type ButtonSize } from '@/components/ui/Button';
 import { useTracking } from '@/lib/tracking/use-tracking';
@@ -90,8 +90,11 @@ interface CommanderAnchorButtonProps {
  * puis accueil très doux (cf. `wizard-arrival`). Partagé avec le flag promo
  * de la sticky (`StickyPromoFlag`).
  */
-export function scrollToCommander(anchorId = 'commander-femiglow'): void {
-  arriveAtCommander(anchorId);
+export function scrollToCommander(
+  anchorId = 'commander-femiglow',
+  options?: ArriveOptions,
+): void {
+  arriveAtCommander(anchorId, options);
 }
 
 export function CommanderAnchorButton({
