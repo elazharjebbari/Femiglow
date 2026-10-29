@@ -174,7 +174,7 @@
       },
       "product": {
         "name": "FemiGlow pack",
-        "tagline": "Halal Japanese manicure. Four gestures, no polish. Your wudu stays intact.",
+        "tagline": "Halal, formulated in Rabat. Four gestures, five minutes, once a week.",
         "description": "The FemiGlow pack brings together two jars — a 15 g smoothing paste and an 8 g polishing powder — and a Step 4 Polish & Shine buffer. A Japanese manicure, formulated in Rabat by our team. No polish. No abrasion. Five minutes, once a week, is enough.",
         "image_alt_primary": "Open FemiGlow pack on a pastel background — paste jar with a sage green label, powder jar with a powdered rose label, sky blue Step 4 buffer, powdered rose wave, FemiGlow typography",
         "image_alt_secondary": "Bare hands with short to medium nails, naturally shining after the paste-powder-polish ritual",
@@ -403,7 +403,9 @@
         }
       },
       "hero": {
-        "kicker": "The ritual",
+        "kicker": "No polish · wudu-friendly",
+        "title_category": "Japanese manicure kit,",
+        "title_promise": "a polish-free glow",
         "savings": "Save {savings} MAD",
         "promo_applied": "Code {code} applied",
         "promo_auto_applied": "Discount applied automatically, nothing to enter.",

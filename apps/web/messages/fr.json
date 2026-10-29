@@ -179,7 +179,7 @@
       },
       "product": {
         "name": "Pack FemiGlow",
-        "tagline": "Manucure japonaise halal. Quatre gestes, sans vernis. Le woudou reste intact.",
+        "tagline": "Halal, formulée à Rabat. Quatre gestes, cinq minutes, une fois par semaine.",
         "description": "Le pack FemiGlow réunit deux pots — une paste lissante de 15 g et une powder lustrante de 8 g — et un polissoir Step 4 Polish & Shine. Une manucure japonaise, formulée à Rabat par notre équipe. Sans vernis. Sans abrasion. Cinq minutes, une fois par semaine, suffisent.",
         "image_alt_primary": "Pack FemiGlow ouvert sur fond pastel — pot paste à l’étiquette vert sauge, pot powder à l’étiquette rose poudré, polissoir Step 4 bleu ciel, vague rose poudré, typographie FemiGlow",
         "image_alt_secondary": "Mains aux ongles nus, courts à moyens, naturellement brillants après le rituel paste-powder-polish",
@@ -408,7 +408,9 @@
         }
       },
       "hero": {
-        "kicker": "Le rituel",
+        "kicker": "Sans vernis · compatible woudou",
+        "title_category": "Kit de manucure japonaise,",
+        "title_promise": "l’éclat sans vernis",
         "savings": "Économie {savings} MAD",
         "promo_applied": "Code {code} appliqué",
         "promo_auto_applied": "Remise appliquée automatiquement, rien à saisir.",

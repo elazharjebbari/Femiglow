@@ -729,7 +729,7 @@ export const SITE_COMPONENT_REGISTRY: SiteComponentSeed[] = [
         type: 'text',
         required: false,
         defaultValue:
-          'Manucure japonaise halal. Quatre gestes, sans vernis. Le woudou reste intact.',
+          'Halal, formulée à Rabat. Quatre gestes, cinq minutes, une fois par semaine.',
         description:
           "Phrase d'accroche sous le H1. La continuité d'image se ferme sur la main (sujet final).",
         group: 'Contenu',
@@ -754,7 +754,9 @@ export const SITE_COMPONENT_REGISTRY: SiteComponentSeed[] = [
         label: 'Chips attributs',
         type: 'list',
         required: false,
-        defaultValue: ['Sans vernis', 'Sans UV', 'Sans acétone', 'Compatible woudou'],
+        // « Sans vernis » / « Compatible woudou » : portés par le titre et le
+        // kicker du hero, pas répétés en chips (écran 1 sans surcharge).
+        defaultValue: ['Sans UV', 'Sans acétone'],
         description:
           'Pastilles courtes (max 6). Réponses aux requêtes mentales — placées sous le tagline.',
         group: 'Réassurance',

@@ -71,6 +71,12 @@ export interface HeroProduitProps {
   strings?: {
     kicker: string;
     ctaLabel: string;
+    /**
+     * Titre-promesse en deux lignes : catégorie (ce que c'est, mots-clés en
+     * tête) puis bénéfice (ce qu'on y gagne). Absent → nom du produit.
+     */
+    titleCategory?: string;
+    titlePromise?: string;
     /** Libellé économie déjà formaté (montant inclus), ou absent si pas de promo. */
     savingsLabel?: string;
     /**
@@ -206,10 +212,29 @@ export function HeroProduit({
             classique, ordre inchangé. Un seul h1 dans le DOM (pas de doublon). */}
           <div className="contents lg:block lg:space-y-5 lg:pt-4">
             <div className="order-first space-y-5 lg:order-none" data-testid="hero-intro">
-              <Kicker>{heroKicker}</Kicker>
-              <Heading id="hero-kit-title" as="h1" size="display-md">
-                {heroName}
-              </Heading>
+              <Kicker tone="sauge">{heroKicker}</Kicker>
+              {strings?.titleCategory && strings.titlePromise ? (
+                // Deux lignes maîtrisées : la 1re (catégorie) ne doit jamais
+                // casser — taille fluide calée sur sa largeur réelle en
+                // Cormorant (≈ 10,2 × la taille), plafonnée à 32 px en mobile.
+                // La 2e (bénéfice) reçoit UN reflet lent au chargement
+                // (`fg-hero-lustre`) : « l'éclat » qui brille, sans animer
+                // l'opacité (le titre est l'élément LCP mobile).
+                <Heading
+                  id="hero-kit-title"
+                  as="h1"
+                  size="display-md"
+                  className="!text-[length:clamp(26px,calc((100vw_-_40px)/10.6),32px)] leading-[1.12] lg:!text-display-md"
+                  data-testid="hero-title-promise"
+                >
+                  <span className="block">{strings.titleCategory}</span>{' '}
+                  <span className="fg-hero-lustre block font-normal">{strings.titlePromise}</span>
+                </Heading>
+              ) : (
+                <Heading id="hero-kit-title" as="h1" size="display-md">
+                  {heroName}
+                </Heading>
+              )}
 
               {/* Sans note par étoiles collectée, la preuve sociale montre la part
                 RÉELLE de clientes qui recommandent le Pack (jamais d'étoiles

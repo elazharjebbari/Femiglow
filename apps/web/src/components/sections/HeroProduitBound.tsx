@@ -105,6 +105,8 @@ export async function HeroProduitBound({
     : 0;
   const heroStrings = {
     kicker: tHero('kicker'),
+    titleCategory: tHero('title_category'),
+    titlePromise: tHero('title_promise'),
     ctaLabel: tHero('cta_commander'),
     savingsLabel: savings > 0 ? tHero('savings', { savings }) : undefined,
     // Gabarits pour recalcul client quand un code promo change le montant
@@ -123,7 +125,7 @@ export async function HeroProduitBound({
     tagline: pickString(
       resolvedFields.tagline,
       taglineFallback ??
-        'Manucure japonaise halal. Quatre gestes, sans vernis. Le woudou reste intact.',
+        'Halal, formulée à Rabat. Quatre gestes, cinq minutes, une fois par semaine.',
       acceptDefault,
     ),
     description: pickString(resolvedFields.description, '', acceptDefault),
@@ -132,10 +134,10 @@ export async function HeroProduitBound({
       // Phase 7E — fallback localisé (FR/AR/EN) depuis `marketing.kit.hero.chips`.
       // En FR, ces valeurs sont identiques aux anciennes constantes hardcodées.
       [
-        tHero('chips.no_polish'),
+        // « Sans vernis » et « Compatible woudou » sont déjà portés par le
+        // kicker et le titre : les répéter en chips surchargerait l'écran 1.
         tHero('chips.no_uv'),
         tHero('chips.no_acetone'),
-        tHero('chips.wudu'),
       ],
       acceptDefault,
     ),

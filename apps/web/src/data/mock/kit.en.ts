@@ -29,7 +29,7 @@ export const mockKitPageContentEn: KitPageContent = {
   product: {
     ...mockKitPageContent.product,
     name: 'FemiGlow pack',
-    tagline: 'Halal Japanese manicure. Four gestures, no polish. Your wudu stays intact.',
+    tagline: 'Halal, formulated in Rabat. Four gestures, five minutes, once a week.',
     description:
       'The FemiGlow pack brings together two jars — a 15 g Paste and an 8 g Powder — and a Step 4 Polish & Shine buffer. A Japanese manicure, prepared in our Rabat atelier. No polish. Four gestures, five minutes, once a week.',
     images: [

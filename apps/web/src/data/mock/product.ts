@@ -11,7 +11,7 @@ export const mockKit: Product = {
   slug: 'le-rituel',
   name: 'Pack FemiGlow',
   tagline:
-    'Manucure japonaise halal. Quatre gestes, sans vernis. Le woudou reste intact.',
+    'Halal, formulée à Rabat. Quatre gestes, cinq minutes, une fois par semaine.',
   description:
     'Le pack FemiGlow réunit deux pots — une paste 15 g et une powder 8 g — et un polissoir Step 4 Polish & Shine. Une manucure japonaise, préparée dans notre atelier de Rabat. Sans vernis. Quatre gestes, cinq minutes, une fois par semaine.',
   priceCents: 28900,
