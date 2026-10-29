@@ -12,6 +12,11 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Déploiement sans coupure (bin/deploy-prod.sh) : le build se fait dans
+  // `.next-build` pendant que le serveur continue de servir `.next`, puis les
+  // dossiers sont échangés. Au runtime (`next start`), la variable est absente
+  // → `.next`, comme avant.
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   reactStrictMode: true,
   poweredByHeader: false,
   env: {

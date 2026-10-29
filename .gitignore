@@ -49,3 +49,8 @@ draft/
 /var/backups/femiglow/
 .emailing-secrets.local
 .env.bak.*
+
+# Déploiement sans coupure (bin/deploy-prod.sh)
+.next-build/
+.next-prev/
+.next-failed/
