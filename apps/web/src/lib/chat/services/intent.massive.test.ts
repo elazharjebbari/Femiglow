@@ -185,7 +185,7 @@ const CASES: IntentCase[] = [
   { text: 'Vous pouvez baisser le prix ?', language: 'fr', expected: 'negotiation' },
   { text: 'Une remise serait possible ?', language: 'fr', expected: 'negotiation' },
   { text: 'Faites un effort commercial', language: 'fr', expected: 'negotiation' },
-  { text: 'Avez-vous un code promo ?', language: 'fr', expected: 'negotiation' },
+  { text: 'Avez-vous un code promo ?', language: 'fr', expected: 'purchase-intent' },
   { text: 'Je voudrais négocier', language: 'fr', expected: 'negotiation' },
   { text: 'Pouvez-vous faire un geste commercial ?', language: 'fr', expected: 'negotiation' },
   { text: 'Faites un prix spécial', language: 'fr', expected: 'negotiation' },

@@ -210,7 +210,8 @@ function genNegotiationFr(): Row[] {
     'un geste commercial',
     'une remise',
     'un effort commercial',
-    'un code promo',
+    // « un code promo » → purchase-intent depuis GLOW99 (29/10/2026) : une
+    // offre existe, le chat la donne et ouvre le formulaire de commande.
     'une réduction',
     'un prix spécial',
     'négocier le prix',

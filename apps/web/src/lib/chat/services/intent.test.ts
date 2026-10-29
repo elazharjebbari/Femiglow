@@ -289,6 +289,35 @@ describe('intent — CHA-230 (commander seul / negotiation / wholesaler)', () =>
   // -------------------------------------------------------------------------
   // Négociation (rabais, réduction, marchandage)
   // -------------------------------------------------------------------------
+  // GLOW99 (29/10/2026) — demander un code / une promo n'est plus du
+  // marchandage : le chat donne l'offre et ouvre le formulaire de commande.
+  describe('code promo → purchase-intent (GLOW99)', () => {
+    it.each([
+      'Avez-vous un code promo ?',
+      'Avez-vous un code réduction ?',
+      'vous avez une promo ?',
+      'vous faites une réduction ?',
+      'y a des promos en ce moment ?',
+      "J'ai le code GLOW99",
+      'GLOW50 ça marche ?',
+      'un coupon ?',
+      '3ndkom chi code promo?',
+      'kayn chi promo?',
+      'كود تخفيض',
+      'واش عندكم كود التخفيض؟',
+      'هل يوجد رمز ترويجي؟',
+    ])('classe purchase-intent sur "%s"', (input) => {
+      expect(detectIntent(input)).toBe('purchase-intent');
+    });
+
+    it.each(['Vous pouvez baisser le prix ?', 'je veux un rabais', 'prix spécial pour moi ?', 'tnzli chwiya f taman'])(
+      'le marchandage reste negotiation : "%s"',
+      (input) => {
+        expect(detectIntent(input)).toBe('negotiation');
+      },
+    );
+  });
+
   describe('negotiation — marchandage explicite (CHA-230)', () => {
     it.each([
       'Vous pouvez me faire un rabais ?',
@@ -296,8 +325,6 @@ describe('intent — CHA-230 (commander seul / negotiation / wholesaler)', () =>
       'On peut négocier le prix ?',
       'Vous pouvez baisser le prix ?',
       'Faites un geste commercial pour moi',
-      'Avez-vous un code promo ?',
-      'Avez-vous un code réduction ?',
       'Faire un effort sur le prix ?',
       "C'est négociable ?",
       'Pouvez-vous faire un prix ?',
@@ -318,7 +345,6 @@ describe('intent — CHA-230 (commander seul / negotiation / wholesaler)', () =>
       'تخفيض من فضلك',
       'تنزيل الثمن',
       'عرض خاص',
-      'كود تخفيض',
     ])('détecte negotiation en AR script sur "%s"', (input) => {
       expect(detectIntent(input)).toBe('negotiation');
     });

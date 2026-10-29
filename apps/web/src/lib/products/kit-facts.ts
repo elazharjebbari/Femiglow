@@ -40,7 +40,8 @@ export const KIT_FACTS = {
   certifications: [] as ReadonlyArray<{ label: string; body: string }>,
 
   workshopCity: 'Rabat',
-  delivery: { rabatHours: 24, moroccoHoursMin: 48, moroccoHoursMax: 72, free: true },
+  // Livraison payante au tarif de la ville (delivery_cities) depuis le 28/10/2026.
+  delivery: { rabatHours: 24, moroccoHoursMin: 48, moroccoHoursMax: 72, free: false },
   returnDays: 30,
   payment: 'cod' as const,
   minAge: 14,

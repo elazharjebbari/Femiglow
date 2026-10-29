@@ -25,7 +25,7 @@
   },
   "rows": [
     { "text": "salam, j'aimerais des infos", "language": "ar-MA", "expectedIntent": "greeting" },
-    { "text": "wach kayn chi takhfid hadi simana", "language": "ar-MA", "expectedIntent": "negotiation" },
+    { "text": "wach kayn chi takhfid hadi simana", "language": "ar-MA", "expectedIntent": "purchase-intent" },
     { "text": "tnzli liya chwiya taman", "language": "ar-MA", "expectedIntent": "negotiation" },
     { "text": "3tini wahd takhfid afak khouya", "language": "ar-MA", "expectedIntent": "negotiation" },
     { "text": "bghit nshri kit dyalkom", "language": "ar-MA", "expectedIntent": "purchase-intent" },
@@ -47,7 +47,7 @@
     { "text": "Vous avez du tracking pour le colis ?", "language": "fr", "expectedIntent": "shipping" },
     { "text": "Pouvez-vous me faire un rabais sur le kit ?", "language": "fr", "expectedIntent": "negotiation" },
     { "text": "Vous accepteriez de baisser le prix ?", "language": "fr", "expectedIntent": "negotiation" },
-    { "text": "Avez-vous un code promo en ce moment ?", "language": "fr", "expectedIntent": "negotiation" },
+    { "text": "Avez-vous un code promo en ce moment ?", "language": "fr", "expectedIntent": "purchase-intent" },
     { "text": "Faites un effort commercial sur deux kits svp", "language": "fr", "expectedIntent": "negotiation" },
     { "text": "Je voudrais un prix spécial parce que je prends 3 kits", "language": "fr", "expectedIntent": "negotiation" },
     { "text": "Vous pouvez me faire un geste commercial ?", "language": "fr", "expectedIntent": "negotiation" },

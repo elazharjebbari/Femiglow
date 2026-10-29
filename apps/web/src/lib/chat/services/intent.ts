@@ -115,6 +115,29 @@ const RULES: PatternRule[] = [
       /\btemps\s+de\s+livraison\b/i,
     ],
   },
+  // Code promo (GLOW99, 29/10/2026) — une question sur un code ou une promo
+  // n'est PLUS du marchandage : une offre existe, le chat la donne et ouvre
+  // le formulaire de commande (`purchase-intent`). Placé AVANT `negotiation`
+  // (ordre = départage) ; score 3 (strong + pattern) pour battre les signaux
+  // « promo / réduction » de `negotiation` et `objection-price`.
+  // Le marchandage (rabais, baisser le prix, prix spécial…) reste `negotiation`.
+  {
+    intent: 'purchase-intent',
+    strong: [
+      /(?<![a-zA-Zà-ÿ])(code(?:\s+de)?\s*(?:promo|promotion(?:nel)?|r[ée]duction|remise)|coupon|glow\s*99|promo\s*code|discount\s+code|bon\s+de\s+r[ée]duction)(?![a-zA-Zà-ÿ])/i,
+      /(كود|كوبون|رمز\s*(?:ال)?(?:ترويج|ترويجي|تخفيض|خصم)|الرمز\s+الترويجي)/,
+      // Question sur l'existence d'une offre (« vous avez une promo ? »,
+      // « vous faites une réduction ? », « y a des promos ? ») ≠ marchandage.
+      /(?<![a-zA-Zà-ÿ])(avez|avez[-\s]vous|faites|faites[-\s]vous|y\s*a|il\s+y\s+a|existe|existe[-\s]t[-\s]il|propos(?:ez|ez[-\s]vous))\s+(?:[a-zA-Zà-ÿ'’-]+\s+){0,3}(promos?|promotions?|r[ée]ductions?|offres?\s+(?:sp[ée]ciale|en\s+cours|du\s+moment))(?![a-zA-Zà-ÿ])/i,
+      /(?<![a-zA-Zà-ÿ])(promos?|promotions?|r[ée]ductions?)\s+(?:en\s+cours|en\s+ce\s+moment|du\s+moment|actuellement)(?![a-zA-Zà-ÿ])/i,
+      /(?<![a-zA-Zà-ÿ])glow\s*\d{2,3}(?![a-zA-Zà-ÿ0-9])/i,
+      /\b(3ndkom|kayn|kayna|wach\s+kayn)\s+(?:chi\s+)?(promo|takhfid|tkhfid|r[ée]duction)\b/i,
+      /(هل\s+(?:يوجد|لديكم|عندكم)\s+(?:أيّ?\s+)?(?:عرض|تخفيض|خصم))/,
+    ],
+    patterns: [
+      /(?<![a-zA-Zà-ÿ])(code\s+promo|coupon|glow\s*99|promo\s*code|كود|code\s*(?:dyal\s+)?(?:promo|takhfid))(?![a-zA-Zà-ÿ])/i,
+    ],
+  },
   // CHA-230 — Négociation explicite (marchandage / demande de rabais).
   // Doit passer AVANT `objection-price` parce qu'une demande de
   // « réduction » contient le signal cherté ; on veut classer la
@@ -128,12 +151,12 @@ const RULES: PatternRule[] = [
       // On élargit avec « pouvez-vous baisser » même sans complément, et
       // on capture aussi « tarif » seul après « baisser » (sinon
       // « baisser le tarif » match seulement pricing via le mot « tarif »).
-      /\b(rabais|remise|n[ée]goci(?:er|ation|ons|able)|baisser\s+(?:le\s+)?(?:prix|tarif|tarifs)|pouvez[-\s]?vous\s+baisser|geste\s+commercial|prix\s+sp[ée]cial|code\s+(?:promo|promotion|reduction|réduction))\b/i,
+      /\b(rabais|remise|n[ée]goci(?:er|ation|ons|able)|baisser\s+(?:le\s+)?(?:prix|tarif|tarifs)|pouvez[-\s]?vous\s+baisser|geste\s+commercial|prix\s+sp[ée]cial)\b/i,
       /\b(faire\s+un\s+effort|effort\s+commercial|faire\s+un\s+prix)\b/i,
       // Darija : « tnzli/khessmi/3tini takhfid » — demandes explicites de remise.
       /\b(tnzli\s+(?:liya\s+)?(?:taman|prix|chwiya)|khessmi\s+(?:liya\s+)?chi|3tini\s+(?:wahd\s+)?(?:takhfid|tnzil|prix\s+special)|naqsalna|tkhfid|chi\s+takhfid)\b/i,
       // AR : تخفيض / تنزيل الثمن / عرض خاص (formulations de marchandage).
-      /(تخفيض|تنزيل\s+الثمن|عرض\s+خاص|كود\s+(?:ترويج|تخفيض))/,
+      /(تخفيض|تنزيل\s+الثمن|عرض\s+خاص)/,
     ],
     patterns: [
       // Réduction/promo demandée explicitement (pas juste « c'est cher »).
@@ -153,7 +176,7 @@ const RULES: PatternRule[] = [
   {
     intent: 'objection-price',
     patterns: [
-      /\b(trop cher|cher|abusif|abusé|c['’]est cher|hors budget|pas les moyens|réduction|promo|code promo|moins cher)\b/i,
+      /\b(trop cher|cher|abusif|abusé|c['’]est cher|hors budget|pas les moyens|réduction|promo|moins cher)\b/i,
       /\b(ghali|ghaliya|ma3andich flouss|takhfid|promo)\b/i,
       /(غالي|كثير|تخفيض)/,
     ],

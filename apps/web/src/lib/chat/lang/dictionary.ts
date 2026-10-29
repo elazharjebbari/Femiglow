@@ -27,7 +27,6 @@ export const DARIJA_FR_TOKENS = [
   // questions
   'chno',
   'kifach',
-  'fin',
   'fayn',
   'wach',
   'wakha',
@@ -106,6 +105,19 @@ export const DARIJA_FR_TOKENS = [
   'shokran',
   'choukran',
   'shukran',
+  // Formulations courtes vues en prod (« chhal l-livraison ? », « 3ndkom chi
+  // code promo ? ») : sans elles, un message d'un seul mot darija partait en FR.
+  'chhal',
+  'ch7al',
+  'bch7al',
+  '3ndkom',
+  '3andkom',
+  'chi',
+  'dyal',
+  'dyali',
+  'tnzli',
+  '3afak',
+  'kifach',
   // anti-darija (faux positifs MSA)
 ];
 

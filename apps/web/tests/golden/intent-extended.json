@@ -9,9 +9,9 @@
     "en": 4
   },
   "countByIntent": {
-    "purchase-intent": 350,
+    "purchase-intent": 359,
     "callback-request": 80,
-    "negotiation": 100,
+    "negotiation": 91,
     "wholesaler": 50,
     "pricing": 80,
     "shipping": 80,
@@ -2214,7 +2214,7 @@
     {
       "text": "un code promo",
       "language": "fr",
-      "expectedIntent": "negotiation"
+      "expectedIntent": "purchase-intent"
     },
     {
       "text": "baisser le tarif s’il vous plaît !",
@@ -2284,7 +2284,7 @@
     {
       "text": "un code promo ?",
       "language": "fr",
-      "expectedIntent": "negotiation"
+      "expectedIntent": "purchase-intent"
     },
     {
       "text": "négocier le prix svp",
@@ -2309,7 +2309,7 @@
     {
       "text": "un code promo stp ?",
       "language": "fr",
-      "expectedIntent": "negotiation"
+      "expectedIntent": "purchase-intent"
     },
     {
       "text": "un effort commercial svp ?",
@@ -2369,7 +2369,7 @@
     {
       "text": "un code promo please !",
       "language": "fr",
-      "expectedIntent": "negotiation"
+      "expectedIntent": "purchase-intent"
     },
     {
       "text": "négocier le prix stp ?",
@@ -2469,7 +2469,7 @@
     {
       "text": "un code promo please ?",
       "language": "fr",
-      "expectedIntent": "negotiation"
+      "expectedIntent": "purchase-intent"
     },
     {
       "text": "vous pouvez baisser le prix svp ?",
@@ -2549,7 +2549,7 @@
     {
       "text": "un code promo.",
       "language": "fr",
-      "expectedIntent": "negotiation"
+      "expectedIntent": "purchase-intent"
     },
     {
       "text": "baisser le tarif please ?",
@@ -2614,7 +2614,7 @@
     {
       "text": "un code promo please",
       "language": "fr",
-      "expectedIntent": "negotiation"
+      "expectedIntent": "purchase-intent"
     },
     {
       "text": "une remise svp s’il vous plaît !",
@@ -2629,12 +2629,12 @@
     {
       "text": "un code promo s’il vous plaît ?",
       "language": "fr",
-      "expectedIntent": "negotiation"
+      "expectedIntent": "purchase-intent"
     },
     {
       "text": "un code promo please.",
       "language": "fr",
-      "expectedIntent": "negotiation"
+      "expectedIntent": "purchase-intent"
     },
     {
       "text": "baisser le tarif stp !",

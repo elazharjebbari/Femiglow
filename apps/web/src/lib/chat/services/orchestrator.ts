@@ -55,6 +55,7 @@ import { ragService, type RetrievedChunk } from '../rag/service';
 import { getRuntimeBool } from '../runtime-setting';
 import { leadRepo } from '../repos/lead';
 import { env } from '@/lib/env';
+import { buildPromoPromptBlock, getChatPromo, renderPromoTokens } from '../promo-offer';
 
 const MEMORY_WINDOW = 12;
 
@@ -75,7 +76,7 @@ export async function* streamReply(
 ): AsyncIterable<ChatStreamEvent> {
   const t0 = Date.now();
   const sanitized = sanitizeAndRedact(input.text);
-  const language = detectLanguage(sanitized.contentSafe);
+  const language = detectLanguage(sanitized.contentSafe, input.session.language);
   let intentTag = detectIntent(sanitized.contentSafe);
   let intentSource: 'regex' | 'vector' = intentTag === 'misc' ? 'vector' : 'regex';
   const charterIn = charterFilter.inbound(sanitized.contentSafe);
@@ -191,8 +192,19 @@ export async function* streamReply(
         language,
         audience: 'all',
       });
-      if (faqMatch) {
-        const reply = faqMatch.scriptedReply;
+      // Jetons promo ({{promo_code}}…) rendus avec l'offre en direct ; sans
+      // offre active, l'entrée est écartée → le LLM répond (pas de prix faux).
+      const faqRender = faqMatch
+        ? renderPromoTokens(faqMatch.scriptedReply, await getChatPromo(), language)
+        : null;
+      if (faqMatch && faqRender && !faqRender.ok) {
+        logger.info('chat.orchestrator.faq_skipped_no_promo', {
+          sessionId: input.session.id,
+          faqKey: faqMatch.key,
+        });
+      }
+      if (faqMatch && faqRender?.ok) {
+        const reply = faqRender.text;
         const assistantMessage = await messageRepo.create({
           sessionId: input.session.id,
           role: 'assistant',
@@ -275,7 +287,9 @@ export async function* streamReply(
   }
 
   // Construit le contexte LLM
-  const systemBody = pickInstructionByLang(instruction, language);
+  const systemBody =
+    pickInstructionByLang(instruction, language) +
+    buildPromoPromptBlock(await getChatPromo(), language);
   const ragContext = ragHits.length
     ? `\n\nContexte (sources internes) :\n${ragHits
         .map(

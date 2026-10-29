@@ -19,7 +19,13 @@ const ARABIC_BLOCK = /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/;
 // pour matcher le tokenisateur.
 const DARIJA_FR_DICT = new Set(DARIJA_FR_TOKENS.map((t) => t.toLowerCase()));
 
-export function detectLanguage(text: string): ChatLanguage {
+/**
+ * `hint` = langue courante de la session (choisie à l'ouverture ou détectée
+ * au tour précédent). Si elle est `ar-MA`, UN seul mot darija suffit : les
+ * messages courts (« chhal l-livraison ? ») partaient sinon en FR alors que
+ * la conversation est en darija.
+ */
+export function detectLanguage(text: string, hint?: ChatLanguage | string | null): ChatLanguage {
   if (!text) return 'fr';
   const trimmed = text.trim();
   if (!trimmed) return 'fr';
@@ -56,5 +62,6 @@ export function detectLanguage(text: string): ChatLanguage {
     if (hits >= 2) break;
   }
   if (hits >= 2) return 'ar-MA';
+  if (hits >= 1 && hint === 'ar-MA') return 'ar-MA';
   return 'fr';
 }

@@ -20,6 +20,7 @@ import type {
   ChatLanguage,
   ChatMessageDto,
 } from '../contracts';
+import { getChatPromo, renderPromoTokens } from '../promo-offer';
 import { cannedPairRepo } from '../repos/canned-pair';
 import { eventRepo } from '../repos/event';
 import { messageRepo } from '../repos/message';
@@ -58,8 +59,14 @@ export const cannedPairService = {
     }
 
     const language = (input.language ?? (session.language as ChatLanguage) ?? 'fr') as ChatLanguage;
-    const userLabel = cannedPairRepo.localizedLabel(pair, language);
-    const scriptedReply = cannedPairRepo.localizedReply(pair, language);
+    const promo = await getChatPromo();
+    const label = renderPromoTokens(cannedPairRepo.localizedLabel(pair, language), promo, language);
+    const reply = renderPromoTokens(cannedPairRepo.localizedReply(pair, language), promo, language);
+    // Offre expirée entre l'affichage et le clic : on refuse plutôt que de
+    // servir un prix faux (le widget retombe sur la saisie libre).
+    if (!label.ok || !reply.ok) throw new CannedPairError('pair-not-published');
+    const userLabel = label.text;
+    const scriptedReply = reply.text;
 
     const userRow = await messageRepo.create({
       sessionId: session.id,

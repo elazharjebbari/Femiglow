@@ -39,6 +39,7 @@ import { parsePhone, PhoneParseError } from '@/lib/phone';
 import { logger } from '@/lib/logging/logger';
 import { sendTransactional } from '@/lib/mail/send';
 import { getKitLeadValue } from '@/lib/products/public';
+import { getChatPromo } from '@/lib/chat/promo-offer';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -221,9 +222,15 @@ export async function POST(req: NextRequest): Promise<Response> {
 
   // M1.B.2 — Notification interne : envoie un mail à info@ pour que
   // l'équipe puisse recontacter dans la journée. Fire-and-forget.
-  const outcomeContext = snapshot
-    .map((m) => `${m.role}: ${m.content}`)
-    .join('\n')
+  const promo = await getChatPromo().catch(() => null);
+  const outcomeContext = [
+    promo
+      ? `Offre : code ${promo.code} → ${promo.promoPriceMad} ${promo.currency} au lieu de ${promo.listPriceMad} (livraison en plus).`
+      : null,
+    snapshot.map((m) => `${m.role}: ${m.content}`).join('\n'),
+  ]
+    .filter(Boolean)
+    .join('\n\n')
     .slice(0, 1900);
   void sendTransactional({
     template: 'lead-notification',
@@ -249,7 +256,10 @@ export async function POST(req: NextRequest): Promise<Response> {
   // Renvoyée au client pour que `generate_lead` parte valorisé (bidding
   // value-based Meta/Ads). Fail-soft : si le prix est indisponible, on omet
   // value/currency plutôt que d'émettre une currency orpheline.
-  const leadValue = await getKitLeadValue().catch(() => null);
+  // Offre GLOW99 active → le lead vaut le prix remisé (99), comme l'achat.
+  const leadValue = promo
+    ? { value: promo.promoPriceMad, currency: promo.currency }
+    : await getKitLeadValue().catch(() => null);
 
   return NextResponse.json({
     ok: true,

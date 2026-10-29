@@ -174,8 +174,9 @@ describe('DEFAULT_INSTRUCTION_AR_MA_V2 (CHA-245 — connaissance produit, darija
 });
 
 describe('DEFAULT_INSTRUCTION_NOTES_V2 (bump v2.6 — fiche kit-facts)', () => {
-  it('commence par le label v2.6', () => {
-    expect(DEFAULT_INSTRUCTION_NOTES_V2.startsWith('v2.6-')).toBe(true);
+  it('commence par le label v2.7 (promo GLOW99) et hérite de v2.6', () => {
+    expect(DEFAULT_INSTRUCTION_NOTES_V2.startsWith('v2.7-')).toBe(true);
+    expect(DEFAULT_INSTRUCTION_NOTES_V2).toContain('v2.6-kit-facts');
   });
 
   it('mentionne les ajouts clés (composition, 199 dh, livraison concrète, brillance 3 semaines, questions complexes)', () => {
@@ -185,5 +186,29 @@ describe('DEFAULT_INSTRUCTION_NOTES_V2 (bump v2.6 — fiche kit-facts)', () => {
     expect(notes).toMatch(/24\s*h|Rabat/);
     expect(notes).toMatch(/3 semaines|brillance/i);
     expect(notes).toMatch(/questions complexes|formulaire/i);
+  });
+});
+
+// v2.7 — offre GLOW99 (bloc « Offre en cours » injecté en direct) + livraison payante.
+describe.each([
+  ['FR', DEFAULT_INSTRUCTION_FR_V2, /Offre en cours/, /livraison est payante/i],
+  ['AR', DEFAULT_INSTRUCTION_AR_V2, /العرض الحالي/, /التوصيل مدفوع/],
+  ['AR-MA', DEFAULT_INSTRUCTION_AR_MA_V2, /L-3ard dyal daba/, /l-livraison b l-flouss/i],
+])('%s — v2.7 promo et livraison', (_lang, body, offerRef, paidDelivery) => {
+  it('renvoie au bloc « Offre en cours » pour le code et le prix remisé', () => {
+    expect(body).toMatch(offerRef);
+  });
+  it('dit que la livraison est payante', () => {
+    expect(body).toMatch(paidDelivery);
+  });
+  it("n'écrit aucun code ni prix remisé en dur (ils viennent du coupon en direct)", () => {
+    expect(body).not.toMatch(/GLOW\s*\d+/i);
+    expect(body).not.toMatch(/\b99\s*(dh|درهم)/i);
+  });
+  it('ne donne plus de fourchette de frais de livraison', () => {
+    expect(body).not.toMatch(/19\s*(à|l|إلى)\s*45/);
+  });
+  it('ne traite plus « code promo » comme de la négociation', () => {
+    expect(body).not.toMatch(/"rabais", "remise", "code promo"/);
   });
 });

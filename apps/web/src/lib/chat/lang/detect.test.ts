@@ -21,4 +21,15 @@ describe('detectLanguage', () => {
     expect(detectLanguage('bonjour')).toBe('fr');
     expect(detectLanguage('')).toBe('fr');
   });
+
+  it('session en darija : un seul mot darija suffit (messages courts)', () => {
+    expect(detectLanguage('chhal l-livraison ?', 'ar-MA')).toBe('ar-MA');
+    expect(detectLanguage('3ndkom code promo ?', 'ar-MA')).toBe('ar-MA');
+    expect(detectLanguage('chhal taman dyal pack ?')).toBe('ar-MA');
+  });
+
+  it('sans indice darija, un message français reste FR même en session ar-MA', () => {
+    expect(detectLanguage('Combien coûte la livraison ?', 'ar-MA')).toBe('fr');
+    expect(detectLanguage('chhal ?')).toBe('fr');
+  });
 });

@@ -22,6 +22,7 @@ import { dispatchToAllChannels, type DispatchToAllChannelsResult } from '../disp
 import { composeFullName, normalizePhoneForPayload } from '../payload';
 import { snapshotMessagesToConversation } from '../helpers/conversation';
 import { getLeadWebhookSettings } from '../settings';
+import { getChatPromo } from '@/lib/chat/promo-offer';
 
 export interface DispatchChatLeadResult {
   status: DispatchToAllChannelsResult['status'];
@@ -53,6 +54,11 @@ export async function dispatchChatLeadWebhook(
   if (lead.note) noteParts.push(lead.note.trim());
   if (lead.triggerReason) noteParts.push(`trigger:${lead.triggerReason}`);
   if (lead.intentAtCapture) noteParts.push(`intent:${lead.intentAtCapture}`);
+  // Offre en cours (GLOW99) : le lead chat est vendu au prix remisé — la
+  // conseillère et la carte CRM doivent l'annoncer (même format que le panier
+  // abandonné : total net + remise + code + note `promo:CODE -X MAD`).
+  const promo = await getChatPromo().catch(() => null);
+  if (promo) noteParts.push(`promo:${promo.code} -${promo.discountMad} ${promo.currency}`);
 
   const settings = await getLeadWebhookSettings();
   const conversation = settings.conversationEnabled
@@ -77,6 +83,13 @@ export async function dispatchChatLeadWebhook(
     lead_status: 'complete' as const,
     quantity: 1,
     currency: 'MAD' as const,
+    ...(promo
+      ? {
+          total_price: promo.promoPriceMad,
+          discount_amount: promo.discountMad,
+          coupon_code: promo.code,
+        }
+      : {}),
   };
 
   const result = await dispatchToAllChannels({

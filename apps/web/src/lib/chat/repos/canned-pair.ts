@@ -18,6 +18,7 @@ import {
 } from '../db/schema';
 
 import type { ChatLanguage } from '../contracts';
+import { getChatPromo, renderPromoTokens } from '../promo-offer';
 
 export interface CannedPairForPill {
   key: string;
@@ -89,11 +90,21 @@ export const cannedPairRepo = {
       )
       .orderBy(asc(chatCannedPair.order));
 
-    const filtered = rows.filter((r) => pageMatches(r.pagePattern, opts.page));
+    // Jetons promo : libellé rendu avec l'offre en direct ; une paire à jetons
+    // (libellé OU réponse) est masquée quand aucune offre n'est active.
+    const promo = await getChatPromo();
+    const lang = opts.language ?? 'fr';
+    const filtered = rows.filter((r) => {
+      if (!pageMatches(r.pagePattern, opts.page)) return false;
+      return (
+        renderPromoTokens(localizedLabel(r, lang), promo, lang).ok &&
+        renderPromoTokens(localizedReply(r, lang), promo, lang).ok
+      );
+    });
     const limit = opts.limit ?? 6;
     return filtered.slice(0, limit).map((r) => ({
       key: r.key,
-      label: localizedLabel(r, opts.language),
+      label: renderPromoTokens(localizedLabel(r, lang), promo, lang).text,
       ctaLabel: r.ctaLabel,
       ctaUrl: r.ctaUrl,
       order: r.order,
