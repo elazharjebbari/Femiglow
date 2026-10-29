@@ -21,6 +21,8 @@
 const BAND_GAP_PX = 12;
 /** Durée totale de l'accueil (halo 1,6 s ; champ 0,35 s + 1,4 s). */
 const ARRIVAL_MS = 2000;
+/** Délai au-delà duquel un défilement `smooth` qui n'a pas bougé est forcé. */
+const SMOOTH_START_GUARD_MS = 400;
 
 export interface CenterInput {
   /** Haut absolu (document) et hauteur de la zone à montrer. */
@@ -218,6 +220,17 @@ export function arriveAtCommander(anchorId = 'commander-femiglow'): void {
     if (!reduceMotion) playArrival(shell.parentElement, field);
   };
 
-  if (alreadyThere || reduceMotion) onArrived();
-  else whenScrollSettles(top, token, onArrived);
+  if (alreadyThere || reduceMotion) {
+    onArrived();
+    return;
+  }
+  // Filet : si le défilement `smooth` n'a pas démarré (navigateur qui l'ignore
+  // hors geste utilisateur), on saute directement à la cible.
+  const startY = window.scrollY;
+  window.setTimeout(() => {
+    if (token === arrivalToken && Math.abs(window.scrollY - startY) < 2) {
+      window.scrollTo({ top, behavior: 'auto' });
+    }
+  }, SMOOTH_START_GUARD_MS);
+  whenScrollSettles(top, token, onArrived);
 }

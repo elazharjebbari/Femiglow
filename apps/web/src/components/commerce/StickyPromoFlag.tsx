@@ -86,8 +86,10 @@ export function StickyPromoFlag({
       destination: `#${anchorId}`,
       component_id: 'sticky_promo_flag',
     });
-    // Laisse l'onde se jouer avant que la page ne défile.
-    window.setTimeout(() => scrollToCommander(anchorId), 260);
+    // Défilement lancé DANS le geste : différé (setTimeout), un défilement
+    // `smooth` peut être ignoré par certains navigateurs. L'onde reste visible
+    // (la sticky ne bouge pas pendant le trajet).
+    scrollToCommander(anchorId);
   }, [toast, strings.toast, code, amount, emit, anchorId]);
 
   if (!coupon.hasDiscount || !coupon.isPromo || !code) return null;

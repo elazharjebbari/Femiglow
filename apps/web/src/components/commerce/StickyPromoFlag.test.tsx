@@ -73,10 +73,7 @@ describe('StickyPromoFlag', () => {
       destination: '#commander-femiglow',
       component_id: 'sticky_promo_flag',
     });
-    expect(scrollToCommander).not.toHaveBeenCalled();
-    act(() => {
-      vi.advanceTimersByTime(300);
-    });
+    // Lancé dans le geste (jamais différé : un smooth différé peut être ignoré).
     expect(scrollToCommander).toHaveBeenCalledWith('commander-femiglow');
   });
 
@@ -85,9 +82,6 @@ describe('StickyPromoFlag', () => {
     applyPromo();
     render(<StickyPromoFlag currency="MAD" />);
     expect(() => fireEvent.click(screen.getByTestId('sticky-promo-flag'))).not.toThrow();
-    act(() => {
-      vi.advanceTimersByTime(300);
-    });
     expect(scrollToCommander).toHaveBeenCalledTimes(1);
   });
 

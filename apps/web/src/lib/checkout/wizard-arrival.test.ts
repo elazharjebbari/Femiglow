@@ -101,6 +101,15 @@ describe('arriveAtCommander', () => {
     Object.defineProperty(window, 'scrollY', { value: 0, configurable: true, writable: true });
   });
 
+  it('smooth ignoré par le navigateur : saut direct à la cible après 400 ms', () => {
+    Object.defineProperty(window, 'scrollY', { value: 900, configurable: true, writable: true });
+    arriveAtCommander();
+    const { top } = vi.mocked(window.scrollTo).mock.calls[0]![0] as ScrollToOptions;
+    vi.advanceTimersByTime(450);
+    expect(window.scrollTo).toHaveBeenLastCalledWith({ top, behavior: 'auto' });
+    Object.defineProperty(window, 'scrollY', { value: 0, configurable: true, writable: true });
+  });
+
   it('défilement bloqué (bas de page) : accueil quand la position est stable', () => {
     Object.defineProperty(window, 'scrollY', { value: 500, configurable: true, writable: true });
     arriveAtCommander();
