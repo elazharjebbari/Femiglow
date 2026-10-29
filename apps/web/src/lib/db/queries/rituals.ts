@@ -294,6 +294,32 @@ export async function getRitualSummary(productKey: string): Promise<RitualSummar
   };
 }
 
+/**
+ * Témoignages APPROUVÉS liés à une commande vérifiée (`verified_purchase`).
+ * Alimente la preuve sociale du hero (« 36 achats vérifiés »).
+ */
+export async function countVerifiedRituals(productKey: string): Promise<number> {
+  const drizzle = db();
+  if (drizzle) {
+    const rows = await drizzle
+      .select({ n: dsql<number>`count(*)::int` })
+      .from(schema.ritualTestimonials)
+      .where(
+        and(
+          eq(schema.ritualTestimonials.productKey, productKey),
+          eq(schema.ritualTestimonials.status, 'APPROVED'),
+          eq(schema.ritualTestimonials.verifiedPurchase, true),
+        ),
+      );
+    return Number(rows[0]?.n ?? 0);
+  }
+  let n = 0;
+  for (const r of memoryStore().ritualTestimonials.values()) {
+    if (r.productKey === productKey && r.status === 'APPROVED' && r.verifiedPurchase) n++;
+  }
+  return n;
+}
+
 export interface RitualListResult {
   items: RitualTestimonialPublic[];
   nextCursor: string | null;

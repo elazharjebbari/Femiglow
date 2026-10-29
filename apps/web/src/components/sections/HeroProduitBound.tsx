@@ -1,6 +1,7 @@
 import 'server-only';
 import type { ComponentProps } from 'react';
 import { getTranslations } from 'next-intl/server';
+import { recommendationPct } from '@/components/commerce/RecommendationProof';
 import { HeroProduit, type HeroProduitFields } from './HeroProduit';
 import { StoriesVideoBound } from './StoriesVideoBound';
 import { resolveComponentFields } from '@/lib/components/field-resolver';
@@ -158,8 +159,18 @@ export async function HeroProduitBound({
   const reviewStats: ProductReviewStats | null = statsOrNull;
 
   // Phase 9bis — libellé avis localisé (« {n} avis » → « {n} تقييم »).
+  const recommendPct = reviewStats
+    ? recommendationPct(reviewStats.recommendCount ?? 0, reviewStats.reviewsCount)
+    : 0;
   const reviewsStrings = reviewStats
     ? {
+        reviewsRecommend: tHero('reviews_recommend', { pct: recommendPct }),
+        reviewsVerified: tHero('reviews_verified', { count: reviewStats.verifiedCount ?? 0 }),
+        reviewsReadReviews: tHero('reviews_read_reviews'),
+        reviewsRecommendAria: tHero('reviews_recommend_aria', {
+          pct: recommendPct,
+          count: reviewStats.reviewsCount,
+        }),
         reviewsLabel: tHero('reviews', { count: reviewStats.reviewsCount }),
         reviewsAriaLabel:
           reviewStats.rating === null

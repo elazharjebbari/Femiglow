@@ -415,6 +415,10 @@
         "cta_commander": "Commander le rituel",
         "reviews": "{count, plural, one {# avis} other {# avis}}",
         "reviews_aria": "Note {rating} sur 5 basée sur {count, plural, one {# avis} other {# avis}}",
+        "reviews_recommend": "{pct}\u202F% recommandent le Pack",
+        "reviews_verified": "{count, plural, one {# achat vérifié} other {# achats vérifiés}}",
+        "reviews_read_reviews": "Lire les avis",
+        "reviews_recommend_aria": "{pct}\u202F% des clientes recommandent le Pack, sur {count, plural, one {# avis} other {# avis}}. Lire les avis.",
         "chips": {
           "no_polish": "Sans vernis",
           "no_uv": "Sans UV",

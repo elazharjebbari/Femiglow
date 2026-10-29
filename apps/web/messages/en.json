@@ -410,6 +410,10 @@
         "cta_commander": "Order the ritual",
         "reviews": "{count, plural, one {# review} other {# reviews}}",
         "reviews_aria": "Rated {rating} out of 5 based on {count, plural, one {# review} other {# reviews}}",
+        "reviews_recommend": "{pct}% recommend the Pack",
+        "reviews_verified": "{count, plural, one {# verified purchase} other {# verified purchases}}",
+        "reviews_read_reviews": "Read the reviews",
+        "reviews_recommend_aria": "{pct}% of customers recommend the Pack, out of {count, plural, one {# review} other {# reviews}}. Read the reviews.",
         "chips": {
           "no_polish": "No polish",
           "no_uv": "No UV",

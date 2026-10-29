@@ -111,13 +111,13 @@ describe('getKitReviewStats — source unique du pack', () => {
 
   it('compte les témoignages approuvés, sans note inventée', async () => {
     seedRitualCount(51);
-    expect(await getKitReviewStats(PRODUCT_ID)).toEqual({ reviewsCount: 51, rating: null });
+    expect(await getKitReviewStats(PRODUCT_ID)).toEqual({ reviewsCount: 51, rating: null, recommendCount: 51 });
   });
 
   it('utilise la note moyenne réelle quand des avis notés existent', async () => {
     seedRitualCount(51);
     _seedReview(review(5, PRODUCT_ID, 0));
     _seedReview(review(4, PRODUCT_ID, 1));
-    expect(await getKitReviewStats(PRODUCT_ID)).toEqual({ reviewsCount: 51, rating: 4.5 });
+    expect(await getKitReviewStats(PRODUCT_ID)).toEqual({ reviewsCount: 51, rating: 4.5, recommendCount: 51 });
   });
 });

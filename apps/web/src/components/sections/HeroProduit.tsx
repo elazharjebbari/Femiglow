@@ -12,6 +12,7 @@ import { CommanderAnchorButton } from '@/components/commerce/CommanderAnchorButt
 import { PriceDisplay } from '@/components/commerce/PriceDisplay';
 import { AttributeChips } from '@/components/commerce/AttributeChips';
 import { SocialProofBadge } from '@/components/commerce/SocialProofBadge';
+import { RecommendationProof } from '@/components/commerce/RecommendationProof';
 import { TrustRow } from '@/components/commerce/TrustRow';
 import { ViewItemTracker } from '@/components/tracking/ViewItemTracker';
 import { HeroGallery } from './hero/HeroGallery';
@@ -97,6 +98,11 @@ export interface HeroProduitProps {
     reviewsLabel?: string;
     /** Phase 9bis — aria-label complet du badge avis localisé. */
     reviewsAriaLabel?: string;
+    /** Preuve sociale « recommandation » (sans note par étoiles). */
+    reviewsRecommend?: string;
+    reviewsVerified?: string;
+    reviewsReadReviews?: string;
+    reviewsRecommendAria?: string;
   };
   /**
    * Phase 7E — Nom produit affiché dans le H1 + l'aria galerie. Localisé
@@ -208,7 +214,30 @@ export function HeroProduit({
               {heroName}
             </Heading>
 
-            {fields.reviewBadgeEnabled && reviewStats && reviewStats.reviewsCount > 0 ? (
+            {/* Sans note par étoiles collectée, la preuve sociale montre la part
+                RÉELLE de clientes qui recommandent le Pack (jamais d'étoiles
+                inventées) ; une vraie note bascule sur le badge étoilé. */}
+            {fields.reviewBadgeEnabled &&
+            reviewStats &&
+            reviewStats.reviewsCount > 0 &&
+            reviewStats.rating === null &&
+            (reviewStats.recommendCount ?? 0) > 0 &&
+            strings?.reviewsRecommend &&
+            strings.reviewsReadReviews ? (
+              <RecommendationProof
+                recommendCount={reviewStats.recommendCount ?? 0}
+                reviewsCount={reviewStats.reviewsCount}
+                verifiedCount={reviewStats.verifiedCount}
+                href={reviewsAnchorHref ?? '#rituals-module-title'}
+                strings={{
+                  recommend: strings.reviewsRecommend,
+                  reviews: strings.reviewsLabel ?? `${reviewStats.reviewsCount} avis`,
+                  verified: strings.reviewsVerified,
+                  readReviews: strings.reviewsReadReviews,
+                  ariaLabel: strings.reviewsRecommendAria ?? strings.reviewsRecommend,
+                }}
+              />
+            ) : fields.reviewBadgeEnabled && reviewStats && reviewStats.reviewsCount > 0 ? (
               <SocialProofBadge
                 rating={reviewStats.rating}
                 reviewsCount={reviewStats.reviewsCount}

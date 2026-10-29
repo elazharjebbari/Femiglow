@@ -17,7 +17,7 @@
  * résultat ; le builder `buildKitProductFeed` reste pur.
  */
 import { memoryStore } from '@/lib/db/client';
-import { getRitualSummary } from '@/lib/db/queries/rituals';
+import { countVerifiedRituals, getRitualSummary } from '@/lib/db/queries/rituals';
 
 /** Clé produit du pack dans le module rituels (`ritual_testimonials`). */
 export const KIT_RITUAL_PRODUCT_KEY = 'pack-femiglow';
@@ -32,6 +32,13 @@ export interface ProductReviewStats {
   rating: number | null;
   /** Nombre total d'avis comptabilisés. */
   reviewsCount: number;
+  /**
+   * Avis qui recommandent le Pack (« oui » du module rituels). Sert la preuve
+   * sociale du hero tant qu'aucune note par étoiles n'est collectée.
+   */
+  recommendCount?: number;
+  /** Avis rattachés à un achat vérifié. */
+  verifiedCount?: number;
 }
 
 /**
@@ -108,13 +115,19 @@ export async function getProductReviewStats(
 export async function getKitReviewStats(
   productId: string,
 ): Promise<ProductReviewStats | null> {
-  const [rated, rituals] = await Promise.all([
+  const [rated, rituals, verified] = await Promise.all([
     getProductReviewStats(productId),
     getRitualSummary(KIT_RITUAL_PRODUCT_KEY).catch(() => null),
+    countVerifiedRituals(KIT_RITUAL_PRODUCT_KEY).catch(() => null),
   ]);
   const ritualCount = rituals?.totalCount ?? 0;
   if (ritualCount > 0) {
-    return { reviewsCount: ritualCount, rating: rated?.rating ?? null };
+    return {
+      reviewsCount: ritualCount,
+      rating: rated?.rating ?? null,
+      recommendCount: rituals?.ouiCount ?? 0,
+      ...(verified ? { verifiedCount: verified } : {}),
+    };
   }
   return rated;
 }

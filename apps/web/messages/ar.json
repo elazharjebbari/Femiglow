@@ -410,6 +410,10 @@
         "cta_commander": "اطلبي الآن",
         "reviews": "{count, plural, one {تقييم واحد} two {تقييمان} few {# تقييمات} many {# تقييمًا} other {# تقييم}}",
         "reviews_aria": "تقييم {rating} من 5 بناءً على {count, plural, one {تقييم واحد} two {تقييمين} few {# تقييمات} many {# تقييمًا} other {# تقييم}}",
+        "reviews_recommend": "{pct}% يوصين بالطقم",
+        "reviews_verified": "{count, plural, one {شراء واحد مُؤكَّد} two {شراءان مُؤكَّدان} few {# مشتريات مُؤكَّدة} many {# شراءً مُؤكَّدًا} other {# شراء مُؤكَّد}}",
+        "reviews_read_reviews": "اقرئي الآراء",
+        "reviews_recommend_aria": "{pct}% من الزبونات يوصين بالطقم، من أصل {count, plural, one {تقييم واحد} two {تقييمين} few {# تقييمات} many {# تقييمًا} other {# تقييم}}. اقرئي الآراء.",
         "chips": {
           "no_polish": "بلا طلاء",
           "no_uv": "بلا مصباح UV",
