@@ -4,6 +4,7 @@ import { logAuditEvent } from '@/lib/audit/log-event';
 import { logger } from '@/lib/logging/logger';
 import { formatErrorResponse, HttpError } from '@/lib/errors/http-error';
 import { runWorkerOnce } from '@/lib/media/worker/process-job';
+import { revalidateForMediaChange } from '@/lib/components/media-variants/revalidate.server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -21,12 +22,18 @@ export async function POST(request: Request): Promise<Response> {
 
     const startedAt = Date.now();
     let processed = 0;
+    const mediaIds = new Set<string>();
     while (Date.now() - startedAt < MAX_DURATION_MS) {
       const result = await runWorkerOnce();
       processed += result.processed;
+      for (const id of result.mediaIds) mediaIds.add(id);
       if (result.processed === 0) break;
     }
     const tookMs = Date.now() - startedAt;
+    // Variants (re)générés : les liaisons (`components`) et les ensembles
+    // qui affichent ces médias (`components:media-sets:<key>`, ciblé) sont
+    // en cache 30 min et doivent relire les nouvelles URL, dimensions et flous.
+    if (mediaIds.size > 0) await revalidateForMediaChange(mediaIds, 'cron/media-optimize');
 
     logger.info('cron.media_optimize.completed', { processed, took_ms: tookMs });
     await logAuditEvent({

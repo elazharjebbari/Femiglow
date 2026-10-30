@@ -115,8 +115,15 @@ async function processOptimize(job: MediaJob): Promise<void> {
   });
 }
 
-export async function runWorkerOnce(): Promise<{ processed: number }> {
+/**
+ * Traite jusqu'à 10 jobs en attente. Renvoie le nombre traité et les
+ * médias dont les variants ont été (re)générés avec succès — l'appelant
+ * invalide le cache des composants qui les affichent
+ * (`revalidateForMediaChange`).
+ */
+export async function runWorkerOnce(): Promise<{ processed: number; mediaIds: string[] }> {
   let processed = 0;
+  const mediaIds = new Set<string>();
   for (let i = 0; i < 10; i += 1) {
     const job = await claimNextPendingJob();
     if (!job) break;
@@ -126,11 +133,12 @@ export async function runWorkerOnce(): Promise<{ processed: number }> {
       }
       await markJobDone(job.id);
       processed += 1;
+      mediaIds.add(job.mediaId);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'unknown';
       await markJobFailed(job.id, message);
       await updateMedia(job.mediaId, { status: 'failed', failureReason: message }).catch(() => {});
     }
   }
-  return { processed };
+  return { processed, mediaIds: Array.from(mediaIds) };
 }

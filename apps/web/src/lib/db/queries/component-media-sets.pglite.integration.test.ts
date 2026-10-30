@@ -22,7 +22,13 @@ import { sql } from 'drizzle-orm';
 
 import { __resetTestDb, __setTestDb, schema } from '@/lib/db/client';
 import { upsertSiteComponentFromSeed } from '@/lib/db/queries/site-components';
-import { createMedia, hardDeleteMedia, MediaInUseError, softDeleteMedia } from '@/lib/db/queries/media';
+import {
+  createMedia,
+  findMediaByIds,
+  hardDeleteMedia,
+  MediaInUseError,
+  softDeleteMedia,
+} from '@/lib/db/queries/media';
 import { createVariant } from '@/lib/db/queries/media-variants';
 import { KIT_HERO_MEDIA_VARIANTS, type SiteComponentSeed } from '@/lib/components/registry';
 import type { Media } from '@/lib/db/types';
@@ -30,6 +36,7 @@ import {
   discardDraft,
   getSetById,
   listPublishedSetsWithMedia,
+  listMediaSetUsages,
   listSetsByComponent,
   MediaSetConflictError,
   MediaSetValidationError,
@@ -341,5 +348,32 @@ describe('component_media_sets — intégration PGlite (vrai chemin SQL)', () =>
       ['create', 'draft', null],
     ]);
     await expect(hardDeleteMedia(m2.id)).resolves.toBeUndefined();
+  });
+  it('listMediaSetUsages : ensembles (desktop et mobile) avec la clé du composant, dédoublonnés', async () => {
+    const p = await upsertDraftSet(draftInput({ items: [{ mediaId: m1.id, mobileMediaId: m2.id }] }));
+    await publishSet({ setId: p.id, actorId: null });
+    const d = await upsertDraftSet(
+      draftInput({ slot: 'secondary', items: [{ mediaId: m2.id }, { mediaId: m2.id }] }),
+    );
+    const usages = await listMediaSetUsages(m2.id);
+    expect(usages.map((u) => [u.setId, u.componentKey, u.status]).sort()).toEqual(
+      [
+        [p.id, 'kit-hero-produit', 'published'],
+        [d.id, 'kit-hero-produit', 'draft'],
+      ].sort(),
+    );
+    expect(await listMediaSetUsages('me_inconnu')).toEqual([]);
+  });
+
+  it('findMediaByIds : une requête, supprimés inclus, ids inconnus ignorés', async () => {
+    await softDeleteMedia(m2.id);
+    const rows = await findMediaByIds([m1.id, m2.id, m1.id, 'me_inconnu']);
+    expect(rows.map((m) => [m.id, m.deletedAt !== null]).sort()).toEqual(
+      [
+        [m1.id, false],
+        [m2.id, true],
+      ].sort(),
+    );
+    expect(await findMediaByIds([])).toEqual([]);
   });
 });

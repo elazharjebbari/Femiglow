@@ -7,6 +7,7 @@ export type ErrorCode =
   | 'rate_limited'
   | 'conflict'
   | 'upstream_failed'
+  | 'service_unavailable'
   | 'internal_error'
   // Components-CMS
   | 'validation_failed'
@@ -30,6 +31,7 @@ const STATUS_BY_CODE: Record<ErrorCode, number> = {
   rate_limited: 429,
   conflict: 409,
   upstream_failed: 502,
+  service_unavailable: 503,
   internal_error: 500,
   validation_failed: 422,
   version_conflict: 409,

@@ -40,6 +40,7 @@ import {
   MediaSetValidationError,
   NotFoundError,
   promoteDueMediaSets,
+  promoteScheduledSets,
   publishSet,
   restoreSetFromHistory,
   scheduleSet,
@@ -357,7 +358,67 @@ describe('programmation', () => {
     await softDeleteMedia(m3.id);
     const res = await promoteDueMediaSets(new Date(at.getTime() + 1));
     expect(res.promoted.map((s) => s.id)).toEqual([ok.id]);
-    expect(res.failed.map((f) => f.setId)).toEqual([ko.id]);
+    // Média supprimé : programmation « bloquée », pas une erreur.
+    expect(res.stuck).toEqual([{ setId: ko.id, issues: ['item.media_deleted'] }]);
+    expect(res.failed).toEqual([]);
+  });
+
+  it('promoteDueMediaSets : course avec un autre tick → `skipped`, pas `failed`', async () => {
+    const a = await upsertDraftSet(draftInput({ locale: 'fr' }));
+    const b = await upsertDraftSet(draftInput({ locale: 'en' }));
+    const at = FUTURE();
+    await scheduleSet({ setId: a.id, actorId: null, scheduledAt: at });
+    await scheduleSet({ setId: b.id, actorId: null, scheduledAt: at });
+    const now = new Date(at.getTime() + 1);
+    // Lecture « due » obtenue AVANT qu'un autre tick ne publie a, et qu'une
+    // écriture concurrente ne touche b (updatedAt changé).
+    const due = await listScheduledDueSets(now);
+    await publishSet({ setId: a.id, actorId: null });
+    const store = memoryStore();
+    store.componentMediaSets.set(b.id, {
+      ...store.componentMediaSets.get(b.id)!,
+      updatedAt: new Date(Date.now() + 5),
+    });
+    const res = await promoteScheduledSets(due, now);
+    expect(res.skipped).toEqual(
+      expect.arrayContaining([
+        { setId: a.id, reason: 'already_published' },
+        { setId: b.id, reason: 'version_conflict' },
+      ]),
+    );
+    expect(res.failed).toEqual([]);
+    expect(res.promoted).toEqual([]);
+  });
+
+  it('promoteDueMediaSets : programmation annulée par une publication manuelle → `skipped` (superseded)', async () => {
+    const s1 = await upsertDraftSet(draftInput());
+    const at = FUTURE();
+    await scheduleSet({ setId: s1.id, actorId: null, scheduledAt: at });
+    const now = new Date(at.getTime() + 1);
+    const due = await listScheduledDueSets(now);
+    const manual = await upsertDraftSet(draftInput({ items: [{ mediaId: m2.id }] }));
+    await publishSet({ setId: manual.id, actorId: null }); // archive la programmation
+    const res = await promoteScheduledSets(due, now);
+    expect(res.skipped).toEqual([{ setId: s1.id, reason: 'superseded' }]);
+    expect(res.failed).toEqual([]);
+  });
+
+  it('promoteDueMediaSets : échec de lecture du composant → publié quand même, clé null', async () => {
+    const d = await upsertDraftSet(draftInput());
+    const at = FUTURE();
+    await scheduleSet({ setId: d.id, actorId: null, scheduledAt: at });
+    const sc = await import('@/lib/db/queries/site-components');
+    const spy = vi.spyOn(sc, 'getSiteComponentById');
+    // La publication ne relit pas le composant : seul le lookup de la clé échoue.
+    spy.mockRejectedValue(new Error('db down'));
+    try {
+      const res = await promoteDueMediaSets(new Date(at.getTime() + 1));
+      expect(res.failed).toEqual([]);
+      expect(res.promoted.map((p) => [p.id, p.componentKey])).toEqual([[d.id, null]]);
+    } finally {
+      spy.mockRestore();
+    }
+    expect((await getSetById(d.id))?.status).toBe('published');
   });
 });
 

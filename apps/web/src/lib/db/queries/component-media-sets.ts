@@ -653,23 +653,61 @@ export async function getSetWithItems(id: string): Promise<ComponentMediaSetWith
   return { ...set, items: await repo.listItems(id) };
 }
 
+export interface ListSetsByComponentOptions {
+  /** Inclure les archivés (ignoré si `statuses` est fourni). Défaut : non. */
+  includeArchived?: boolean;
+  /** Statuts à renvoyer — filtrés EN BASE. Prioritaire sur `includeArchived`. */
+  statuses?: readonly FieldBindingStatus[];
+  /**
+   * Pagination (admin : historique des archivés). Sans `limit`, tout est
+   * renvoyé — à réserver aux statuts vivants (≤ 3 ensembles par tuple).
+   */
+  limit?: number;
+  offset?: number;
+  /** Filtres de tuple (en base, avant pagination). */
+  slot?: string;
+  variantDim?: string;
+  variantKey?: string;
+  locale?: string;
+}
+
+/** Statuts « vivants » (I1 : au plus un de chaque par tuple). */
+const LIVE_STATUSES: readonly FieldBindingStatus[] = ['draft', 'published', 'scheduled'];
+
 /**
- * Tous les ensembles d'un composant avec leurs items (admin : matrice).
- * Archivés exclus par défaut.
+ * Ensembles d'un composant avec leurs items (admin : matrice). Archivés
+ * exclus par défaut, filtre de statut appliqué en base. Avec `limit`,
+ * l'ordre est celui du tuple puis de la version décroissante (stable d'une
+ * page à l'autre).
  */
 export async function listSetsByComponent(
   componentId: string,
-  opts: { includeArchived?: boolean } = {},
+  opts: ListSetsByComponentOptions = {},
 ): Promise<ComponentMediaSetWithItems[]> {
+  const statuses: readonly FieldBindingStatus[] =
+    opts.statuses ?? (opts.includeArchived ? [...LIVE_STATUSES, 'archived'] : LIVE_STATUSES);
+  if (statuses.length === 0) return [];
+  const offset = Math.max(0, opts.offset ?? 0);
   const drizzle = db();
   let sets: ComponentMediaSet[];
   let items: ComponentMediaSetItem[];
   if (drizzle) {
     const t = schema.componentMediaSets;
-    const rows = await drizzle
+    const base = drizzle
       .select()
       .from(t)
-      .where(eq(t.componentId, componentId));
+      .where(
+        and(
+          eq(t.componentId, componentId),
+          inArray(t.status, [...statuses]),
+          opts.slot !== undefined ? eq(t.slot, opts.slot) : undefined,
+          opts.variantDim !== undefined ? eq(t.variantDim, opts.variantDim) : undefined,
+          opts.variantKey !== undefined ? eq(t.variantKey, opts.variantKey) : undefined,
+          opts.locale !== undefined ? eq(t.locale, opts.locale) : undefined,
+        ),
+      )
+      .orderBy(asc(t.slot), asc(t.variantDim), asc(t.variantKey), asc(t.locale), desc(t.version), asc(t.id));
+    const rows = opts.limit !== undefined ? await base.limit(opts.limit).offset(offset) : await base;
     sets = rows as ComponentMediaSet[];
     const ids = sets.map((s) => s.id);
     items =
@@ -682,15 +720,70 @@ export async function listSetsByComponent(
             .orderBy(asc(schema.componentMediaSetItems.position))) as ComponentMediaSetItem[]);
   } else {
     const store = memoryStore();
-    sets = Array.from(store.componentMediaSets.values()).filter((s) => s.componentId === componentId);
+    const cmp = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+    const all = Array.from(store.componentMediaSets.values())
+      .filter(
+        (s) =>
+          s.componentId === componentId &&
+          statuses.includes(s.status) &&
+          (opts.slot === undefined || s.slot === opts.slot) &&
+          (opts.variantDim === undefined || s.variantDim === opts.variantDim) &&
+          (opts.variantKey === undefined || s.variantKey === opts.variantKey) &&
+          (opts.locale === undefined || s.locale === opts.locale),
+      )
+      .sort(
+        (a, b) =>
+          cmp(a.slot, b.slot) ||
+          cmp(a.variantDim, b.variantDim) ||
+          cmp(a.variantKey, b.variantKey) ||
+          cmp(a.locale, b.locale) ||
+          b.version - a.version ||
+          cmp(a.id, b.id),
+      );
+    sets = opts.limit !== undefined ? all.slice(offset, offset + opts.limit) : all;
     const ids = new Set(sets.map((s) => s.id));
     items = Array.from(store.componentMediaSetItems.values()).filter((i) => ids.has(i.setId));
   }
-  const visible = opts.includeArchived ? sets : sets.filter((s) => s.status !== 'archived');
-  return sortSets(visible).map((s) => ({
+  return sortSets(sets).map((s) => ({
     ...s,
     items: items.filter((i) => i.setId === s.id).sort((a, b) => a.position - b.position),
   }));
+}
+
+/**
+ * L'ensemble d'un tuple au statut donné (`draft`, `published`, `scheduled`
+ * — au plus un, I1), sans items. Lecture ciblée (PUT /draft : 201 vs 200).
+ */
+export async function findSetByTuple(
+  tuple: MediaSetTuple,
+  status: FieldBindingStatus,
+): Promise<ComponentMediaSet | null> {
+  const t = normalizeTuple(tuple);
+  const drizzle = db();
+  if (drizzle) {
+    const sets = schema.componentMediaSets;
+    const rows = await drizzle
+      .select()
+      .from(sets)
+      .where(
+        and(
+          eq(sets.componentId, t.componentId),
+          eq(sets.slot, t.slot),
+          eq(sets.variantDim, t.variantDim),
+          eq(sets.variantKey, t.variantKey),
+          eq(sets.locale, t.locale),
+          eq(sets.status, status),
+        ),
+      )
+      .orderBy(desc(sets.version))
+      .limit(1);
+    return (rows[0] as ComponentMediaSet | undefined) ?? null;
+  }
+  return (
+    Array.from(memoryStore().componentMediaSets.values()).find(
+      (s) => s.status === status && sameTuple(t, s),
+    ) ?? null
+  );
 }
 
 /** Assemble ensembles + items + médias (avec variants) en mémoire. */
@@ -902,6 +995,73 @@ export async function getSetHistoryById(id: string): Promise<ComponentMediaSetHi
     return (rows[0] as ComponentMediaSetHistoryEntry | undefined) ?? null;
   }
   return memoryStore().componentMediaSetHistory.get(id) ?? null;
+}
+
+/** Ensemble qui référence un média (message de refus d'une suppression définitive). */
+export interface MediaSetUsage {
+  setId: string;
+  componentId: string;
+  /** `site_components.key`, `null` si le composant a disparu. */
+  componentKey: string | null;
+  slot: string;
+  variantDim: string;
+  variantKey: string;
+  locale: string;
+  status: FieldBindingStatus;
+  version: number;
+}
+
+/**
+ * Ensembles (tous statuts) dont un item référence `mediaId` (desktop ou
+ * mobile). C'est exactement ce que la FK `ON DELETE RESTRICT` protège (I5).
+ */
+export async function listMediaSetUsages(mediaId: string, limit = 50): Promise<MediaSetUsage[]> {
+  const drizzle = db();
+  if (drizzle) {
+    const sets = schema.componentMediaSets;
+    const items = schema.componentMediaSetItems;
+    const rows = await drizzle
+      .selectDistinct({
+        setId: sets.id,
+        componentId: sets.componentId,
+        componentKey: schema.siteComponents.key,
+        slot: sets.slot,
+        variantDim: sets.variantDim,
+        variantKey: sets.variantKey,
+        locale: sets.locale,
+        status: sets.status,
+        version: sets.version,
+      })
+      .from(items)
+      .innerJoin(sets, eq(sets.id, items.setId))
+      .leftJoin(schema.siteComponents, eq(schema.siteComponents.id, sets.componentId))
+      .where(or(eq(items.mediaId, mediaId), eq(items.mobileMediaId, mediaId)))
+      .limit(limit);
+    return rows.map((r) => ({ ...r, componentKey: r.componentKey ?? null }) as MediaSetUsage);
+  }
+  const store = memoryStore();
+  const setIds = new Set(
+    Array.from(store.componentMediaSetItems.values())
+      .filter((i) => i.mediaId === mediaId || i.mobileMediaId === mediaId)
+      .map((i) => i.setId),
+  );
+  return sortSets(
+    Array.from(setIds)
+      .map((id) => store.componentMediaSets.get(id))
+      .filter((s): s is ComponentMediaSet => !!s),
+  )
+    .slice(0, limit)
+    .map((s) => ({
+      setId: s.id,
+      componentId: s.componentId,
+      componentKey: store.siteComponents.get(s.componentId)?.key ?? null,
+      slot: s.slot,
+      variantDim: s.variantDim,
+      variantKey: s.variantKey,
+      locale: s.locale,
+      status: s.status,
+      version: s.version,
+    }));
 }
 
 /* ──────────────────────────────────────────────────────────────────
@@ -1240,38 +1400,86 @@ export interface PromotedMediaSet extends ComponentMediaSet {
 
 export interface PromoteDueMediaSetsResult {
   promoted: PromotedMediaSet[];
+  /**
+   * Course avec un autre tick (ou une publication manuelle) : l'ensemble a
+   * déjà été publié ou modifié entre la lecture et la publication. Pas une
+   * erreur — rien à faire.
+   */
+  skipped: Array<{ setId: string; reason: 'already_published' | 'superseded' | 'version_conflict' }>;
+  /**
+   * Programmation bloquée : un média de l'ensemble a été supprimé ou est
+   * introuvable. Elle restera due à chaque tick jusqu'à correction par
+   * l'admin (liste `stuckScheduled` de GET /media-sets).
+   */
+  stuck: Array<{ setId: string; issues: string[] }>;
   failed: Array<{ setId: string; error: string }>;
 }
 
+/** Codes de validation qui signalent un média indisponible (programmation bloquée). */
+const MEDIA_UNAVAILABLE_ISSUES = new Set(['item.media_deleted', 'item.media_not_found']);
+
 /**
- * Publie les ensembles programmés arrivés à échéance (appelé par le cron
- * `promote-scheduled-fields`). Un échec n'empêche pas les suivants. Chaque
- * ensemble promu porte `componentKey` pour que le cron invalide
- * `mediaSetsCacheTag(componentKey)`.
+ * Publie les ensembles programmés arrivés à échéance (appelé par les crons
+ * `promote-scheduled-fields` et `promote-now`). Un échec n'empêche pas les
+ * suivants. Chaque ensemble promu porte `componentKey` pour que le cron
+ * invalide `mediaSetsCacheTag(componentKey)` ; la recherche de la clé est
+ * HORS de la publication : un échec de lecture du composant ne fait pas
+ * passer pour « échoué » un ensemble bel et bien publié (clé `null`).
  */
 export async function promoteDueMediaSets(now: Date = new Date()): Promise<PromoteDueMediaSetsResult> {
-  const due = await listScheduledDueSets(now);
-  const result: PromoteDueMediaSetsResult = { promoted: [], failed: [] };
+  return promoteScheduledSets(await listScheduledDueSets(now), now);
+}
+
+/**
+ * Publie une liste d'ensembles programmés lue au préalable (cœur de
+ * `promoteDueMediaSets`). La lecture peut être périmée — un autre tick ou
+ * une publication manuelle est passé entre-temps : ces cas sont classés
+ * `skipped`, jamais `failed`.
+ */
+export async function promoteScheduledSets(
+  due: readonly ComponentMediaSet[],
+  now: Date = new Date(),
+): Promise<PromoteDueMediaSetsResult> {
+  const result: PromoteDueMediaSetsResult = { promoted: [], skipped: [], stuck: [], failed: [] };
   const keys = new Map<string, string | null>();
   for (const set of due) {
+    let published: ComponentMediaSetWithItems;
     try {
-      const published = await publishSet({
+      published = await publishSet({
         setId: set.id,
         actorId: null,
         expectedUpdatedAt: set.updatedAt,
         now,
       });
-      if (!keys.has(published.componentId)) {
-        const component = await getSiteComponentById(published.componentId);
-        keys.set(published.componentId, component?.key ?? null);
-      }
-      result.promoted.push({
-        ...withoutItems(published),
-        componentKey: keys.get(published.componentId) ?? null,
-      });
     } catch (err) {
-      result.failed.push({ setId: set.id, error: err instanceof Error ? err.message : String(err) });
+      if (err instanceof MediaSetConflictError) {
+        result.skipped.push({ setId: set.id, reason: 'version_conflict' });
+      } else if (err instanceof MediaSetStateError && err.reason === 'publish.invalid_status:published') {
+        result.skipped.push({ setId: set.id, reason: 'already_published' });
+      } else if (err instanceof MediaSetStateError && err.reason === 'publish.invalid_status:archived') {
+        // Une publication manuelle a annulé cette programmation entre-temps.
+        result.skipped.push({ setId: set.id, reason: 'superseded' });
+      } else if (
+        err instanceof MediaSetValidationError &&
+        err.issues.length > 0 &&
+        err.issues.every((i) => MEDIA_UNAVAILABLE_ISSUES.has(i.code))
+      ) {
+        result.stuck.push({ setId: set.id, issues: Array.from(new Set(err.issues.map((i) => i.code))) });
+      } else {
+        result.failed.push({ setId: set.id, error: err instanceof Error ? err.message : String(err) });
+      }
+      continue;
     }
+    if (!keys.has(published.componentId)) {
+      // Lecture en échec → clé `null` (l'appelant invalide alors au moins
+      // le tag global `components`) ; non mise en cache, retentée au suivant.
+      const component = await getSiteComponentById(published.componentId).catch(() => undefined);
+      if (component !== undefined) keys.set(published.componentId, component?.key ?? null);
+    }
+    result.promoted.push({
+      ...withoutItems(published),
+      componentKey: keys.get(published.componentId) ?? null,
+    });
   }
   return result;
 }

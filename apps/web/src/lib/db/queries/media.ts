@@ -162,6 +162,23 @@ export async function findMediaById(id: string): Promise<Media | null> {
   return memoryStore().media.get(id) ?? null;
 }
 
+/**
+ * Plusieurs médias en une requête (supprimés inclus — l'appelant décide).
+ * Utilisé par l'admin « médias par audience » pour signaler les cellules
+ * dont une image a été supprimée ou n'est pas prête.
+ */
+export async function findMediaByIds(ids: readonly string[]): Promise<Media[]> {
+  const unique = Array.from(new Set(ids.filter(Boolean)));
+  if (unique.length === 0) return [];
+  const drizzle = db();
+  if (drizzle) {
+    const rows = await drizzle.select().from(schema.media).where(inArray(schema.media.id, unique));
+    return rows.map((r) => rowToMedia(r as Record<string, unknown>));
+  }
+  const store = memoryStore();
+  return unique.map((id) => store.media.get(id)).filter((m): m is Media => !!m);
+}
+
 export async function findMediaBySlug(
   slug: string,
   opts: { includeDeleted?: boolean } = {},

@@ -38,6 +38,8 @@ storybook-static
 
 # Brouillons locaux (notes perso, dumps GTM Tag Assistant, etc.)
 draft/
+# … sauf les segments de route Next nommés `draft` (ex. PUT /media-sets/draft).
+!apps/web/src/app/**/draft/
 
 # Media storage (régénérable par seeders — cf. docs/reset-feature)
 # Les fichiers optimisés (avif/webp/jpeg variants + originaux) vivent

@@ -1,3 +1,11 @@
+/**
+ * POST /api/admin/media/[id]/regenerate
+ *
+ * Met en file une régénération des variants. Aucune invalidation ici : rien
+ * ne change tant que le worker n'a pas traité le job — c'est
+ * `/api/cron/media-optimize` qui invalide le cache une fois les nouveaux
+ * variants écrits.
+ */
 import { NextResponse } from 'next/server';
 import { getAdminSession } from '@/lib/auth/require-admin';
 import { logAuditEvent } from '@/lib/audit/log-event';

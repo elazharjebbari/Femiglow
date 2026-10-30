@@ -50,6 +50,8 @@ describe('worker.process-job', () => {
 
     const result = await runWorkerOnce();
     expect(result.processed).toBe(1);
+    // Médias (re)générés renvoyés pour l'invalidation ciblée du cache.
+    expect(result.mediaIds).toEqual([media.id]);
 
     const after = await findMediaById(media.id);
     expect(after?.status).toBe('ready');
@@ -65,6 +67,7 @@ describe('worker.process-job', () => {
     await enqueueJob({ mediaId: media.id, kind: 'optimize', payload: { sourceKey: 'missing' } });
     const result = await runWorkerOnce();
     expect(result.processed).toBe(0);
+    expect(result.mediaIds).toEqual([]);
     const after = await findMediaById(media.id);
     expect(after?.status).toBe('failed');
   });
