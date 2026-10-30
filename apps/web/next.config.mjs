@@ -37,7 +37,11 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   typescript: {
-    ignoreBuildErrors: false,
+    // Serveur prod serré en RAM : le contrôle des types de `next build` (≈ 3 Go)
+    // s'y fait tuer par l'OOM killer. `NEXT_SKIP_TYPECHECK=1` le saute pour le
+    // build sur ce serveur uniquement — le typecheck reste obligatoire en local
+    // et en CI (`pnpm typecheck`) avant tout déploiement.
+    ignoreBuildErrors: process.env.NEXT_SKIP_TYPECHECK === '1',
   },
   experimental: {
     // Serveur partagé et serré en RAM : bin/deploy-prod.sh limite le nombre de
