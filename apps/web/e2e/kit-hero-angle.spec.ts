@@ -130,3 +130,140 @@ test.describe('/kit hero — angle publicitaire', () => {
     await expect(h1).not.toContainText(/salon chez vous/i);
   });
 });
+
+/**
+ * Images du hero par audience (angle × langue) — PR 4.
+ *
+ * Dépend du drapeau d'environnement `HERO_MEDIA_VARIANTS` (lu depuis `.env`
+ * par playwright.config, comme par le serveur local) et du champ CMS
+ * `kit-hero-produit.mediaVariantsEnabled` : chaque cas est ignoré quand
+ * l'environnement ne s'y prête pas, sur le modèle des autres specs.
+ *
+ * Drapeau coupé : aucun `data-hero-media-variant`, aucun `<picture>` dans le
+ * hero, aucun `hero_media_variant` envoyé (rendu identique à l'existant).
+ */
+const HERO_MEDIA_ENV_ON = ['on', 'true', '1'].includes(
+  (process.env.HERO_MEDIA_VARIANTS ?? '').trim().toLowerCase(),
+);
+const HERO_MEDIA_VARIANT_RE = /^[a-z0-9:._*-]+$/;
+
+test.describe('/kit hero — images par audience (HERO_MEDIA_VARIANTS)', () => {
+  test('drapeau d’environnement coupé : galerie historique, aucun attribut', async ({ page }) => {
+    test.skip(HERO_MEDIA_ENV_ON, 'HERO_MEDIA_VARIANTS=on dans cet environnement.');
+    const events = trackingCollector(page);
+    await page.goto('/fr/kit?cta=scroll&angle=e');
+    await expect(hero(page)).toHaveAttribute('data-kit-angle', 'e');
+    await expect(hero(page)).not.toHaveAttribute('data-hero-media-variant');
+    await expect(hero(page).locator('picture')).toHaveCount(0);
+    await expect.poll(() => events.some((e) => e.event === 'view_item'), { timeout: 10_000 }).toBe(true);
+    expect(events.find((e) => e.event === 'view_item')?.params).not.toHaveProperty('hero_media_variant');
+  });
+
+  test('drapeau actif : variante posée sur le hero et envoyée avec view_item / add_to_cart', async ({
+    page,
+  }) => {
+    test.skip(!HERO_MEDIA_ENV_ON, 'HERO_MEDIA_VARIANTS non activé dans cet environnement.');
+    const events = trackingCollector(page);
+    await page.goto('/fr/kit?cta=scroll&angle=e');
+    await expect(hero(page)).toHaveAttribute('data-kit-angle', 'e');
+    const variant = await hero(page).getAttribute('data-hero-media-variant');
+    test.skip(variant === null, 'Champ CMS mediaVariantsEnabled=false dans cet environnement.');
+    expect(variant).toMatch(HERO_MEDIA_VARIANT_RE);
+    // Angle E en FR : ensemble E (fr ou toutes langues), sinon un repli documenté.
+    expect(variant).toMatch(/^(angle-e\.(fr|any)\.v\d+|default\.(fr|any)\.v\d+|legacy|product)$/);
+    const level = Number(await hero(page).getAttribute('data-hero-media-level'));
+    expect(level).toBeGreaterThanOrEqual(1);
+    expect(level).toBeLessThanOrEqual(8);
+
+    await expect
+      .poll(() => events.find((e) => e.event === 'view_item')?.params.hero_media_variant, {
+        timeout: 10_000,
+      })
+      .toBe(variant);
+    await hero(page).getByRole('button', { name: /je commande/i }).first().click();
+    await expect
+      .poll(() => events.find((e) => e.event === 'add_to_cart')?.params.hero_media_variant, {
+        timeout: 10_000,
+      })
+      .toBe(variant);
+  });
+
+  test('drapeau actif : /ar/kit + utm A-darija → ensemble AR (jamais un ensemble FR)', async ({
+    page,
+  }) => {
+    test.skip(!HERO_MEDIA_ENV_ON, 'HERO_MEDIA_VARIANTS non activé dans cet environnement.');
+    await page.goto('/ar/kit?cta=scroll&utm_content=A-darija');
+    await expect(hero(page)).toHaveAttribute('data-kit-angle', 'a');
+    const variant = await hero(page).getAttribute('data-hero-media-variant');
+    test.skip(variant === null, 'Champ CMS mediaVariantsEnabled=false dans cet environnement.');
+    // `.fr.` n'est possible que via un ensemble explicitement `crossLocale`.
+    expect(variant).toMatch(/^(angle-a\.(ar|any|fr)\.v\d+|default\.(ar|any|fr)\.v\d+|legacy|product)$/);
+  });
+
+  test('drapeau actif : ?hmv=off coupe pour l’URL', async ({ page }) => {
+    test.skip(!HERO_MEDIA_ENV_ON, 'HERO_MEDIA_VARIANTS non activé dans cet environnement.');
+    await page.goto('/fr/kit?cta=scroll&angle=e&hmv=off');
+    await expect(hero(page)).toHaveAttribute('data-kit-angle', 'e');
+    await expect(hero(page)).not.toHaveAttribute('data-hero-media-variant');
+    await expect(hero(page).locator('picture')).toHaveCount(0);
+  });
+
+  test('drapeau actif : au plus 1 preload image par media dans <head>', async ({ page }) => {
+    test.skip(!HERO_MEDIA_ENV_ON, 'HERO_MEDIA_VARIANTS non activé dans cet environnement.');
+    await page.goto('/fr/kit?cta=scroll&angle=e');
+    await expect(hero(page)).toHaveAttribute('data-kit-angle', 'e');
+    const preloads = await page.$$eval('head link[rel="preload"][as="image"]', (links) =>
+      links.map((l) => ({ media: l.getAttribute('media') ?? '', srcset: l.getAttribute('imagesrcset') })),
+    );
+    const perMedia = new Map<string, number>();
+    for (const p of preloads) perMedia.set(p.media, (perMedia.get(p.media) ?? 0) + 1);
+    for (const [media, count] of perMedia) expect(count, `preloads pour media="${media}"`).toBe(1);
+    // Image principale art-dirigée : preloads mobile ET desktop, chacun borné.
+    if ((await hero(page).locator('picture').count()) > 0) {
+      expect(perMedia.get('(max-width: 1023px)')).toBe(1);
+      expect(perMedia.get('(min-width: 1024px)')).toBe(1);
+      expect(perMedia.has('')).toBe(false);
+    }
+  });
+
+  test.describe('viewport mobile', () => {
+    test.use({ viewport: { width: 375, height: 812 } });
+
+    test('drapeau actif : une seule image principale téléchargée (source mobile)', async ({ page }) => {
+      test.skip(!HERO_MEDIA_ENV_ON, 'HERO_MEDIA_VARIANTS non activé dans cet environnement.');
+      const imageRequests: string[] = [];
+      page.on('request', (req) => {
+        if (req.resourceType() === 'image') imageRequests.push(req.url());
+      });
+      await page.goto('/fr/kit?cta=scroll&angle=e');
+      await expect(hero(page)).toHaveAttribute('data-kit-angle', 'e');
+      const picture = hero(page).locator('picture').first();
+      test.skip((await picture.count()) === 0, 'Aucune image art-dirigée publiée pour cet angle.');
+      await page.waitForLoadState('networkidle');
+
+      /** Paramètre `url=` de `/_next/image` (= média d'origine). */
+      const origin = (u: string | null) => {
+        if (!u) return null;
+        const first = u.split(',')[0]!.trim().split(/\s+/)[0]!;
+        return new URL(first, page.url()).searchParams.get('url') ?? first;
+      };
+      const mobileOrigin = origin(await picture.locator('source').getAttribute('srcset'));
+      const desktopOrigin = origin(await picture.locator('img').getAttribute('src'));
+      expect(mobileOrigin).not.toBe(desktopOrigin);
+
+      const fetched = (o: string | null) =>
+        imageRequests.filter((u) => o !== null && new URL(u).searchParams.get('url') === o);
+      // La source mobile : une seule largeur ; l'image desktop : jamais.
+      expect(new Set(fetched(mobileOrigin)).size).toBe(1);
+      expect(fetched(desktopOrigin)).toHaveLength(0);
+    });
+  });
+
+  test('?hmv_preview=draft sans session admin : ignoré (même rendu que sans)', async ({ page }) => {
+    await page.goto('/fr/kit?cta=scroll&angle=e');
+    const publicVariant = await hero(page).getAttribute('data-hero-media-variant');
+    await page.goto('/fr/kit?cta=scroll&angle=e&hmv_preview=draft');
+    await expect(hero(page)).toHaveAttribute('data-kit-angle', 'e');
+    expect(await hero(page).getAttribute('data-hero-media-variant')).toBe(publicVariant);
+  });
+});

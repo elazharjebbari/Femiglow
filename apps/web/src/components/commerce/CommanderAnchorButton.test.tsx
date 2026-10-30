@@ -230,3 +230,45 @@ describe('CommanderAnchorButton — Kit CRO v2 §3 : kit_angle', () => {
     expect(calls.find((c) => c[0] === 'add_to_cart')?.[1]).not.toHaveProperty('kit_angle');
   });
 });
+
+describe('CommanderAnchorButton — images par audience : hero_media_variant', () => {
+  function clickWithHero(attrs: Record<string, string> | null): unknown[][] {
+    const hero = document.createElement('section');
+    hero.setAttribute('data-kit-angle', 'e');
+    for (const [k, v] of Object.entries(attrs ?? {})) hero.setAttribute(k, v);
+    document.body.appendChild(hero);
+    render(
+      <CommanderAnchorButton
+        productId="p1"
+        productName="Kit"
+        priceCents={9900}
+        currency="MAD"
+        source="pack_section"
+      >
+        Je commande
+      </CommanderAnchorButton>,
+    );
+    fireEvent.click(screen.getByTestId('kit-commander-anchor-button'));
+    hero.remove();
+    return emitMock.mock.calls;
+  }
+
+  it('ajoute hero_media_variant/level à add_to_cart et pack_cta_click', () => {
+    const calls = clickWithHero({
+      'data-hero-media-variant': 'angle-e.fr.v2',
+      'data-hero-media-level': '1',
+    });
+    const expected = { kit_angle: 'e', hero_media_variant: 'angle-e.fr.v2', hero_media_level: 1 };
+    expect(calls.find((c) => c[0] === 'add_to_cart')?.[1]).toMatchObject(expected);
+    expect(calls.find((c) => c[0] === 'pack_cta_click')?.[1]).toMatchObject(expected);
+  });
+
+  it('drapeau coupé (aucun attribut) : paramètres absents', () => {
+    const calls = clickWithHero(null);
+    for (const name of ['add_to_cart', 'pack_cta_click']) {
+      const params = calls.find((c) => c[0] === name)?.[1];
+      expect(params).not.toHaveProperty('hero_media_variant');
+      expect(params).not.toHaveProperty('hero_media_level');
+    }
+  });
+});

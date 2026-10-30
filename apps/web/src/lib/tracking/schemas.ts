@@ -1,6 +1,24 @@
 import { z } from 'zod';
 import type { TrackingEventCategory } from '@/lib/db/types';
 import { KIT_ANGLES } from '@/lib/kit/angle';
+import {
+  HERO_MEDIA_LEVEL_MAX,
+  HERO_MEDIA_LEVEL_MIN,
+  HERO_MEDIA_VARIANT_MAX_LENGTH,
+  HERO_MEDIA_VARIANT_PATTERN,
+} from '@/lib/kit/hero-media';
+
+/**
+ * Images du hero /kit par audience (cf. lib/kit/hero-media.ts) : valeurs de
+ * `mediaVariantTrackingValue` (`angle-e.ar.v3`, `default.any.v1`,
+ * `ab-<exp>-<bras>.fr.v1`, `legacy`, `product`) et niveau de repli 1–8.
+ */
+const heroMediaVariantSchema = z
+  .string()
+  .min(1)
+  .max(HERO_MEDIA_VARIANT_MAX_LENGTH)
+  .regex(HERO_MEDIA_VARIANT_PATTERN);
+const heroMediaLevelSchema = z.number().int().min(HERO_MEDIA_LEVEL_MIN).max(HERO_MEDIA_LEVEL_MAX);
 
 const itemSchema = z
   .object({
@@ -507,6 +525,8 @@ export const eventSchemas: Record<string, z.ZodTypeAny> = {
       cms_mode: z.enum(['scroll', 'sheet', 'ab']),
       share_pct: z.number().finite().min(0).max(100),
       kit_angle: z.union([z.enum(KIT_ANGLES), z.literal('none')]).optional(),
+      hero_media_variant: heroMediaVariantSchema.optional(),
+      hero_media_level: heroMediaLevelSchema.optional(),
     })
     .strict(),
 };

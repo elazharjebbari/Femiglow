@@ -6,22 +6,27 @@ import { HeroProduit, type HeroProduitFields } from './HeroProduit';
 import { StoriesVideoBound } from './StoriesVideoBound';
 import { resolveComponentFields } from '@/lib/components/field-resolver';
 import {
-  getKitHeroGalleryImages,
+  getKitHeroGallery,
+  kitHeroGalleryTracking,
+  kitHeroProductFallback,
   type HeroGalleryImage,
+  type KitHeroGallery,
 } from '@/lib/products/kit-hero-gallery';
+import {
+  KIT_HERO_GALLERY_MAX_TOTAL,
+  resolveHeroMediaVariantsFlag,
+} from '@/lib/kit/page-context.server';
+import { fetchPriorityProps, heroPicturePreloads } from './hero/hero-picture-props';
 import { getKitReviewStats, type ProductReviewStats } from '@/lib/products/reviews';
 import type { ResolvedFields } from '@/lib/db/types';
 import { DEFAULT_LOCALE, type Locale } from '@/i18n.config';
 import type { KitAngle } from '@/lib/kit/angle';
 import { resolveKitCtaCopy } from '@/lib/kit/cta-copy.server';
-import {
-  KIT_HERO_ANGLES_COMPONENT_KEY,
-  resolveKitHeroAngleCopy,
-} from '@/lib/kit/hero-angle-copy';
+import { KIT_HERO_ANGLES_COMPONENT_KEY, resolveKitHeroAngleCopy } from '@/lib/kit/hero-angle-copy';
 
 type HeroProduitBoundProps = Omit<
   ComponentProps<typeof HeroProduit>,
-  'galleryImages' | 'fields' | 'reviewStats' | 'kitAngle' | 'priceLocale'
+  'galleryImages' | 'fields' | 'reviewStats' | 'kitAngle' | 'priceLocale' | 'heroMediaTracking'
 > & {
   componentKey: string;
   /**
@@ -53,14 +58,21 @@ type HeroProduitBoundProps = Omit<
    * `utm_content` > cookie `fg_angle`). `null` : titre par défaut.
    */
   kitAngle?: KitAngle | null;
+  /**
+   * Galerie déjà résolue par la page (`resolveKitPageContext`) — une seule
+   * résolution par requête, partagée avec le `view_item` serveur. Absente
+   * (aperçus, tests) : résolue ici, drapeau env × CMS (sans `?hmv=off`).
+   */
+  heroGallery?: KitHeroGallery | Promise<KitHeroGallery>;
 };
 
 /**
  * RSC wrapper du hero produit. Résout :
  *  - Les champs editorial (`tagline`, `description`, chips, trust row, flags)
  *    via `resolveComponentFields(componentKey)`.
- *  - La galerie d'images (slot primary + contextuels + photos clientes) via
- *    `getKitHeroGalleryImages(productId)`.
+ *  - La galerie d'images : fournie par la page (`heroGallery`), sinon
+ *    `getKitHeroGallery` — images par audience (angle × langue) si le
+ *    drapeau est actif, sinon slot primary + contextuels + photos clientes.
  *  - Les stats d'avis (compteur + note) via `getKitReviewStats` — source
  *    unique ; sans donnée, le badge est masqué.
  *
@@ -80,51 +92,46 @@ export async function HeroProduitBound({
   taglineFallback,
   initialCoupon,
   kitAngle = null,
+  heroGallery: heroGalleryProp,
 }: HeroProduitBoundProps): Promise<JSX.Element> {
   const effectiveLocale = locale ?? DEFAULT_LOCALE;
-  const productFallback = product.images[0];
-  const [
-    resolvedFields,
-    rawGalleryImages,
-    statsOrNull,
-    tHero,
-    angleFields,
-    ctaCopy,
-  ] = await Promise.all([
-    resolveComponentFields(componentKey, effectiveLocale),
-    getKitHeroGalleryImages({
-      productId: product.id,
-      maxTotal: pickNumber(undefined, 7),
-      // Garantit que le packshot produit reste en première position de la
-      // galerie même quand aucun binding Component-Media n'est défini sur
-      // `kit-hero-produit/primary` (cas dev local sans seed admin).
-      productFallback: productFallback
-        ? {
-            src: productFallback.src,
-            alt: productFallback.alt,
-            width: productFallback.width,
-            height: productFallback.height,
-            blurDataURL: productFallback.blurDataURL,
-          }
-        : undefined,
-    }),
-    reviewStatsProp !== undefined
-      ? Promise.resolve(reviewStatsProp)
-      : getKitReviewStats(product.id),
-    // Phase 7E — strings UI du hero (kicker, CTA, économie) localisés.
-    getTranslations({
-      locale: effectiveLocale,
-      namespace: 'marketing.kit.hero',
-    }),
-    // Kit CRO v2 §3 — tous les angles en UN appel caché (pas de cache par
-    // angle) ; l'angle est choisi en mémoire. Lu seulement si un angle est
-    // présent. Base indisponible → titre par défaut.
-    kitAngle
-      ? resolveComponentFields(KIT_HERO_ANGLES_COMPONENT_KEY, effectiveLocale).catch(() => null)
-      : Promise.resolve(null),
-    // Kit CRO v2 §4 — libellés du bouton et micro-texte (`kit-cta` ▸ i18n).
-    resolveKitCtaCopy(effectiveLocale),
-  ]);
+  const [resolvedFields, heroGallery, statsOrNull, tHero, angleFields, ctaCopy] = await Promise.all(
+    [
+      resolveComponentFields(componentKey, effectiveLocale),
+      heroGalleryProp !== undefined
+        ? Promise.resolve(heroGalleryProp)
+        : resolveHeroMediaVariantsFlag().then((flagEnabled) =>
+            getKitHeroGallery({
+              productId: product.id,
+              maxTotal: KIT_HERO_GALLERY_MAX_TOTAL,
+              // Garantit que le packshot produit reste en première position de la
+              // galerie même quand aucun binding Component-Media n'est défini sur
+              // `kit-hero-produit/primary` (cas dev local sans seed admin).
+              productFallback: kitHeroProductFallback(product.images[0]),
+              locale: effectiveLocale,
+              angle: kitAngle,
+              flagEnabled,
+              fallbackAlt: displayName,
+            }),
+          ),
+      reviewStatsProp !== undefined
+        ? Promise.resolve(reviewStatsProp)
+        : getKitReviewStats(product.id),
+      // Phase 7E — strings UI du hero (kicker, CTA, économie) localisés.
+      getTranslations({
+        locale: effectiveLocale,
+        namespace: 'marketing.kit.hero',
+      }),
+      // Kit CRO v2 §3 — tous les angles en UN appel caché (pas de cache par
+      // angle) ; l'angle est choisi en mémoire. Lu seulement si un angle est
+      // présent. Base indisponible → titre par défaut.
+      kitAngle
+        ? resolveComponentFields(KIT_HERO_ANGLES_COMPONENT_KEY, effectiveLocale).catch(() => null)
+        : Promise.resolve(null),
+      // Kit CRO v2 §4 — libellés du bouton et micro-texte (`kit-cta` ▸ i18n).
+      resolveKitCtaCopy(effectiveLocale),
+    ],
+  );
 
   // Phase 7E — économie en MAD (entier) pour le libellé localisé `savings`.
   const savings = product.promoPriceCents
@@ -193,7 +200,12 @@ export async function HeroProduitBound({
   // Galerie résolue côté helper — le fallback produit est passé en option,
   // donc on est garanti d'avoir au minimum 1 image (le packshot) tant que
   // `product.images[0]` existe.
-  const galleryImages: HeroGalleryImage[] = rawGalleryImages;
+  const galleryImages: HeroGalleryImage[] = heroGallery.images;
+  // Drapeau coupé → `null` : ni attribut ni paramètre (HTML inchangé).
+  const heroMediaTracking = kitHeroGalleryTracking(heroGallery);
+  // Image principale art-dirigée : preloads explicites, un par media query
+  // (`next/image` n'en émet pas pour un `<picture>`). `[]` sinon.
+  const heroPreloads = heroPicturePreloads(galleryImages[0]);
 
   // Source unique (`getKitReviewStats`) : compteur des témoignages
   // approuvés + note réelle si elle existe. Sans donnée → badge masqué.
@@ -218,39 +230,55 @@ export async function HeroProduitBound({
             ? tHero('reviews', { count: reviewStats.reviewsCount })
             : tHero('reviews_aria', {
                 count: reviewStats.reviewsCount,
-                rating: (Math.round(reviewStats.rating * 10) / 10)
-                  .toString()
-                  .replace('.', ','),
+                rating: (Math.round(reviewStats.rating * 10) / 10).toString().replace('.', ','),
               }),
       }
     : {};
 
   return (
-    <HeroProduit
-      product={product}
-      displayName={displayName}
-      strings={{ ...heroStrings, ...reviewsStrings }}
-      reassurances={reassurances}
-      galleryImages={galleryImages}
-      fields={fields}
-      reviewStats={reviewStats}
-      observeId={observeId}
-      commanderMode={commanderMode}
-      // Rend le badge cliquable → scroll vers le bloc « Les voix de la
-      // maison » (RitualsModule, id H2="rituals-module-title"). C'est le
-      // gros bloc social proof à grande échelle, dont le compteur est le
-      // même que celui du badge. Si le module rituels n'est pas rendu (cas test),
-      // l'ancre tombe en no-op silencieux côté navigateur.
-      reviewsAnchorHref="#rituals-module-title"
-      // MOBILE : bloc stories sous les images du hero, avant le titre.
-      // Desktop : masqué ici (le bloc reste après le hero dans la page).
-      storiesSlot={<StoriesVideoBound locale={locale} variant="inline" />}
-      // Code de campagne validé côté serveur : le hero porte le prix remisé
-      // dès le premier paint, sans attendre l'hydratation.
-      initialCoupon={initialCoupon}
-      kitAngle={kitAngle}
-      priceLocale={effectiveLocale}
-    />
+    <>
+      {/* `<link>` rendus (et non `ReactDOM.preload`, qui perd `media` dans le
+          React canary de Next 14.2) : React les hisse dans `<head>` avec
+          tous leurs attributs. Absents drapeau coupé → HTML inchangé. */}
+      {heroPreloads.map((link) => (
+        <link
+          key={link.media}
+          rel="preload"
+          as="image"
+          href={link.href}
+          imageSrcSet={link.imageSrcSet}
+          imageSizes={link.imageSizes}
+          media={link.media}
+          {...fetchPriorityProps('high')}
+        />
+      ))}
+      <HeroProduit
+        product={product}
+        displayName={displayName}
+        strings={{ ...heroStrings, ...reviewsStrings }}
+        reassurances={reassurances}
+        galleryImages={galleryImages}
+        fields={fields}
+        reviewStats={reviewStats}
+        observeId={observeId}
+        commanderMode={commanderMode}
+        // Rend le badge cliquable → scroll vers le bloc « Les voix de la
+        // maison » (RitualsModule, id H2="rituals-module-title"). C'est le
+        // gros bloc social proof à grande échelle, dont le compteur est le
+        // même que celui du badge. Si le module rituels n'est pas rendu (cas test),
+        // l'ancre tombe en no-op silencieux côté navigateur.
+        reviewsAnchorHref="#rituals-module-title"
+        // MOBILE : bloc stories sous les images du hero, avant le titre.
+        // Desktop : masqué ici (le bloc reste après le hero dans la page).
+        storiesSlot={<StoriesVideoBound locale={locale} variant="inline" />}
+        // Code de campagne validé côté serveur : le hero porte le prix remisé
+        // dès le premier paint, sans attendre l'hydratation.
+        initialCoupon={initialCoupon}
+        kitAngle={kitAngle}
+        heroMediaTracking={heroMediaTracking}
+        priceLocale={effectiveLocale}
+      />
+    </>
   );
 }
 
@@ -286,12 +314,4 @@ function pickStringArray(
     .map((s) => s.trim())
     .filter((s) => s.length > 0);
   return cleaned.length > 0 ? cleaned : fallback;
-}
-
-function pickNumber(
-  field: ResolvedFields[string] | undefined,
-  fallback: number,
-): number {
-  const v = field?.value;
-  return typeof v === 'number' && Number.isFinite(v) ? v : fallback;
 }

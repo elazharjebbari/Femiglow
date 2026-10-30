@@ -1,4 +1,5 @@
 import type { VariantBreakpoint } from '@/lib/db/types';
+import type { ComponentVariantPolicy } from '@/lib/components/registry';
 
 export const BREAKPOINT_WIDTHS: Record<VariantBreakpoint, number> = {
   xs: 320,
@@ -43,3 +44,26 @@ export const DEFAULT_QUALITIES: Record<'avif' | 'webp' | 'jpeg', number> = {
   webp: 75,
   jpeg: 80,
 };
+
+/**
+ * Breakpoints à passer à `optimizeImage` selon la politique de variants
+ * déclarée sur le composant (cf. `ComponentVariantPolicy`).
+ *
+ * Seule source de vérité de cette politique, partagée par le seed
+ * (`seed-pipeline.ts`) et l'import des images générées : si demain on ajoute
+ * `og-only`, c'est ici que la logique vit.
+ */
+export function breakpointsForVariantPolicy(
+  policy: ComponentVariantPolicy | undefined,
+): VariantBreakpoint[] {
+  switch (policy) {
+    case 'with-thumbnail':
+      return THUMB_BREAKPOINTS;
+    case 'thumb-only':
+      return THUMB_ONLY_BREAKPOINTS;
+    case 'default':
+    case undefined:
+    default:
+      return DEFAULT_BREAKPOINTS;
+  }
+}

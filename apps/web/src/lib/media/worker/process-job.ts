@@ -53,6 +53,9 @@ async function processOptimize(job: MediaJob): Promise<void> {
     await updateMedia(media.id, {
       status: 'ready',
       blurhash: result.blurhash,
+      // `null` si le calcul a échoué : un flou périmé (ancienne source) est
+      // effacé, le backfill le recalculera.
+      blurDataUrl: result.blurDataUrl,
       palette: result.palette,
       phash: result.phash,
       originalWidth: result.width,

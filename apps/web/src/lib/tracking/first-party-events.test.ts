@@ -102,6 +102,30 @@ describe('eventSchemas.kit_checkout_exposure (schéma strict)', () => {
     expect(getEventCategory('kit_checkout_exposure')).toBe('custom');
   });
 
+  it('accepte hero_media_variant / hero_media_level (images par audience)', () => {
+    for (const variant of [
+      'angle-e.ar.v3',
+      'angle-temoin.any.v12',
+      'default.fr.v1',
+      'ab-hero-media-2026-11-b.fr.v1',
+      'ab-exp_1-arm_2.en.v4',
+      'legacy',
+      'product',
+    ]) {
+      expect(schema.safeParse({ ...valid, hero_media_variant: variant }).success).toBe(true);
+    }
+    expect(schema.safeParse({ ...valid, hero_media_variant: 'legacy', hero_media_level: 7 }).success).toBe(true);
+  });
+
+  it('rejette un hero_media_variant / hero_media_level hors format', () => {
+    for (const variant of ['', 'Angle-E', 'a b', '<script>', 'a'.repeat(161)]) {
+      expect(schema.safeParse({ ...valid, hero_media_variant: variant }).success).toBe(false);
+    }
+    for (const level of [0, 9, 1.5, '1']) {
+      expect(schema.safeParse({ ...valid, hero_media_level: level }).success).toBe(false);
+    }
+  });
+
   it('rejette valeurs inconnues, bornes et champs supplémentaires', () => {
     expect(schema.safeParse({ ...valid, assigned_mode: 'modal' }).success).toBe(false);
     expect(schema.safeParse({ ...valid, mode_source: 'random' }).success).toBe(false);

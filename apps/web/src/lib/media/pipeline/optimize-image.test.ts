@@ -41,6 +41,9 @@ describe('optimizeImage', () => {
       storage,
     );
     expect(result.blurhash).toMatch(/^[\x21-\x7e]+$/);
+    // Placeholder `blur_data_url` (05 §4.5) : WebP inline < 1,5 Ko.
+    expect(result.blurDataUrl).toMatch(/^data:image\/webp;base64,/);
+    expect(result.blurDataUrl!.length).toBeLessThanOrEqual(1536);
     expect(result.palette.length).toBeGreaterThan(0);
     expect(result.phash).toMatch(/^[0-9a-f]+$/);
     expect(result.variants).toHaveLength(4);
@@ -83,6 +86,11 @@ describe('optimizeImage', () => {
     // Les dimensions effectives reportées correspondent à la zone cropée.
     expect(result.width).toBe(900);
     expect(result.height).toBe(900);
+    // Le flou reflète la zone cropée (carré) et non la source paysage.
+    const blur = await sharp(
+      Buffer.from(result.blurDataUrl!.slice(result.blurDataUrl!.indexOf(',') + 1), 'base64'),
+    ).metadata();
+    expect(blur.width).toBe(blur.height);
     const variant = result.variants[0]!;
     // Variant doit être (à 1px près) carré : la résize sharp peut arrondir.
     expect(Math.abs(variant.width - variant.height)).toBeLessThanOrEqual(1);

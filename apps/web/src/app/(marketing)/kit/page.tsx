@@ -7,7 +7,8 @@ import { computePromo } from '@/lib/utils/promo';
 import { deriveEventId } from '@/lib/tracking/event-id';
 import { serverFire } from '@/lib/tracking/server/server-fire';
 import { KitAngleCookie } from '@/components/kit/KitAngleCookie';
-import { KIT_ANGLE_COOKIE, kitAngleTrackingValue, resolveKitAngle } from '@/lib/kit/angle';
+import { resolveKitPageContext } from '@/lib/kit/page-context.server';
+import { DEFAULT_LOCALE } from '@/i18n.config';
 import { productSchema } from '@/lib/seo/json-ld';
 import { resolveOgImage } from '@/lib/components/og-image';
 import { resolveSeoMetadata } from '@/lib/seo/resolve';
@@ -114,6 +115,10 @@ interface KitPageProps {
     angle?: string | string[];
     /** Angle publicitaire porté par les publicités Meta (`A-darija`, `E-fr`…). */
     utm_content?: string | string[];
+    /** Recette : `?hmv=off` coupe les images par audience pour l'URL. */
+    hmv?: string | string[];
+    /** Aperçu admin des images par audience brouillons (session requise). */
+    hmv_preview?: string | string[];
   };
 }
 
@@ -133,7 +138,23 @@ export default async function KitPage({ searchParams }: KitPageProps) {
   // des témoignages approuvés (module rituels, même chiffre que la section
   // « Les voix de la maison ») + note réelle si elle existe. Null si aucune
   // donnée : compteur et note sont masqués partout.
-  const reviewStats = await getKitReviewStats(dbProduct.id);
+  const reqCookies = cookies();
+  const reviewStatsPromise = getKitReviewStats(dbProduct.id);
+  // Kit CRO v2 §3 + images par audience (PR 4) — angle publicitaire
+  // (`?angle=` > `utm_content` > cookie), drapeau `HERO_MEDIA_VARIANTS` ×
+  // CMS × `?hmv=off`, galerie du hero résolue UNE fois : HTML, `view_item`
+  // serveur et client portent la même variante.
+  // Résolu en parallèle des stats d'avis (cookies lus en amont).
+  const [reviewStats, kitContext] = await Promise.all([
+    reviewStatsPromise,
+    resolveKitPageContext({
+      locale: DEFAULT_LOCALE,
+      searchParams,
+      cookies: reqCookies,
+      product: dbProduct,
+      fallbackAlt: content.product.name,
+    }),
+  ]);
 
   // Tracking ViewContent — fire CAPI server-side avec event_id déterministe
   // partagé avec le Pixel client (via ViewItemTracker.eventIdSeed). Meta
@@ -143,13 +164,7 @@ export default async function KitPage({ searchParams }: KitPageProps) {
   // de moins côté serveur sur 7 j). Le serveur devient la source fiable.
   // cf. docs/meta-quality-audit-2026-05/02-plan-dev-action.md step 2.6
   const reqHeaders = headers();
-  const reqCookies = cookies();
-  // Kit CRO v2 §3 — angle publicitaire : `?angle=` > `utm_content` > cookie.
-  const kitAngle = resolveKitAngle({
-    angleParam: searchParams?.angle,
-    utmContent: searchParams?.utm_content,
-    cookie: reqCookies.get(KIT_ANGLE_COOKIE)?.value,
-  });
+  const { kitAngle } = kitContext;
   const sessionId =
     reqCookies.get('fg_session_id')?.value ?? reqCookies.get('_fbp')?.value ?? null;
   const eventIdSeed = sessionId
@@ -160,27 +175,39 @@ export default async function KitPage({ searchParams }: KitPageProps) {
   // documenter l'intention — sera consommé quand le ViewItemTracker landera.
   void eventIdSeed;
   const kitPromo = computePromo(dbProduct.priceCents, dbProduct.promoPriceCents);
-  void serverFire({
-    eventName: 'view_item',
-    pageId: 'kit',
-    pageRoute: '/kit',
-    pageUrl: `https://femiglow-maroc.com/kit`,
-    params: {
-      kit_angle: kitAngleTrackingValue(kitAngle.angle),
-      currency: dbProduct.currency,
-      value: kitPromo.effectivePriceCents / 100,
-      items: [
-        {
-          item_id: dbProduct.id,
-          item_name: dbProduct.name,
-          price: kitPromo.effectivePriceCents / 100,
-          quantity: 1,
-        },
-      ],
-    },
-    headers: reqHeaders,
-    cookies: reqCookies,
-  });
+  // Aperçu brouillon admin : aucun envoi CAPI (variante non publiée).
+  // La galerie (et donc `hero_media_variant`) se résout en parallèle du
+  // rendu : l'envoi part dès qu'elle est prête, sans bloquer la page.
+  if (kitContext.shouldServerFire) {
+    void kitContext.viewItemParams
+      .then((viewItemParams) =>
+        serverFire({
+          eventName: 'view_item',
+          pageId: 'kit',
+          pageRoute: '/kit',
+          pageUrl: `https://femiglow-maroc.com/kit`,
+          params: {
+            // `kit_angle`, plus `hero_media_variant` / `hero_media_level` quand le
+            // drapeau est actif (cf. lib/kit/hero-media.ts).
+            ...viewItemParams,
+            currency: dbProduct.currency,
+            value: kitPromo.effectivePriceCents / 100,
+            items: [
+              {
+                item_id: dbProduct.id,
+                item_name: dbProduct.name,
+                price: kitPromo.effectivePriceCents / 100,
+                quantity: 1,
+              },
+            ],
+          },
+          headers: reqHeaders,
+          cookies: reqCookies,
+        }),
+      )
+      // Erreur de galerie : remontée par le hero ; ignorée ici.
+      .catch(() => undefined);
+  }
 
   // Schema.org Product :
   //  - L'admin garde l'autorité éditoriale sur name / description / offers
@@ -241,6 +268,8 @@ export default async function KitPage({ searchParams }: KitPageProps) {
     productJsonLd,
     reviewStats,
     kitAngle: kitAngle.angle,
+    // Galerie du hero résolue une seule fois (cf. resolveKitPageContext).
+    heroGallery: kitContext.heroGallery,
     // Arbre legacy (`/kit` servi sans i18n) : le bandeau promo géolocalisé
     // reste actif, comme avant.
     promoBannerEnabled: true,

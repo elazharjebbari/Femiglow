@@ -42,6 +42,35 @@ describe('ViewItemTracker', () => {
     );
   });
 
+  it('images par audience — ajoute hero_media_variant et hero_media_level', () => {
+    render(
+      <ViewItemTracker
+        itemId="kit"
+        itemName="Le pack FemiGlow"
+        priceCents={19900}
+        kitAngle="e"
+        heroMediaVariant="angle-e.ar.v3"
+        heroMediaLevel={1}
+      />,
+    );
+    expect(emitSpy).toHaveBeenCalledWith(
+      'view_item',
+      expect.objectContaining({ kit_angle: 'e', hero_media_variant: 'angle-e.ar.v3', hero_media_level: 1 }),
+      undefined,
+    );
+  });
+
+  it('images par audience — absent (drapeau coupé) ou invalide : non émis', () => {
+    render(<ViewItemTracker itemId="kit" itemName="Kit" priceCents={19900} kitAngle="e" />);
+    render(
+      <ViewItemTracker itemId="kit2" itemName="Kit" priceCents={19900} heroMediaVariant="NOT VALID" />,
+    );
+    for (const call of emitSpy.mock.calls) {
+      expect(call[1]).not.toHaveProperty('hero_media_variant');
+      expect(call[1]).not.toHaveProperty('hero_media_level');
+    }
+  });
+
   it('passes eventIdOverride when eventIdSeed prop is provided', () => {
     const seed = 'a'.repeat(32);
     render(

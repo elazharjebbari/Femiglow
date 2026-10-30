@@ -8,6 +8,7 @@ import {
   DEFAULT_QUALITIES,
 } from './breakpoints';
 import { computeBlurhash } from './blurhash';
+import { computeBlurDataUrl } from './blur-data-url';
 import { computePalette } from './palette';
 import { computePhash } from './phash';
 import { computeCropRegion, type CropRegion } from './crop-region';
@@ -57,6 +58,13 @@ export interface OptimizeImageResult {
   width: number;
   height: number;
   blurhash: string;
+  /**
+   * Placeholder `data:image/webp;base64,…` (≈ 16×20 px, < 1,5 Ko), à
+   * persister dans `media.blur_data_url` (cf. `blur-data-url.ts`).
+   * `null` si son calcul a échoué : le flou est un confort, il ne doit
+   * jamais faire échouer un upload (le backfill pourra le rattraper).
+   */
+  blurDataUrl: string | null;
   palette: Awaited<ReturnType<typeof computePalette>>;
   phash: string;
   variants: VariantArtifact[];
@@ -66,7 +74,15 @@ function checksumOf(buffer: Buffer): string {
   return `sha256-${createHash('sha256').update(buffer).digest('hex')}`;
 }
 
-function variantKey(mediaId: string, format: VariantFormat, breakpoint: VariantBreakpoint): string {
+/**
+ * Clé de stockage d'un variant. Exportée pour les traitements qui relisent
+ * un variant existant (backfill du flou : `lib/media/blur-backfill.ts`).
+ */
+export function variantStorageKey(
+  mediaId: string,
+  format: VariantFormat,
+  breakpoint: VariantBreakpoint,
+): string {
   return `media/${mediaId}/${format}/${breakpoint}.${format}`;
 }
 
@@ -135,7 +151,7 @@ export async function optimizeImage(
   const effectiveWidth = cropRegion?.width ?? origWidth;
   const effectiveHeight = cropRegion?.height ?? origHeight;
 
-  // Si on crope, on calcule blurhash/palette/phash sur la VARIANTE cropée
+  // Si on crope, on calcule blurhash/flou/palette/phash sur la VARIANTE cropée
   // pour que le placeholder reflète vraiment ce que l'utilisateur verra.
   const baseBuffer = cropRegion
     ? await sharp(buffer)
@@ -144,8 +160,9 @@ export async function optimizeImage(
         .toBuffer()
     : buffer;
 
-  const [blurhash, palette, phash] = await Promise.all([
+  const [blurhash, blurDataUrl, palette, phash] = await Promise.all([
     computeBlurhash(baseBuffer),
+    computeBlurDataUrl(baseBuffer).catch(() => null),
     computePalette(baseBuffer),
     computePhash(baseBuffer),
   ]);
@@ -162,7 +179,7 @@ export async function optimizeImage(
         cropRegion,
         flattenBackground: input.flattenBackground,
       });
-      const key = variantKey(mediaId, format, bp);
+      const key = variantStorageKey(mediaId, format, bp);
       const checksum = checksumOf(data);
       const put = await storage.put({
         key,
@@ -187,6 +204,7 @@ export async function optimizeImage(
     width: effectiveWidth,
     height: effectiveHeight,
     blurhash,
+    blurDataUrl,
     palette,
     phash,
     variants,

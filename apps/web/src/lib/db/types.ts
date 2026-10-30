@@ -274,6 +274,11 @@ export interface MediaOverrides {
    * Lue uniquement par `seed-pipeline` / worker, pas par le rendu.
    */
   cropToSlotAspect?: boolean;
+  /**
+   * Empreinte `sha256-<hex>` du fichier source ingéré (import des images
+   * générées). Idempotence et dédoublonnage : cf. `lib/media/ingest.ts`.
+   */
+  sourceChecksum?: string;
 }
 
 export interface Media {

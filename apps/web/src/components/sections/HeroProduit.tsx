@@ -19,6 +19,7 @@ import { HeroGallery } from './hero/HeroGallery';
 import { useAppliedCoupon, type AppliedCouponSeed } from '@/lib/checkout/state/use-applied-coupon';
 import { cn } from '@/lib/utils/cn';
 import { KIT_ANGLE_DATA_ATTRIBUTE, kitAngleTrackingValue, type KitAngle } from '@/lib/kit/angle';
+import { heroMediaDataAttributes, type HeroMediaTracking } from '@/lib/kit/hero-media';
 import { DEFAULT_KIT_CTA_COPY, formatCtaLabel, formatCtaPrice } from '@/lib/kit/cta-copy';
 import { computePromo } from '@/lib/utils/promo';
 import type { Product, Reassurance as ReassuranceData } from '@/lib/schemas';
@@ -133,6 +134,13 @@ export interface HeroProduitProps {
    * (rendu hors page /kit) : ni attribut ni paramètre.
    */
   kitAngle?: KitAngle | null;
+  /**
+   * Images par audience — variante et niveau de la galerie affichée. Posés
+   * en `data-hero-media-variant` / `data-hero-media-level` sur la section
+   * (lus au clic par les boutons) et envoyés avec `view_item`. `null` ou
+   * absent (drapeau coupé) : ni attribut ni paramètre — rendu inchangé.
+   */
+  heroMediaTracking?: HeroMediaTracking | null;
   /** Locale du prix affiché dans le bouton (« DH », « MAD », « درهم »). */
   priceLocale?: string;
 }
@@ -154,6 +162,7 @@ export function HeroProduit({
   storiesSlot,
   initialCoupon,
   kitAngle,
+  heroMediaTracking,
   priceLocale = 'fr',
 }: HeroProduitProps): JSX.Element {
   const promo = computePromo(product.priceCents, product.promoPriceCents);
@@ -185,6 +194,7 @@ export function HeroProduit({
   const heroCtaMicrocopy = strings?.ctaMicrocopy?.trim() || null;
   const angleAttribute =
     kitAngle !== undefined ? { [KIT_ANGLE_DATA_ATTRIBUTE]: kitAngleTrackingValue(kitAngle) } : {};
+  const heroMediaAttributes = heroMediaDataAttributes(heroMediaTracking);
   // Sans crédit : libellé serveur (déjà formaté). Avec crédit : gabarit
   // localisé recalculé, sinon défaut FR.
   const heroSavingsLabel =
@@ -209,6 +219,7 @@ export function HeroProduit({
       aria-labelledby="hero-kit-title"
       className="relative bg-creme-warm py-8 sm:py-12 lg:py-20"
       {...angleAttribute}
+      {...heroMediaAttributes}
     >
       <ViewItemTracker
         itemId={product.id}
@@ -217,6 +228,8 @@ export function HeroProduit({
         currency={product.currency}
         eventIdSeed={eventIdSeed}
         kitAngle={kitAngle !== undefined ? kitAngleTrackingValue(kitAngle) : undefined}
+        heroMediaVariant={heroMediaTracking?.variant}
+        heroMediaLevel={heroMediaTracking?.level}
       />
       <Container width="page">
         {/* `grid-cols-1` (= minmax(0,1fr)) est CRITIQUE : sans lui, la colonne

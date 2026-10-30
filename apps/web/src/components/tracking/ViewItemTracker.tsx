@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useTracking } from '@/lib/tracking/use-tracking';
+import { heroMediaTrackingParams } from '@/lib/kit/hero-media';
 
 interface Item {
   item_id: string;
@@ -31,6 +32,14 @@ interface ViewItemTrackerProps {
    * Absent hors /kit : le paramètre n'est pas émis.
    */
   kitAngle?: string;
+  /**
+   * Images par audience — variante de la galerie du hero /kit
+   * (`angle-e.ar.v3`, `legacy`…), envoyée en `hero_media_variant` avec
+   * `hero_media_level`. Absente (drapeau coupé, hors /kit) : non émise.
+   */
+  heroMediaVariant?: string;
+  /** Niveau de repli (1 à 8) associé à `heroMediaVariant`. */
+  heroMediaLevel?: number;
 }
 
 /**
@@ -48,6 +57,8 @@ export function ViewItemTracker({
   category,
   eventIdSeed,
   kitAngle,
+  heroMediaVariant,
+  heroMediaLevel,
 }: ViewItemTrackerProps) {
   const { emit } = useTracking();
   const lastFiredItemRef = useRef<string | null>(null);
@@ -66,10 +77,27 @@ export function ViewItemTracker({
     ];
     emit(
       'view_item',
-      { currency, value: priceCents / 100, items, ...(kitAngle ? { kit_angle: kitAngle } : {}) },
+      {
+        currency,
+        value: priceCents / 100,
+        items,
+        ...(kitAngle ? { kit_angle: kitAngle } : {}),
+        ...heroMediaTrackingParams({ variant: heroMediaVariant, level: heroMediaLevel }),
+      },
       eventIdSeed ? { eventIdOverride: eventIdSeed } : undefined,
     );
-  }, [emit, itemId, itemName, priceCents, currency, category, eventIdSeed, kitAngle]);
+  }, [
+    emit,
+    itemId,
+    itemName,
+    priceCents,
+    currency,
+    category,
+    eventIdSeed,
+    kitAngle,
+    heroMediaVariant,
+    heroMediaLevel,
+  ]);
 
   return null;
 }
