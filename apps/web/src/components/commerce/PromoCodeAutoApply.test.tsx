@@ -158,3 +158,92 @@ describe('PromoCodeAutoApply', () => {
     await waitFor(() => expect(state().creditCents).toBe(10000));
   });
 });
+
+describe('PromoCodeAutoApply — mémorisation 48 h du code promo', () => {
+  const H = 60 * 60 * 1000;
+
+  it('lien avec ?code= → horodate l’arrivée (départ de la fenêtre)', async () => {
+    server.use(
+      ...redeemHandlers({
+        byCode: { GLOW99: { valid: true, valueCents: 10000, kind: 'promo' } as never },
+      }),
+    );
+    search = 'code=GLOW99';
+    const before = Date.now();
+    render(<PromoCodeAutoApply />);
+    await waitFor(() => expect(state().couponUrlSeenAt).not.toBeNull());
+    expect(state().couponUrlSeenAt!).toBeGreaterThanOrEqual(before);
+  });
+
+  it('sans code dans l’URL, promo vue il y a plus de 48 h → retirée, sans appel API', async () => {
+    const calls: string[] = [];
+    server.use(
+      ...redeemHandlers({
+        byCode: { GLOW99: { valid: true, valueCents: 10000, kind: 'promo' } as never },
+      }),
+    );
+    server.events.on('request:start', ({ request }) => {
+      if (request.url.includes('/api/coupons/redeem')) calls.push(request.url);
+    });
+    useWizardStore.setState({
+      couponCode: 'GLOW99',
+      creditCents: 10000,
+      couponKind: 'promo',
+      couponUrlSeenAt: Date.now() - 49 * H,
+    });
+    render(<PromoCodeAutoApply />);
+    await waitFor(() => expect(state().couponCode).toBeNull());
+    expect(state().creditCents).toBe(0);
+    expect(state().couponUrlSeenAt).toBeNull();
+    await new Promise((r) => setTimeout(r, 30));
+    expect(calls).toHaveLength(0);
+  });
+
+  it('sans code dans l’URL, promo vue il y a moins de 48 h → gardée et re-validée', async () => {
+    server.use(
+      ...redeemHandlers({
+        byCode: { GLOW99: { valid: true, valueCents: 10000, kind: 'promo' } as never },
+      }),
+    );
+    const seen = Date.now() - 47 * H;
+    useWizardStore.setState({
+      couponCode: 'GLOW99',
+      creditCents: 10000,
+      couponKind: 'promo',
+      couponUrlSeenAt: seen,
+    });
+    render(<PromoCodeAutoApply />);
+    await new Promise((r) => setTimeout(r, 30));
+    expect(state().couponCode).toBe('GLOW99');
+    // La re-validation sans lien ne relance PAS la fenêtre.
+    expect(state().couponUrlSeenAt).toBe(seen);
+  });
+
+  it('promo mémorisée avant le correctif (sans horodatage) → fenêtre ouverte maintenant', async () => {
+    server.use(
+      ...redeemHandlers({
+        byCode: { GLOW99: { valid: true, valueCents: 10000, kind: 'promo' } as never },
+      }),
+    );
+    useWizardStore.setState({ couponCode: 'GLOW99', creditCents: 10000, couponKind: 'promo' });
+    render(<PromoCodeAutoApply />);
+    await waitFor(() => expect(state().couponUrlSeenAt).not.toBeNull());
+    expect(state().couponCode).toBe('GLOW99');
+  });
+
+  it('crédit de fidélité ancien → jamais expiré par la règle des 48 h', async () => {
+    server.use(
+      ...redeemHandlers({ byCode: { 'FG-SAUGE-7212': { valid: true, valueCents: 2000 } } }),
+    );
+    useWizardStore.setState({
+      couponCode: 'FG-SAUGE-7212',
+      creditCents: 2000,
+      couponKind: 'credit',
+      couponUrlSeenAt: Date.now() - 30 * 24 * H,
+    });
+    render(<PromoCodeAutoApply />);
+    await new Promise((r) => setTimeout(r, 30));
+    expect(state().couponCode).toBe('FG-SAUGE-7212');
+    expect(state().creditCents).toBe(2000);
+  });
+});

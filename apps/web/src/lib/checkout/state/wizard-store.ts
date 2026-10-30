@@ -148,6 +148,13 @@ export interface WizardState {
    * pour libeller correctement la ligne de réduction après reprise.
    */
   couponKind: CouponKind | null;
+  /**
+   * Horodatage (ms) de la dernière arrivée par un lien portant un code promo
+   * (`?code=`). Un code `promo` mémorisé n'est conservé que
+   * `PROMO_MEMORY_MS` (48 h) après ce dernier lien, cf. `lib/coupons/promo-memory`.
+   * `null` = jamais vu (state antérieur au correctif ou code de fidélité).
+   */
+  couponUrlSeenAt: number | null;
 
   /**
    * Code de fidélité ÉMIS pour cette commande (Phase 3), à afficher en fin de
@@ -198,6 +205,8 @@ export interface WizardState {
   setCoupon: (code: string, creditCents: number, kind?: CouponKind) => void;
   /** Phase 3 — retire le crédit (code vidé ou ré-édité → re-validation). */
   clearCoupon: () => void;
+  /** Note l'arrivée par un lien portant un code promo (départ des 48 h). */
+  markCouponUrlSeen: (at: number) => void;
   /** Phase 3 — mémorise le code de fidélité émis (affichage ThankYou). */
   setLoyalty: (loyalty: WizardState['loyalty']) => void;
   /** OWBS — signale une sync de fond dégradée (FR-11). */
@@ -272,6 +281,7 @@ const INITIAL: Omit<
   | 'setOrderId'
   | 'setCoupon'
   | 'clearCoupon'
+  | 'markCouponUrlSeen'
   | 'setLoyalty'
   | 'markSyncDegraded'
   | 'clearSyncDegraded'
@@ -296,6 +306,7 @@ const INITIAL: Omit<
   couponCode: null,
   creditCents: 0,
   couponKind: null,
+  couponUrlSeenAt: null,
   loyalty: null,
   hydrated: false,
   // wizard-kit-optim W0 — tracking enrichi (non-persisté sauf flag dismiss)
@@ -330,7 +341,9 @@ export const wizardStoreCreator: StateCreator<WizardState> = (set) => ({
       creditCents: Math.max(0, Math.round(creditCents)),
       couponKind: kind,
     }),
-  clearCoupon: () => set({ couponCode: null, creditCents: 0, couponKind: null }),
+  clearCoupon: () =>
+    set({ couponCode: null, creditCents: 0, couponKind: null, couponUrlSeenAt: null }),
+  markCouponUrlSeen: (at) => set({ couponUrlSeenAt: at }),
   setLoyalty: (loyalty) => set({ loyalty }),
   markSyncDegraded: () => set({ syncDegraded: true }),
   clearSyncDegraded: () => set({ syncDegraded: false }),
@@ -486,6 +499,9 @@ const persistOpts: PersistOptions<WizardState, Partial<WizardState>> = {
     couponCode: state.couponCode,
     creditCents: state.creditCents,
     couponKind: state.couponKind,
+    // Champ additif (absent des states antérieurs → `null` par défaut,
+    // sans migration) : départ de la fenêtre de 48 h du code promo.
+    couponUrlSeenAt: state.couponUrlSeenAt,
     loyalty: state.loyalty,
     resumeBannerDismissed: state.resumeBannerDismissed,
   }),
