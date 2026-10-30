@@ -483,6 +483,19 @@ export const eventSchemas: Record<string, z.ZodTypeAny> = {
       layout_version: z.enum(['v1', 'v2']),
     })
     .strict(),
+  // Kit CRO v2 §1 — Web Vitals réels (RUM), cf. components/tracking/WebVitalsReporter.
+  // First-party uniquement (jamais relayé aux providers, cf. first-party-events).
+  web_vitals: z
+    .object({
+      name: z.enum(['LCP', 'FCP', 'CLS', 'INP', 'TTFB']),
+      value: z.number().finite().nonnegative(),
+      rating: z.enum(['good', 'needs-improvement', 'poor']).optional(),
+      navigation_type: z.string().max(40).optional(),
+      page_route: z.string().min(1).max(300),
+      metric_id: z.string().max(80).optional(),
+      sample_rate: z.number().gt(0).max(1),
+    })
+    .strict(),
 };
 
 export type KnownEventName = keyof typeof eventSchemas;
@@ -563,6 +576,8 @@ const eventCategoryByName: Record<string, TrackingEventCategory> = {
   // Kit landing reorder (kit-landing-reorder-2026-05 L0).
   kit_section_viewed: 'engagement',
   kit_wizard_visible_first_time: 'engagement',
+  // Kit CRO v2 §1 — mesures de performance (RUM).
+  web_vitals: 'custom',
 };
 
 export function getEventCategory(name: string): TrackingEventCategory {

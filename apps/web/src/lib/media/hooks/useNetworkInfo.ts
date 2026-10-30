@@ -40,3 +40,20 @@ export function useNetworkInfo(): NetworkInfo {
   }, []);
   return info;
 }
+
+/** Réseaux jugés trop lents pour lancer un média non demandé. */
+const CONSTRAINED_EFFECTIVE_TYPES: ReadonlySet<NetworkInfo['effectiveType']> = new Set([
+  'slow-2g',
+  '2g',
+  '3g',
+]);
+
+/**
+ * `true` si l'on peut lancer un aperçu vidéo NON sollicité (autoplay
+ * décoratif) : pas de mode « économie de données » et réseau au moins 4G
+ * (ou inconnu — Safari/Firefox n'exposent pas `navigator.connection`).
+ */
+export function allowsUnrequestedMedia(info: NetworkInfo): boolean {
+  if (info.saveData) return false;
+  return !CONSTRAINED_EFFECTIVE_TYPES.has(info.effectiveType);
+}

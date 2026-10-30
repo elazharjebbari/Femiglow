@@ -46,3 +46,16 @@ jobs:
           uploadArtifacts: true
           temporaryPublicStorage: true
           runs: 1
+
+      # Kit CRO v2 §1 — landing publicitaire en conditions mobiles (preset
+      # mobile, throttling simulé 4G lente). Config séparée : LHCI n'applique
+      # qu'un seul jeu de réglages par collecte (le run ci-dessus est desktop).
+      # Assertions en `warn` uniquement → n'échoue pas le job.
+      - name: Run Lighthouse CI (mobile /kit)
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          configPath: ./.lighthouserc.mobile-kit.json
+          uploadArtifacts: true
+          artifactName: lighthouse-results-mobile-kit
+          temporaryPublicStorage: true
+          runs: 3

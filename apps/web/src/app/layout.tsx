@@ -15,6 +15,7 @@ import {
 } from '@/components/tracking/ConsentBanner';
 import { DebugOverlay } from '@/components/tracking/DebugOverlay';
 import { PixelLoader } from '@/components/tracking/PixelLoader';
+import { WebVitalsReporter } from '@/components/tracking/WebVitalsReporter';
 import { SnapPixelEvents } from '@/components/tracking/SnapPixelEvents';
 import { GtmHeadScript } from '@/components/tracking/GtmHeadScript';
 import { AttributionCaptureBridge } from '@/components/tracking/AttributionCaptureBridge';
@@ -94,6 +95,10 @@ const inter = localFont({
 // jamais. Désormais Cairo n'est plus préchargée ; en FR/EN elle n'est même pas
 // téléchargée (aucun texte ne l'applique) ; en AR elle se charge à la demande
 // en `display: swap` (fallback système le temps du fetch).
+//
+// Graisses (Kit CRO v2 §1) : 500 est conservée — les titres sont en
+// `font-weight: 500` (globals.css) et le formulaire de commande utilise
+// `font-medium` ; la retirer ferait retomber ces textes AR sur 400 ou 700.
 const cairo = Cairo({
   subsets: ['arabic'],
   weight: ['400', '500', '700'],
@@ -187,6 +192,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           attributionStrategy={attributionStrategy}
         >
           <TrackingGlobalListener />
+          {/* Kit CRO v2 §1 — Web Vitals réels → /api/track (`web_vitals`,
+              first-party, jamais relayé aux pixels). Ignoré sur /admin. */}
+          <WebVitalsReporter />
           {/* Garde-fou anti-scroll horizontal : `overflow-x-clip` confine tout
             débordement latéral (bleeds `-mx-*`, carousels, rails) SANS créer de
             scroll-container (position:sticky préservé) ni toucher le scroll
