@@ -1010,7 +1010,7 @@ export const SITE_COMPONENT_REGISTRY: SiteComponentSeed[] = [
         // (cf. lib/feature-flags/hero-media-variants.ts).
         defaultValue: false,
         description:
-          "Sans effet pour l'instant : sera lu par la PR d'affichage (pas encore livrée), et seulement si la variable d'environnement HERO_MEDIA_VARIANTS=on est posée sur le serveur. Une fois actif : affiche les images publiées dans l'onglet « Médias par audience » selon l'angle publicitaire et la langue. Désactivé = galerie actuelle.",
+          "N'a d'effet que si la variable d'environnement HERO_MEDIA_VARIANTS=on est posée sur le serveur. Activé : la galerie du hero /kit affiche les images publiées dans l'onglet « Médias par audience » selon l'angle publicitaire et la langue (repli sur la galerie actuelle quand aucun ensemble ne correspond). Désactivé = galerie actuelle, à l'identique. Réglage global, lu en français. Recette : ?hmv=off coupe pour une URL.",
         group: 'Galerie',
         order: 9,
       },

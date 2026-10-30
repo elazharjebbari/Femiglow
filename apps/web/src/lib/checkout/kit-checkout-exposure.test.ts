@@ -42,6 +42,36 @@ describe('buildKitCheckoutExposureParams', () => {
   });
 });
 
+describe('buildKitCheckoutExposureParams — images par audience', () => {
+  const input = {
+    assignment: { mode: 'scroll', source: 'ab' } as const,
+    cmsMode: 'ab' as const,
+    sharePct: 50,
+    kitAngle: 'e' as const,
+  };
+
+  it('ajoute hero_media_variant/level, conformes au schéma strict', () => {
+    const params = buildKitCheckoutExposureParams({
+      ...input,
+      heroMedia: { hero_media_variant: 'ab-hero-media-2026-11-b.fr.v1', hero_media_level: 1 },
+    });
+    expect(params).toMatchObject({
+      hero_media_variant: 'ab-hero-media-2026-11-b.fr.v1',
+      hero_media_level: 1,
+    });
+    expect(getEventSchema(KIT_CHECKOUT_EXPOSURE_EVENT)!.safeParse(params).success).toBe(true);
+  });
+
+  it('absents (drapeau coupé) ou invalides : omis, l’événement reste valide', () => {
+    for (const heroMedia of [null, {}, { hero_media_variant: 'Pas Valide', hero_media_level: 1 }]) {
+      const params = buildKitCheckoutExposureParams({ ...input, heroMedia });
+      expect(params).not.toHaveProperty('hero_media_variant');
+      expect(params).not.toHaveProperty('hero_media_level');
+      expect(getEventSchema(KIT_CHECKOUT_EXPOSURE_EVENT)!.safeParse(params).success).toBe(true);
+    }
+  });
+});
+
 describe('claimKitCheckoutExposure', () => {
   it('une seule fois par chargement de page', () => {
     expect(claimKitCheckoutExposure()).toBe(true);

@@ -214,6 +214,29 @@ describe('HeroProduit', () => {
       const { container } = renderWith();
       expect(container.querySelector('section')?.hasAttribute('data-kit-angle')).toBe(false);
     });
+
+    it('images par audience : data-hero-media-variant/level posés à côté de data-kit-angle', () => {
+      const { container } = renderWith({
+        kitAngle: 'e',
+        heroMediaTracking: { variant: 'angle-e.fr.v2', level: 1 },
+      });
+      const section = container.querySelector('section')!;
+      expect(section.getAttribute('data-kit-angle')).toBe('e');
+      expect(section.getAttribute('data-hero-media-variant')).toBe('angle-e.fr.v2');
+      expect(section.getAttribute('data-hero-media-level')).toBe('1');
+    });
+
+    it('drapeau coupé (null / absent) : HTML identique, aucun attribut hero-media', () => {
+      const withNull = renderWith({ kitAngle: 'e', heroMediaTracking: null });
+      const section = withNull.container.querySelector('section')!;
+      expect(section.hasAttribute('data-hero-media-variant')).toBe(false);
+      expect(section.hasAttribute('data-hero-media-level')).toBe(false);
+      expect(withNull.container.querySelector('picture')).toBeNull();
+      const htmlNull = withNull.container.innerHTML;
+      withNull.unmount();
+      const withoutProp = renderWith({ kitAngle: 'e' });
+      expect(withoutProp.container.innerHTML).toBe(htmlNull);
+    });
   });
 
   it('rend les 4 chips attributs', () => {

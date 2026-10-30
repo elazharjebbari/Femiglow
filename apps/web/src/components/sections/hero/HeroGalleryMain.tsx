@@ -1,8 +1,8 @@
 'use client';
 
-import NextImage from 'next/image';
 import { cn } from '@/lib/utils/cn';
 import type { HeroGalleryImage } from '@/lib/products/hero-gallery-types';
+import { HeroPicture } from './HeroPicture';
 
 export interface HeroGalleryMainProps {
   image: HeroGalleryImage;
@@ -10,7 +10,11 @@ export interface HeroGalleryMainProps {
   /** Sizes passé au composant `next/image`. */
   sizes?: string;
   className?: string;
-  /** Ratio CSS personnalisé. Default '4/5'. */
+  /**
+   * Ratio CSS personnalisé. Défaut : '4 / 5' — sauf image art-dirigée
+   * (`image.mobile`) sans ratio explicite : `aspect-[3/4] lg:aspect-[4/5]`
+   * en CSS (CLS nul à toutes les largeurs).
+   */
   aspectRatio?: string;
 }
 
@@ -29,26 +33,21 @@ export function HeroGalleryMain({
   priority = false,
   sizes = '(min-width: 1024px) 40vw, 100vw',
   className,
-  aspectRatio = '4 / 5',
+  aspectRatio,
 }: HeroGalleryMainProps): JSX.Element {
+  // Art direction sans ratio imposé : ratio par breakpoint en CSS. Sinon,
+  // style inline historique (rendu inchangé pour la galerie actuelle).
+  const responsiveAspect = Boolean(image.mobile) && aspectRatio === undefined;
   return (
     <figure
       className={cn(
         'relative w-full overflow-hidden rounded-md bg-[#E8EDE3]',
+        responsiveAspect && 'aspect-[3/4] lg:aspect-[4/5]',
         className,
       )}
-      style={{ aspectRatio }}
+      style={responsiveAspect ? undefined : { aspectRatio: aspectRatio ?? '4 / 5' }}
     >
-      <NextImage
-        src={image.src}
-        alt={image.alt}
-        fill
-        priority={priority}
-        sizes={sizes}
-        placeholder={image.blurDataURL ? 'blur' : 'empty'}
-        blurDataURL={image.blurDataURL}
-        className="object-cover"
-      />
+      <HeroPicture image={image} priority={priority} sizes={sizes} />
       {image.caption ? (
         <figcaption className="absolute bottom-2 end-2 rounded-full bg-encre/70 px-2 py-1 text-[11px] font-medium uppercase tracking-wider text-creme-warm">
           {image.caption}

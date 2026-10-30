@@ -20,6 +20,7 @@ import { useAppliedCoupon } from '@/lib/checkout/state/use-applied-coupon';
 import { openCommander } from '@/lib/checkout/commander-launcher';
 import { arriveAtCommander, type ArriveOptions } from '@/lib/checkout/wizard-arrival';
 import { readKitAngleFromDocument } from '@/lib/kit/angle';
+import { readHeroMediaTrackingFromDocument } from '@/lib/kit/hero-media';
 import { formatCtaLabel, formatCtaPrice } from '@/lib/kit/cta-copy';
 
 import { Button, type ButtonSize } from '@/components/ui/Button';
@@ -156,11 +157,15 @@ export function CommanderAnchorButton({
     // Kit CRO v2 §3 — angle publicitaire posé sur le hero /kit (`data-kit-angle`).
     // Hors /kit : aucun attribut, le paramètre n'est pas envoyé.
     const kitAngle = readKitAngleFromDocument();
+    // Images par audience — `hero_media_variant` / `hero_media_level` posés
+    // sur le hero (drapeau actif uniquement ; sinon `{}`).
+    const heroMedia = readHeroMediaTrackingFromDocument();
 
     if (trackedPriceCents !== undefined && productId && productName) {
       emit('add_to_cart', {
         kit_cta_mode: kitCtaMode,
         ...(kitAngle ? { kit_angle: kitAngle } : {}),
+        ...heroMedia,
         currency,
         value: trackedPriceCents / 100,
         items: [
@@ -181,6 +186,7 @@ export function CommanderAnchorButton({
       emit('pack_cta_click', {
         kit_cta_mode: kitCtaMode,
         ...(kitAngle ? { kit_angle: kitAngle } : {}),
+        ...heroMedia,
         source: 'pack_section',
         cta_label:
           trackingLabel ??

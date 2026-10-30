@@ -1,7 +1,15 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { memoryStore, resetMemoryStore } from '@/lib/db/client';
-import { getKitHeroGalleryImages } from './kit-hero-gallery';
+import {
+  getKitHeroGallery,
+  getKitHeroGalleryImages,
+  kitHeroGalleryTracking,
+  kitHeroProductFallback,
+  type GetKitHeroGalleryImagesOptions,
+} from './kit-hero-gallery';
 import type { ProductReviewPhoto } from '@/lib/db/types';
+import type { ResolvedComponentMediaSlots } from '@/lib/components/media-variants/resolve.server';
+import type { MediaSlotTrace } from '@/lib/components/media-variants/types';
 
 // On mocke le resolver de slot — la galerie est testée en isolation des
 // bindings Component-Media (qui ont leur propre suite). Ici on se concentre
@@ -10,7 +18,15 @@ vi.mock('@/lib/components/resolver', () => ({
   resolveComponentSlot: vi.fn(async () => null),
 }));
 
+// Résolveur « médias par audience » : seul `resolveComponentMediaSlots` est
+// simulé ; `delegatedTrace` / `mediaVariantTrackingValue` restent les vrais.
+vi.mock('@/lib/components/media-variants/resolve.server', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/components/media-variants/resolve.server')>()),
+  resolveComponentMediaSlots: vi.fn(async () => ({ slots: {}, traces: {} })),
+}));
+
 import { resolveComponentSlot } from '@/lib/components/resolver';
+import { resolveComponentMediaSlots } from '@/lib/components/media-variants/resolve.server';
 
 function makeReview(overrides: Partial<ProductReviewPhoto>): ProductReviewPhoto {
   return {
@@ -184,5 +200,332 @@ describe('getKitHeroGalleryImages', () => {
     }));
     const images = await getKitHeroGalleryImages();
     expect(images[0]?.caption).toBeUndefined();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// getKitHeroGallery — images par audience (PR 4)
+// ─────────────────────────────────────────────────────────────────────────
+
+const PRODUCT_FALLBACK = {
+  src: '/products/kit-principale.png',
+  alt: 'Pack FemiGlow',
+  width: 1200,
+  height: 1500,
+};
+
+function setTrace(slot: string, overrides: Partial<MediaSlotTrace> = {}): MediaSlotTrace {
+  return {
+    slot,
+    level: 1,
+    setId: `set-${slot}`,
+    variantDim: 'angle',
+    variantKey: 'e',
+    locale: 'ar',
+    version: 3,
+    ...overrides,
+  };
+}
+
+function mockSets(value: ResolvedComponentMediaSlots) {
+  vi.mocked(resolveComponentMediaSlots).mockResolvedValue(value);
+}
+
+/** Liaisons legacy : primary + context_1 + context_2. */
+function mockLegacyBindings() {
+  vi.mocked(resolveComponentSlot).mockImplementation(async (_key, slot) => {
+    if (slot === 'primary') return makeResolvedSlot('primary', 'me_primary', '/_media/primary.webp') as never;
+    if (slot === 'context_1') return makeResolvedSlot('context_1', 'me_ctx1', '/_media/ctx1.webp') as never;
+    if (slot === 'context_2') return makeResolvedSlot('context_2', 'me_ctx2', '/_media/ctx2.webp') as never;
+    return null;
+  });
+}
+
+function seedReviews(count: number) {
+  for (let i = 0; i < count; i++) {
+    memoryStore().productReviewPhotos.set(
+      `rp_${i}`,
+      makeReview({ id: `rp_${i}`, src: `/reviews/${i}.jpg`, displayOrder: i }),
+    );
+  }
+}
+
+const BASE = { locale: 'ar' as const, angle: 'e' as const, productFallback: PRODUCT_FALLBACK };
+
+describe('getKitHeroGallery — drapeau coupé (galerie historique à l’identique)', () => {
+  beforeEach(() => {
+    resetMemoryStore();
+    vi.mocked(resolveComponentSlot).mockReset();
+    vi.mocked(resolveComponentSlot).mockResolvedValue(null);
+    vi.mocked(resolveComponentMediaSlots).mockClear();
+  });
+
+  it('images strictement égales à getKitHeroGalleryImages (liaisons + avis)', async () => {
+    mockLegacyBindings();
+    seedReviews(3);
+    const opts: GetKitHeroGalleryImagesOptions = { productFallback: PRODUCT_FALLBACK, maxTotal: 7 };
+
+    const legacy = await getKitHeroGalleryImages(opts);
+    const gallery = await getKitHeroGallery({ ...opts, ...BASE, flagEnabled: false });
+
+    expect(gallery.images).toStrictEqual(legacy);
+    expect(gallery.variantsEnabled).toBe(false);
+    expect(gallery.trackingValue).toBe('legacy');
+    expect(gallery.level).toBe(7);
+    // Les ensembles ne sont même pas lus.
+    expect(resolveComponentMediaSlots).not.toHaveBeenCalled();
+    expect(kitHeroGalleryTracking(gallery)).toBeNull();
+  });
+
+  it('forme exacte de la galerie historique (aucun champ ajouté)', async () => {
+    mockLegacyBindings();
+    seedReviews(1);
+    const gallery = await getKitHeroGallery({ ...BASE, flagEnabled: false });
+    expect(gallery.images).toStrictEqual([
+      {
+        id: 'slot-primary-me_primary',
+        src: '/_media/primary.webp',
+        alt: 'Photo packshot kit',
+        width: 1024,
+        height: 1280,
+        blurDataURL: undefined,
+        kind: 'product',
+      },
+      {
+        id: 'slot-context_1-me_ctx1',
+        src: '/_media/ctx1.webp',
+        alt: 'Photo packshot kit',
+        width: 1024,
+        height: 1280,
+        blurDataURL: undefined,
+        kind: 'context',
+      },
+      {
+        id: 'slot-context_2-me_ctx2',
+        src: '/_media/ctx2.webp',
+        alt: 'Photo packshot kit',
+        width: 1024,
+        height: 1280,
+        blurDataURL: undefined,
+        kind: 'context',
+      },
+      {
+        id: 'review-rp_0',
+        src: '/reviews/0.jpg',
+        alt: 'Photo cliente',
+        width: 800,
+        height: 1000,
+        blurDataURL: undefined,
+        kind: 'review',
+        caption: undefined,
+      },
+    ]);
+  });
+
+  it('sans liaison : image produit de repli, valeur « product » (niveau 8)', async () => {
+    const opts = { productFallback: PRODUCT_FALLBACK };
+    const gallery = await getKitHeroGallery({ ...opts, ...BASE, flagEnabled: false });
+    expect(gallery.images).toStrictEqual(await getKitHeroGalleryImages(opts));
+    expect(gallery.images[0]?.id).toBe('product-fallback');
+    expect(gallery.trackingValue).toBe('product');
+    expect(gallery.level).toBe(8);
+  });
+
+  it('ignore `draft` drapeau coupé', async () => {
+    await getKitHeroGallery({ ...BASE, flagEnabled: false, draft: true });
+    expect(resolveComponentMediaSlots).not.toHaveBeenCalled();
+  });
+});
+
+describe('getKitHeroGallery — drapeau actif', () => {
+  beforeEach(() => {
+    resetMemoryStore();
+    vi.mocked(resolveComponentSlot).mockReset();
+    vi.mocked(resolveComponentSlot).mockResolvedValue(null);
+    vi.mocked(resolveComponentMediaSlots).mockReset();
+    vi.mocked(resolveComponentMediaSlots).mockResolvedValue({ slots: {}, traces: {} });
+  });
+
+  it('ensemble angle × langue : image principale art-dirigée, trace niveau 1', async () => {
+    mockLegacyBindings();
+    mockSets({
+      slots: {
+        primary: [
+          {
+            id: 'mset-set-primary-0',
+            src: '/_media/e-ar-desktop.webp',
+            width: 1200,
+            height: 1500,
+            blurDataURL: 'data:image/webp;base64,AAA',
+            alt: 'صورة',
+            focalX: 50,
+            focalY: 30,
+            mobile: {
+              src: '/_media/e-ar-mobile.webp',
+              width: 1200,
+              height: 1600,
+              blurDataURL: 'data:image/webp;base64,MOBILE',
+            },
+          },
+        ],
+        secondary: null,
+      },
+      traces: { primary: setTrace('primary'), secondary: setTrace('secondary', { level: 7, setId: null, variantDim: null, variantKey: null, locale: null, version: null }) },
+    });
+
+    const gallery = await getKitHeroGallery({ ...BASE, flagEnabled: true, draft: true, fallbackAlt: 'باك' });
+
+    expect(resolveComponentMediaSlots).toHaveBeenCalledWith(
+      'kit-hero-produit',
+      { locale: 'ar', variants: { angle: 'e' } },
+      { draft: true, fallbackAlt: 'باك' },
+    );
+    expect(gallery.images[0]).toStrictEqual({
+      id: 'mset-set-primary-0',
+      src: '/_media/e-ar-desktop.webp',
+      alt: 'صورة',
+      width: 1200,
+      height: 1500,
+      kind: 'product',
+      blurDataURL: 'data:image/webp;base64,AAA',
+      objectPosition: '50% 30%',
+      mobile: { src: '/_media/e-ar-mobile.webp', width: 1200, height: 1600 },
+    });
+    // Flou mobile non repris (un <source> n'a pas de placeholder).
+    expect(gallery.images[0]?.mobile).not.toHaveProperty('blurDataURL');
+    expect(gallery.trace.primary.level).toBe(1);
+    expect(gallery.trackingValue).toBe('angle-e.ar.v3');
+    expect(gallery.level).toBe(1);
+    expect(gallery.variantsEnabled).toBe(true);
+    // Résolue depuis les brouillons (aperçu admin) : jamais exposée au tracking.
+    expect(gallery.draft).toBe(true);
+    expect(kitHeroGalleryTracking(gallery)).toBeNull();
+    expect(kitHeroGalleryTracking({ ...gallery, draft: false })).toEqual({
+      variant: 'angle-e.ar.v3',
+      level: 1,
+    });
+    // La liaison legacy `primary` n'est pas consultée.
+    expect(vi.mocked(resolveComponentSlot).mock.calls.map((c) => c[1])).not.toContain('primary');
+    // Secondaires : repli legacy context_1/2 (avec identifiant du média).
+    expect(gallery.images.slice(1).map((i) => i.src)).toEqual(['/_media/ctx1.webp', '/_media/ctx2.webp']);
+    expect(gallery.images[1]?.mediaId).toBe('me_ctx1');
+    expect(gallery.trace.secondary.level).toBe(7);
+  });
+
+  it('cadrage nommé repris quand il n’y a pas de point focal', async () => {
+    mockSets({
+      slots: {
+        primary: [{ id: 'm', src: '/d.webp', width: 1, height: 1, alt: '', objectPosition: 'top' }],
+        secondary: null,
+      },
+      traces: { primary: setTrace('primary', { variantDim: 'default', variantKey: '*', locale: '*', version: 1, level: 5 }) },
+    });
+    const gallery = await getKitHeroGallery({ ...BASE, flagEnabled: true });
+    expect(gallery.images[0]?.objectPosition).toBe('top');
+    expect(gallery.images[0]).not.toHaveProperty('mobile');
+    expect(gallery.trackingValue).toBe('default.any.v1');
+    expect(gallery.level).toBe(5);
+  });
+
+  it('aucun ensemble : liaison legacy `primary` (niveau 7, « legacy »)', async () => {
+    mockLegacyBindings();
+    const gallery = await getKitHeroGallery({ ...BASE, flagEnabled: true });
+    expect(gallery.images[0]?.src).toBe('/_media/primary.webp');
+    expect(gallery.images[0]?.mediaId).toBe('me_primary');
+    expect(gallery.trackingValue).toBe('legacy');
+    expect(gallery.level).toBe(7);
+    expect(kitHeroGalleryTracking(gallery)).toEqual({ variant: 'legacy', level: 7 });
+  });
+
+  it('ni ensemble ni liaison : image produit (niveau 8, « product »)', async () => {
+    const gallery = await getKitHeroGallery({ ...BASE, flagEnabled: true });
+    expect(gallery.images).toHaveLength(1);
+    expect(gallery.images[0]?.id).toBe('product-fallback');
+    expect(gallery.trackingValue).toBe('product');
+    expect(gallery.level).toBe(8);
+    expect(gallery.draft).toBe(false);
+  });
+
+  it('flou `media.blur_data_url` repris sur le repli legacy', async () => {
+    vi.mocked(resolveComponentSlot).mockImplementation(async (_key, slot) => {
+      if (slot !== 'primary') return null;
+      const r = makeResolvedSlot('primary', 'me_p', '/_media/p.webp');
+      return { ...r, media: { ...r.media, blurDataUrl: 'data:image/webp;base64,BBB' } } as never;
+    });
+    const gallery = await getKitHeroGallery({ ...BASE, flagEnabled: true });
+    expect(gallery.images[0]?.blurDataURL).toBe('data:image/webp;base64,BBB');
+  });
+
+  it('liste `secondary` de l’ensemble : remplace context_1/2 en entier', async () => {
+    mockLegacyBindings();
+    mockSets({
+      slots: {
+        primary: null,
+        secondary: [
+          { id: 's0', src: '/_media/s0.webp', width: 1200, height: 1500, alt: 'a' },
+          { id: 's1', src: '/_media/s1.webp', width: 1200, height: 1500, alt: 'b' },
+          { id: 's2', src: '/_media/s2.webp', width: 1200, height: 1500, alt: 'c' },
+        ],
+      },
+      traces: { primary: setTrace('primary', { level: 7 }), secondary: setTrace('secondary') },
+    });
+    const gallery = await getKitHeroGallery({ ...BASE, flagEnabled: true });
+    expect(gallery.images.map((i) => [i.src, i.kind])).toEqual([
+      ['/_media/primary.webp', 'product'],
+      ['/_media/s0.webp', 'context'],
+      ['/_media/s1.webp', 'context'],
+      ['/_media/s2.webp', 'context'],
+    ]);
+    expect(vi.mocked(resolveComponentSlot).mock.calls.map((c) => c[1])).not.toContain('context_1');
+    expect(gallery.trace.secondary.level).toBe(1);
+    // La valeur de tracking suit l'image principale (legacy ici).
+    expect(gallery.trackingValue).toBe('legacy');
+  });
+
+  it('photos clientes ajoutées en queue, total plafonné à maxTotal', async () => {
+    seedReviews(6);
+    mockSets({
+      slots: {
+        primary: [{ id: 'p', src: '/_media/p.webp', width: 1, height: 1, alt: '' }],
+        secondary: [
+          { id: 's0', src: '/_media/s0.webp', width: 1, height: 1, alt: '' },
+          { id: 's1', src: '/_media/s1.webp', width: 1, height: 1, alt: '' },
+        ],
+      },
+      traces: { primary: setTrace('primary'), secondary: setTrace('secondary') },
+    });
+    const gallery = await getKitHeroGallery({ ...BASE, flagEnabled: true, maxTotal: 5 });
+    expect(gallery.images.map((i) => i.kind)).toEqual(['product', 'context', 'context', 'review', 'review']);
+    expect(gallery.images[3]?.src).toBe('/reviews/0.jpg');
+
+    const all = await getKitHeroGallery({ ...BASE, flagEnabled: true });
+    expect(all.images).toHaveLength(7);
+  });
+
+  it('includeReviews=false respecté', async () => {
+    seedReviews(2);
+    const gallery = await getKitHeroGallery({ ...BASE, flagEnabled: true, includeReviews: false });
+    expect(gallery.images.some((i) => i.kind === 'review')).toBe(false);
+  });
+
+  it('erreur de lecture des ensembles : repli legacy sans faire échouer la page', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mockLegacyBindings();
+    vi.mocked(resolveComponentMediaSlots).mockRejectedValue(new Error('db down'));
+    const gallery = await getKitHeroGallery({ ...BASE, flagEnabled: true });
+    expect(gallery.images[0]?.src).toBe('/_media/primary.webp');
+    expect(gallery.trackingValue).toBe('legacy');
+    expect(spy).toHaveBeenCalled();
+    spy.mockRestore();
+  });
+});
+
+describe('kitHeroProductFallback', () => {
+  it('reprend product.images[0] ; undefined sans image', () => {
+    expect(kitHeroProductFallback(undefined)).toBeUndefined();
+    expect(kitHeroProductFallback({ ...PRODUCT_FALLBACK, blurDataURL: 'x' })).toEqual({
+      ...PRODUCT_FALLBACK,
+      blurDataURL: 'x',
+    });
   });
 });

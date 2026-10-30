@@ -68,6 +68,7 @@ export async function KitPageLayoutV2({
   initialCoupon,
   kitAngle = null,
   promoBannerEnabled = false,
+  heroGallery,
 }: KitPageLayoutProps) {
   const effectiveLocale = locale ?? DEFAULT_LOCALE;
   // Phase 7E — strings de niveau layout (kicker/title JournalGrid) localisées.
@@ -125,6 +126,7 @@ export async function KitPageLayoutV2({
       <HeroProduitBound
         initialCoupon={initialCoupon}
         kitAngle={kitAngle}
+        heroGallery={heroGallery}
         product={dbProduct}
         reassurances={content.reassurances}
         componentKey="kit-hero-produit"

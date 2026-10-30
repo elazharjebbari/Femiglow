@@ -57,6 +57,7 @@ import {
   claimKitCheckoutExposure,
 } from '@/lib/checkout/kit-checkout-exposure';
 import { readKitAngleFromDocument } from '@/lib/kit/angle';
+import { readHeroMediaTrackingFromDocument } from '@/lib/kit/hero-media';
 import { useTracking } from '@/lib/tracking/use-tracking';
 import {
   DEFAULT_KIT_CHECKOUT_CONFIG,
@@ -181,6 +182,7 @@ function CommanderModeSync({ cmsMode, sharePct }: { cmsMode: CommanderCmsMode; s
         cmsMode: assignment.cmsMode,
         sharePct: assignment.sharePct,
         kitAngle: readKitAngleFromDocument(),
+        heroMedia: readHeroMediaTrackingFromDocument(),
       }),
     );
   }, [assignment, isReady, emit]);

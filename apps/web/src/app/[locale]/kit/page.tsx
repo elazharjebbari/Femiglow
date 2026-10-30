@@ -48,7 +48,7 @@ import { productSchema } from '@/lib/seo/json-ld';
 import { deriveEventId } from '@/lib/tracking/event-id';
 import { serverFire } from '@/lib/tracking/server/server-fire';
 import { KitAngleCookie } from '@/components/kit/KitAngleCookie';
-import { KIT_ANGLE_COOKIE, kitAngleTrackingValue, resolveKitAngle } from '@/lib/kit/angle';
+import { resolveKitPageContext } from '@/lib/kit/page-context.server';
 
 const FALLBACK_OG = {
   url: '/og/kit.svg',
@@ -72,6 +72,10 @@ interface PageProps {
     angle?: string | string[];
     /** Angle publicitaire porté par les publicités Meta (`A-darija`, `E-fr`…). */
     utm_content?: string | string[];
+    /** Recette : `?hmv=off` coupe les images par audience pour l'URL. */
+    hmv?: string | string[];
+    /** Aperçu admin des images par audience brouillons (session requise). */
+    hmv_preview?: string | string[];
   };
 }
 
@@ -211,17 +215,27 @@ export default async function KitPage({ params, searchParams }: PageProps) {
 
   // Avis — source unique (hero, bloc pack/prix, JSON-LD) : compteur des
   // témoignages approuvés + note réelle si elle existe ; null → masqués.
-  const reviewStats = await getKitReviewStats(dbProduct.id);
+  const reqCookies = cookies();
+  const reviewStatsPromise = getKitReviewStats(dbProduct.id);
+  // Kit CRO v2 §3 + images par audience (PR 4) — angle publicitaire
+  // (`?angle=` > `utm_content` > cookie), drapeau `HERO_MEDIA_VARIANTS` ×
+  // CMS × `?hmv=off`, galerie du hero résolue UNE fois : HTML, `view_item`
+  // serveur et client portent la même variante.
+  // Résolu en parallèle des stats d'avis (cookies lus en amont).
+  const [reviewStats, kitContext] = await Promise.all([
+    reviewStatsPromise,
+    resolveKitPageContext({
+      locale,
+      searchParams,
+      cookies: reqCookies,
+      product: dbProduct,
+      fallbackAlt: content.product.name,
+    }),
+  ]);
 
   // Tracking ViewContent — CAPI server-side avec pageRoute localisé.
   const reqHeaders = headers();
-  const reqCookies = cookies();
-  // Kit CRO v2 §3 — angle publicitaire : `?angle=` > `utm_content` > cookie.
-  const kitAngle = resolveKitAngle({
-    angleParam: searchParams?.angle,
-    utmContent: searchParams?.utm_content,
-    cookie: reqCookies.get(KIT_ANGLE_COOKIE)?.value,
-  });
+  const { kitAngle } = kitContext;
   const sessionId =
     reqCookies.get('fg_session_id')?.value ??
     reqCookies.get('_fbp')?.value ??
@@ -253,27 +267,39 @@ export default async function KitPage({ params, searchParams }: PageProps) {
     promoPriceCents: kitPricing.active ? kitPricing.effectivePriceCents : null,
   };
   const kitPromo = kitPricing;
-  void serverFire({
-    eventName: 'view_item',
-    pageId: 'kit',
-    pageRoute: `/${locale}/kit`,
-    pageUrl: `https://femiglow-maroc.com/${locale}/kit`,
-    params: {
-      kit_angle: kitAngleTrackingValue(kitAngle.angle),
-      currency: dbProduct.currency,
-      value: kitPromo.effectivePriceCents / 100,
-      items: [
-        {
-          item_id: dbProduct.id,
-          item_name: dbProduct.name,
-          price: kitPromo.effectivePriceCents / 100,
-          quantity: 1,
-        },
-      ],
-    },
-    headers: reqHeaders,
-    cookies: reqCookies,
-  });
+  // Aperçu brouillon admin : aucun envoi CAPI (variante non publiée).
+  // La galerie (et donc `hero_media_variant`) se résout en parallèle du
+  // rendu : l'envoi part dès qu'elle est prête, sans bloquer la page.
+  if (kitContext.shouldServerFire) {
+    void kitContext.viewItemParams
+      .then((viewItemParams) =>
+        serverFire({
+          eventName: 'view_item',
+          pageId: 'kit',
+          pageRoute: `/${locale}/kit`,
+          pageUrl: `https://femiglow-maroc.com/${locale}/kit`,
+          params: {
+            // `kit_angle`, plus `hero_media_variant` / `hero_media_level` quand le
+            // drapeau est actif (cf. lib/kit/hero-media.ts).
+            ...viewItemParams,
+            currency: dbProduct.currency,
+            value: kitPromo.effectivePriceCents / 100,
+            items: [
+              {
+                item_id: dbProduct.id,
+                item_name: dbProduct.name,
+                price: kitPromo.effectivePriceCents / 100,
+                quantity: 1,
+              },
+            ],
+          },
+          headers: reqHeaders,
+          cookies: reqCookies,
+        }),
+      )
+      // Erreur de galerie : remontée par le hero ; ignorée ici.
+      .catch(() => undefined);
+  }
 
   // Product JSON-LD — admin override + aggregateRating system-driven.
   const productFeed = buildKitProductFeed(pricedProduct, content, reviewStats);
@@ -320,6 +346,8 @@ export default async function KitPage({ params, searchParams }: PageProps) {
     reviewStats,
     locale,
     kitAngle: kitAngle.angle,
+    // Galerie du hero résolue une seule fois (cf. resolveKitPageContext).
+    heroGallery: kitContext.heroGallery,
     // Arbre localisé (y compris `/kit` réécrit vers `/fr/kit`) : pas de
     // bandeau promo géolocalisé, comme en production avant la réécriture.
     promoBannerEnabled: false,

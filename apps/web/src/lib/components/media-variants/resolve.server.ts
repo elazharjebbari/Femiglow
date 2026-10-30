@@ -8,7 +8,7 @@
  * l'appelant d'appliquer les liaisons legacy (7) puis le produit (8), et de
  * corriger la trace via `delegatedTrace(slot, 8)` si besoin.
  *
- * Rien n'est encore branché sur les pages (PR 4).
+ * Consommé par `getKitHeroGallery` (lib/products/kit-hero-gallery.ts).
  *
  * cf. docs/hero-media-par-angle/05-architecture-technique.md §4.4
  */

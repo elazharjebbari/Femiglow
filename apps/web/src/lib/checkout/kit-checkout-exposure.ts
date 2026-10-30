@@ -17,6 +17,7 @@
 
 import type { CommanderAssignment, CommanderCmsMode } from '@/lib/checkout/commander-mode';
 import type { KitAngle } from '@/lib/kit/angle';
+import { heroMediaTrackingParams, type HeroMediaTrackingParams } from '@/lib/kit/hero-media';
 
 export const KIT_CHECKOUT_EXPOSURE_EVENT = 'kit_checkout_exposure';
 
@@ -30,6 +31,9 @@ export type KitCheckoutExposureParams = {
   cms_mode: CommanderCmsMode;
   share_pct: number;
   kit_angle?: KitAngle | 'none';
+  /** Images par audience (drapeau actif uniquement), cf. `lib/kit/hero-media.ts`. */
+  hero_media_variant?: string;
+  hero_media_level?: number;
 };
 
 export interface KitCheckoutExposureInput {
@@ -38,6 +42,8 @@ export interface KitCheckoutExposureInput {
   sharePct: number;
   /** Angle publicitaire posé sur le hero (`data-kit-angle`), si présent. */
   kitAngle?: KitAngle | 'none' | null;
+  /** Variante d'images du hero (`readHeroMediaTrackingFromDocument`), si présente. */
+  heroMedia?: HeroMediaTrackingParams | null;
 }
 
 export function buildKitCheckoutExposureParams({
@@ -45,6 +51,7 @@ export function buildKitCheckoutExposureParams({
   cmsMode,
   sharePct,
   kitAngle,
+  heroMedia,
 }: KitCheckoutExposureInput): KitCheckoutExposureParams {
   return {
     assigned_mode: assignment.mode,
@@ -52,6 +59,13 @@ export function buildKitCheckoutExposureParams({
     cms_mode: cmsMode,
     share_pct: Math.min(100, Math.max(0, Number.isFinite(sharePct) ? sharePct : 0)),
     ...(kitAngle ? { kit_angle: kitAngle } : {}),
+    // Re-validé : une valeur hors format serait rejetée par le schéma strict
+    // et ferait perdre tout l'événement.
+    ...heroMediaTrackingParams(
+      heroMedia
+        ? { variant: heroMedia.hero_media_variant, level: heroMedia.hero_media_level }
+        : null,
+    ),
   };
 }
 

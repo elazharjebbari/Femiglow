@@ -331,6 +331,26 @@ describe('KitCommanderSection — exposition A/B (kit_checkout_exposure)', () =>
     });
     hero.remove();
   });
+
+  it('images par audience : hero_media_variant/level lus sur le hero', async () => {
+    const hero = document.createElement('section');
+    hero.setAttribute('data-kit-angle', 'e');
+    hero.setAttribute('data-hero-media-variant', 'angle-e.ar.v3');
+    hero.setAttribute('data-hero-media-level', '1');
+    document.body.appendChild(hero);
+    renderPage({ ctaMode: 'scroll', sheetSharePct: 50 });
+    await waitFor(() => expect(exposureCalls()).toHaveLength(1));
+    expect(exposureCalls()[0]![1]).toEqual({
+      assigned_mode: 'scroll',
+      mode_source: 'cms',
+      cms_mode: 'scroll',
+      share_pct: 50,
+      kit_angle: 'e',
+      hero_media_variant: 'angle-e.ar.v3',
+      hero_media_level: 1,
+    });
+    hero.remove();
+  });
 });
 
 describe('KitCommanderSection — clic avant la synchronisation du mode', () => {

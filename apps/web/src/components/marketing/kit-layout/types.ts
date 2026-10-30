@@ -10,6 +10,7 @@ import type { ProductReviewStats } from '@/lib/products/reviews';
 import type { Locale } from '@/i18n.config';
 import type { AppliedCouponSeed } from '@/lib/checkout/state/use-applied-coupon';
 import type { KitAngle } from '@/lib/kit/angle';
+import type { KitHeroGallery } from '@/lib/products/kit-hero-gallery';
 
 export interface KitPageLayoutProps {
   /** Contenu CMS structuré (composition, faq, comparatif, testimonials, etc.). */
@@ -56,4 +57,12 @@ export interface KitPageLayoutProps {
    *    comportement de production. Absent → `false`.
    */
   promoBannerEnabled?: boolean;
+  /**
+   * Galerie du hero lancée par la page (`resolveKitPageContext`) : une seule
+   * résolution par requête, partagée par le HTML et le tracking. Promesse
+   * acceptée : elle s'exécute en parallèle des autres lectures du hero.
+   * Porte aussi la variante de tracking (`kitHeroGalleryTracking`).
+   * Absente → `HeroProduitBound` la résout lui-même (aperçus, tests).
+   */
+  heroGallery?: KitHeroGallery | Promise<KitHeroGallery>;
 }

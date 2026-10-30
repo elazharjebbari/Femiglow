@@ -10,8 +10,8 @@
  *     `false`) — coupe-circuit immédiat, sans déploiement.
  *  3. Recette : `?hmv=off` désactive pour une URL.
  *
- * Rien n'est encore branché sur les pages (PR 4) : ce module ne change
- * aucun rendu.
+ * Évalué une fois par requête par `lib/kit/page-context.server.ts` (pages
+ * /kit), qui lit le champ CMS puis résout la galerie du hero.
  *
  * Référence : `docs/hero-media-par-angle/05-architecture-technique.md` §4.9.
  */
