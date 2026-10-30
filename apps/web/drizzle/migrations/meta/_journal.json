@@ -610,6 +610,13 @@
       "when": 1793221274022,
       "tag": "0086_order_shipping_cents",
       "breakpoints": true
+    },
+    {
+      "idx": 87,
+      "version": "7",
+      "when": 1793394259275,
+      "tag": "0087_component_media_sets",
+      "breakpoints": true
     }
   ]
 }

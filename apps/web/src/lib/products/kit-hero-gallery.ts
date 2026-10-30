@@ -21,6 +21,7 @@ import { asc, eq, and } from 'drizzle-orm';
 import { db, memoryStore } from '@/lib/db/client';
 import { productReviewPhotos } from '@/lib/db/schema';
 import { resolveComponentSlot } from '@/lib/components/resolver';
+import { pickHeroVariantUrl } from '@/lib/media/pick-variant';
 import type { HeroGalleryImage, HeroGalleryImageKind } from './hero-gallery-types';
 
 export type { HeroGalleryImage, HeroGalleryImageKind } from './hero-gallery-types';
@@ -178,30 +179,6 @@ function slotToImage(
     blurDataURL: m.blurhash ? undefined : undefined, // TODO: dériver depuis blurhash
     kind,
   };
-}
-
-/**
- * Pick une variant adaptée au hero (priorité décroissante) :
- * `xl` > `lg` > `md` > `sm` > `xs`, format `webp` > `avif` > `jpeg`.
- *
- * Pourquoi `webp` en premier ? Universal browser support (95 %+ Q4 2026), et
- * pas besoin de logique de négociation côté client (`MediaImage` server faisait
- * `<picture><source>` pour AVIF, mais on est en client component ici).
- */
-function pickHeroVariantUrl(media: NonNullable<Awaited<ReturnType<typeof resolveComponentSlot>>>['media']): string | null {
-  if (!media) return null;
-  const variants = (media as { variants?: Array<{ url: string; breakpoint: string | null; format: string }> }).variants;
-  if (!variants || variants.length === 0) return null;
-  const sizes = ['xl', 'lg', 'md', 'sm', 'xs'];
-  const formats = ['webp', 'avif', 'jpeg'];
-  for (const size of sizes) {
-    for (const format of formats) {
-      const v = variants.find((x) => x.breakpoint === size && x.format === format);
-      if (v?.url) return v.url;
-    }
-  }
-  // Aucun match strict — premier variant disponible.
-  return variants[0]?.url ?? null;
 }
 
 function rowToImage(row: {

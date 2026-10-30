@@ -25,6 +25,42 @@ function toRecord(row: unknown): SiteComponent {
   return row as SiteComponent;
 }
 
+/** Clé de `metadata` possédée par le registre (politique médias par audience). */
+export const MEDIA_VARIANTS_METADATA_KEY = 'mediaVariants';
+
+/**
+ * Fusionne la metadata du registre et celle déjà en base.
+ *  - Clés libres : la valeur en base gagne (personnalisation admin préservée).
+ *  - `mediaVariants` : possédée par le registre → toujours réécrite depuis
+ *    `seed.mediaVariants`, et retirée si le registre ne la déclare plus.
+ */
+export function mergeSeedMetadata(
+  seed: SiteComponentSeed,
+  existing: Record<string, unknown> | null | undefined,
+): Record<string, unknown> {
+  const merged: Record<string, unknown> = { ...(seed.metadata ?? {}), ...(existing ?? {}) };
+  if (seed.mediaVariants) {
+    merged[MEDIA_VARIANTS_METADATA_KEY] = seed.mediaVariants;
+  } else {
+    delete merged[MEDIA_VARIANTS_METADATA_KEY];
+  }
+  return merged;
+}
+
+/**
+ * Applique un PATCH admin de `metadata`. `mediaVariants` est possédée par le
+ * registre : la valeur du PATCH est ignorée (ajout, modification ou `null`)
+ * et la valeur en base est conservée telle quelle.
+ */
+export function mergeAdminMetadata(
+  existing: Record<string, unknown> | null | undefined,
+  patch: Record<string, unknown> | null | undefined,
+): Record<string, unknown> {
+  const safePatch: Record<string, unknown> = { ...(patch ?? {}) };
+  delete safePatch[MEDIA_VARIANTS_METADATA_KEY];
+  return { ...(existing ?? {}), ...safePatch };
+}
+
 export async function listSiteComponents(opts?: {
   pageGroup?: string;
 }): Promise<SiteComponent[]> {
@@ -103,7 +139,8 @@ export async function upsertSiteComponentFromSeed(
       defaultFetchPriority: seed.defaultFetchPriority,
       supportsAnimation: seed.supportsAnimation,
       // metadata : on merge mais on ne sur-écrit pas les clés admin
-      metadata: { ...(seed.metadata ?? {}), ...existing.metadata },
+      // (sauf `mediaVariants`, possédée par le registre).
+      metadata: mergeSeedMetadata(seed, existing.metadata),
       updatedAt: now,
     };
     const drizzle = db();
@@ -146,7 +183,7 @@ export async function upsertSiteComponentFromSeed(
     defaultLoadingStrategy: seed.defaultLoadingStrategy,
     defaultFetchPriority: seed.defaultFetchPriority,
     supportsAnimation: seed.supportsAnimation,
-    metadata: seed.metadata ?? {},
+    metadata: mergeSeedMetadata(seed, null),
     createdAt: now,
     updatedAt: now,
   };
@@ -174,7 +211,7 @@ export async function updateSiteComponent(
     defaultLoadingStrategy: input.defaultLoadingStrategy ?? existing.defaultLoadingStrategy,
     defaultFetchPriority: input.defaultFetchPriority ?? existing.defaultFetchPriority,
     supportsAnimation: input.supportsAnimation ?? existing.supportsAnimation,
-    metadata: { ...existing.metadata, ...(input.metadata ?? {}) },
+    metadata: mergeAdminMetadata(existing.metadata, input.metadata),
     updatedAt: now,
   };
   const drizzle = db();

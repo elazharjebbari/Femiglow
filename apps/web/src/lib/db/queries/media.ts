@@ -332,13 +332,60 @@ export async function restoreMedia(id: string): Promise<void> {
   store.media.set(id, { ...m, deletedAt: null, updatedAt: now });
 }
 
+/**
+ * Levée quand un média encore référencé par un ensemble de médias par
+ * audience (`component_media_set_items`) est supprimé définitivement.
+ * En Postgres, c'est la FK `ON DELETE RESTRICT` qui refuse (code 23503) ;
+ * le mode mémoire reproduit la même règle avec cette erreur.
+ */
+export class MediaInUseError extends Error {
+  code = 'media_in_use';
+  constructor(public mediaId: string) {
+    super(`Media ${mediaId} is referenced by a component media set`);
+  }
+}
+
+/**
+ * Vrai si `err` (postgres-js, PGlite ou enveloppe Drizzle via `cause`) est
+ * une violation de FK (23503) due à `component_media_set_items`. Sans nom
+ * de contrainte exploitable, tout 23503 sur `media` est traité comme tel.
+ */
+function isMediaSetItemsFkViolation(err: unknown): boolean {
+  let cur: unknown = err;
+  for (let depth = 0; depth < 4 && cur && typeof cur === 'object'; depth += 1) {
+    const e = cur as { code?: unknown; constraint_name?: unknown; constraint?: unknown; table_name?: unknown; table?: unknown };
+    if (e.code === '23503') {
+      const name = e.constraint_name ?? e.constraint;
+      const table = e.table_name ?? e.table;
+      if (typeof name === 'string') return name.startsWith('component_media_set_items_');
+      if (typeof table === 'string') return table === 'component_media_set_items';
+      return true;
+    }
+    cur = (cur as { cause?: unknown }).cause;
+  }
+  return false;
+}
+
 export async function hardDeleteMedia(id: string): Promise<void> {
   const drizzle = db();
   if (drizzle) {
-    await drizzle.delete(schema.media).where(eq(schema.media.id, id));
+    try {
+      await drizzle.delete(schema.media).where(eq(schema.media.id, id));
+    } catch (err) {
+      // FK `ON DELETE RESTRICT` (component_media_set_items) → même erreur
+      // métier qu'en mémoire (parité, → 409 côté route).
+      if (isMediaSetItemsFkViolation(err)) throw new MediaInUseError(id);
+      throw err;
+    }
     return;
   }
   const store = memoryStore();
+  // Équivalent mémoire de la FK `ON DELETE RESTRICT` (component_media_set_items).
+  for (const item of store.componentMediaSetItems.values()) {
+    if (item.mediaId === id || item.mobileMediaId === id) {
+      throw new MediaInUseError(id);
+    }
+  }
   store.media.delete(id);
   for (const v of Array.from(store.mediaVariants.values())) {
     if (v.mediaId === id) store.mediaVariants.delete(v.id);
