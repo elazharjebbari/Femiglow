@@ -58,6 +58,8 @@
     "check:event-emit-patterns": "tsx scripts/check-event-emit-patterns.ts",
     "smoke:content-studio": "node --env-file=.env --import tsx scripts/smoke-content-studio.ts",
     "backfill:traffic-source": "tsx scripts/backfill-traffic-source.ts",
+    "media:backfill-blur": "tsx scripts/backfill-media-blur.ts",
+    "import:component-media": "tsx scripts/import-component-media.ts",
     "chat:export-golden": "tsx scripts/chat-export-golden.ts",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",

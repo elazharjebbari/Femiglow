@@ -54,6 +54,8 @@ describe('worker.process-job', () => {
     const after = await findMediaById(media.id);
     expect(after?.status).toBe('ready');
     expect(after?.blurhash).toBeTruthy();
+    // Placeholder `blur_data_url` persisté par le worker (05 §4.5).
+    expect(after?.blurDataUrl).toMatch(/^data:image\/webp;base64,/);
     const variants = await listVariants(media.id);
     expect(variants.length).toBeGreaterThan(0);
   }, 30_000);

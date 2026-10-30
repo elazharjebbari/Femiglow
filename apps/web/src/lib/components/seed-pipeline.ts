@@ -2,10 +2,10 @@
  * Seed pipeline — `docs/images/values/<group>/*.png` → Media + Binding.
  *
  * Étapes pour chaque image :
- *   1. Lire le PNG depuis docs/images/values.
- *   2. Optimize via `optimizeImage` (génère AVIF/WebP/JPEG aux 6 breakpoints).
- *   3. Insère un `Media` (status=ready) avec alt seedé.
- *   4. Crée les `MediaVariant` produits.
+ *   1-4. `ingestImageBuffer` (`lib/media/ingest.ts`, partagé avec l'import
+ *      des images générées) : lit le PNG, crée le `Media` avec l'alt seedé,
+ *      optimise (AVIF/WebP/JPEG, blurhash, `blur_data_url`), enregistre les
+ *      `MediaVariant` et passe le média en `ready`.
  *   5. Upsert le `componentMediaBindings` (componentKey, slot) :
  *      - À la CRÉATION du binding : `isActive=true` par défaut (fresh-seed
  *        = tout actif, pas d'admin override à protéger).
@@ -23,12 +23,6 @@
  */
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import {
-  createMedia,
-  findMediaBySlug,
-  updateMedia,
-} from '@/lib/db/queries/media';
-import { upsertVariant } from '@/lib/db/queries/media-variants';
 import { upsertSiteComponentFromSeed } from '@/lib/db/queries/site-components';
 import {
   getBindingBySlot,
@@ -44,17 +38,11 @@ import {
   listBindingsByComponent,
 } from '@/lib/db/queries/component-fields';
 import { getSiteComponentByKey } from '@/lib/db/queries/site-components';
-import { optimizeImage } from '@/lib/media/pipeline/optimize-image';
-import { mediaVariantsHealthy } from '@/lib/media/heal';
-import {
-  DEFAULT_BREAKPOINTS,
-  THUMB_BREAKPOINTS,
-  THUMB_ONLY_BREAKPOINTS,
-} from '@/lib/media/pipeline/breakpoints';
+import { ingestImageBuffer } from '@/lib/media/ingest';
+import { breakpointsForVariantPolicy } from '@/lib/media/pipeline/breakpoints';
 import {
   findComponentSeed,
   SITE_COMPONENT_REGISTRY,
-  type ComponentVariantPolicy,
   type SiteComponentSeed,
 } from './registry';
 import type { VariantBreakpoint } from '@/lib/db/types';
@@ -166,30 +154,6 @@ function inferLoadingStrategy(
 }
 
 /**
- * Calcule les breakpoints à passer à `optimizeImage` selon la politique
- * déclarée sur le composant (cf. `ComponentVariantPolicy`).
- *
- * Cette fonction est la *seule* source de vérité pour la politique de
- * variants côté seed : si demain on ajoute `with-thumbnail-only-mobile`
- * ou `og-only`, c'est ici que la logique vit. Les composants déclarent
- * leur politique en metadata, le pipeline applique.
- */
-function breakpointsForPolicy(
-  policy: ComponentVariantPolicy | undefined,
-): VariantBreakpoint[] {
-  switch (policy) {
-    case 'with-thumbnail':
-      return THUMB_BREAKPOINTS;
-    case 'thumb-only':
-      return THUMB_ONLY_BREAKPOINTS;
-    case 'default':
-    case undefined:
-    default:
-      return DEFAULT_BREAKPOINTS;
-  }
-}
-
-/**
  * À partir d'un (composant, slotKey) donné, retourne les options à passer
  * à `optimizeImage`. Couvre :
  *  - les breakpoints (cf. `ComponentVariantPolicy`),
@@ -211,7 +175,7 @@ export function optimizeOptionsForSeed(
   flattenBackground?: string;
 } {
   const slotDef = seed.slots.find((s) => s.key === slotKey);
-  const breakpoints = breakpointsForPolicy(seed.variantPolicy);
+  const breakpoints = breakpointsForVariantPolicy(seed.variantPolicy);
   const out: ReturnType<typeof optimizeOptionsForSeed> = { breakpoints };
   if (slotDef?.cropToAspect && slotDef.aspectRatioHint) {
     out.targetAspectRatio = slotDef.aspectRatioHint;
@@ -561,102 +525,31 @@ export async function seedFromDocs(opts: SeedOptions = {}): Promise<SeedReport> 
         continue;
       }
 
-      let media = await findMediaBySlug(slug);
-
-      // Heal automatique : si le media est déjà ready mais ses variantes
-      // physiques manquent sur disque (driver local), on force la
-      // ré-optimisation comme si `--force` avait été passé. Sans ça, un
-      // reset soft re-seed la DB mais laisse l'utilisateur avec des 404
-      // partout.
-      const mediaHealthy = media ? await mediaVariantsHealthy(media.id) : true;
-      const shouldOptimize = !media || opts.force || !mediaHealthy;
-
-      if (!media) {
-        const buf = await fs.readFile(path.join(root, sourcePath));
-        const seedOptimize = optimizeOptionsForSeed(seed, mapping.slot);
-        media = await createMedia({
-          kind: 'image',
-          source: 'upload',
-          slug,
-          alt: altFor(sourcePath),
-          originalFilename: basename,
-          originalSizeBytes: buf.byteLength,
-          originalMime: 'image/png',
-          status: 'processing',
-          // On persiste les breakpoints utilisés en `overrides` pour qu'une
-          // re-optimisation déclenchée par l'admin (worker `process-job`)
-          // applique la même politique que le seed.
-          overrides: { breakpoints: seedOptimize.breakpoints },
-        });
-
-        const optim = await optimizeImage({
-          mediaId: media.id,
-          buffer: buf,
-          ...seedOptimize,
-        });
-        for (const v of optim.variants) {
-          await upsertVariant({
-            mediaId: media.id,
-            format: v.format,
-            breakpoint: v.breakpoint,
-            width: v.width,
-            height: v.height,
-            quality: v.quality,
-            sizeBytes: v.sizeBytes,
-            url: v.url,
-            checksum: v.checksum,
-          });
-        }
-        media = await updateMedia(media.id, {
-          status: 'ready',
-          blurhash: optim.blurhash,
-          phash: optim.phash,
-          palette: optim.palette,
-          originalWidth: optim.width,
-          originalHeight: optim.height,
-        });
+      // Ingestion partagée avec l'import des images générées
+      // (`lib/media/ingest.ts`) : création, ou ré-optimisation si `force`
+      // ou si les variants physiques manquent (heal automatique : un reset
+      // soft re-seed la DB mais laisserait sinon des 404 partout). Le
+      // fichier n'est lu que si un traitement est nécessaire.
+      const { breakpoints, ...optimize } = optimizeOptionsForSeed(seed, mapping.slot);
+      const ingested = await ingestImageBuffer({
+        buffer: () => fs.readFile(path.join(root, sourcePath)),
+        filename: basename,
+        slug,
+        alt: altFor(sourcePath),
+        mime: 'image/png',
+        // Breakpoints mémorisés en `overrides` : une re-optimisation
+        // déclenchée par l'admin (worker `process-job`) applique la même
+        // politique que le seed.
+        breakpoints,
+        optimize,
+        force: !!opts.force,
+        forceAlt: !!opts.forceAlt,
+      });
+      const media = ingested.media;
+      if (ingested.status === 'created') {
         report.images.seeded += 1;
         itemStatus = 'seeded';
-      } else if (shouldOptimize) {
-        const buf = await fs.readFile(path.join(root, sourcePath));
-        const seedOptimize = optimizeOptionsForSeed(seed, mapping.slot);
-        // Synchronise les overrides si la politique du registre a évolué
-        // depuis le dernier seed (ex : on flag un composant en
-        // `with-thumbnail` pour la première fois, ou on bascule un slot
-        // en `cropToAspect`).
-        media = await updateMedia(media.id, {
-          overrides: {
-            ...(media.overrides ?? {}),
-            breakpoints: seedOptimize.breakpoints,
-          },
-        });
-        const optim = await optimizeImage({
-          mediaId: media.id,
-          buffer: buf,
-          ...seedOptimize,
-        });
-        for (const v of optim.variants) {
-          await upsertVariant({
-            mediaId: media.id,
-            format: v.format,
-            breakpoint: v.breakpoint,
-            width: v.width,
-            height: v.height,
-            quality: v.quality,
-            sizeBytes: v.sizeBytes,
-            url: v.url,
-            checksum: v.checksum,
-          });
-        }
-        media = await updateMedia(media.id, {
-          status: 'ready',
-          blurhash: optim.blurhash,
-          phash: optim.phash,
-          palette: optim.palette,
-          originalWidth: optim.width,
-          originalHeight: optim.height,
-          ...(opts.forceAlt ? { alt: altFor(sourcePath) } : {}),
-        });
+      } else if (ingested.status === 'reprocessed') {
         report.images.seeded += 1;
         itemStatus = 'forced';
       } else {
@@ -711,7 +604,7 @@ export async function seedFromDocs(opts: SeedOptions = {}): Promise<SeedReport> 
       await upsertBinding({
         componentId: cmp.id,
         slot: mapping.slot,
-        mediaId: media!.id,
+        mediaId: media.id,
         loadingStrategy: inferLoadingStrategy(seed.key, mapping.slot),
         fetchPriority: seed.defaultFetchPriority,
         ...(isActiveDecision !== undefined ? { isActive: isActiveDecision } : {}),

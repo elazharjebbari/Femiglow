@@ -69,6 +69,8 @@ export interface UpdateMediaInput {
   isHero?: boolean;
   overrides?: MediaOverrides;
   blurhash?: string | null;
+  /** Placeholder `data:` (colonne `blur_data_url`), cf. `lib/media/pipeline/blur-data-url.ts`. */
+  blurDataUrl?: string | null;
   palette?: PaletteEntry[];
   phash?: string | null;
   originalWidth?: number | null;
@@ -198,6 +200,81 @@ export async function findMediaByPhash(
     (m) =>
       m.phash === phash && m.deletedAt === null && (!opts.excludeId || m.id !== opts.excludeId),
   );
+}
+
+/**
+ * Média image (non supprimé) dont la source ingérée a cette empreinte
+ * (`overrides.sourceChecksum`, posée par `lib/media/ingest.ts`). Sert au
+ * dédoublonnage de l'import : deux fichiers identiques octet pour octet
+ * partagent le même média. Le plus ancien gagne (ordre stable).
+ */
+export async function findMediaBySourceChecksum(checksum: string): Promise<Media | null> {
+  const drizzle = db();
+  if (drizzle) {
+    const rows = await drizzle
+      .select()
+      .from(schema.media)
+      .where(
+        and(
+          dsql`${schema.media.overrides}->>'sourceChecksum' = ${checksum}`,
+          eq(schema.media.kind, 'image'),
+          isNull(schema.media.deletedAt),
+        ),
+      )
+      .orderBy(asc(schema.media.createdAt), asc(schema.media.id))
+      .limit(1);
+    const r = rows[0];
+    return r ? rowToMedia(r as Record<string, unknown>) : null;
+  }
+  const matches = Array.from(memoryStore().media.values())
+    .filter(
+      (m) =>
+        m.kind === 'image' &&
+        m.deletedAt === null &&
+        m.overrides?.sourceChecksum === checksum,
+    )
+    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime() || a.id.localeCompare(b.id));
+  return matches[0] ?? null;
+}
+
+/**
+ * Page de médias image exploitables (`ready` / `passthrough`, non
+ * supprimés) sans placeholder `blur_data_url`, triés par id (pagination
+ * par curseur `afterId`, stable même si des lignes sont mises à jour
+ * entre deux pages). Utilisé par `scripts/backfill-media-blur.ts`.
+ */
+export async function listImageMediaWithoutBlur(
+  opts: { afterId?: string | null; limit?: number } = {},
+): Promise<Media[]> {
+  const limit = Math.min(Math.max(opts.limit ?? 100, 1), 1000);
+  const drizzle = db();
+  if (drizzle) {
+    const conditions = [
+      eq(schema.media.kind, 'image'),
+      isNull(schema.media.deletedAt),
+      isNull(schema.media.blurDataUrl),
+      inArray(schema.media.status, ['ready', 'passthrough']),
+    ];
+    if (opts.afterId) conditions.push(dsql`${schema.media.id} > ${opts.afterId}`);
+    const rows = await drizzle
+      .select()
+      .from(schema.media)
+      .where(and(...conditions))
+      .orderBy(asc(schema.media.id))
+      .limit(limit);
+    return rows.map((r) => rowToMedia(r as Record<string, unknown>));
+  }
+  return Array.from(memoryStore().media.values())
+    .filter(
+      (m) =>
+        m.kind === 'image' &&
+        m.deletedAt === null &&
+        !m.blurDataUrl &&
+        (m.status === 'ready' || m.status === 'passthrough') &&
+        (!opts.afterId || m.id > opts.afterId),
+    )
+    .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+    .slice(0, limit);
 }
 
 export async function listMedia(filters: MediaFilters = {}): Promise<MediaListResult> {

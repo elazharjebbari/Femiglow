@@ -180,6 +180,7 @@ export async function runMediaSeed(
       await updateMedia(media.id, {
         status: 'ready',
         blurhash: optim.blurhash,
+        blurDataUrl: optim.blurDataUrl,
         palette: optim.palette,
         phash: optim.phash,
         originalWidth: optim.width,
