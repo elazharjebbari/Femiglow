@@ -207,10 +207,11 @@ const KIT_HERO_ANGLE_COPY: ReadonlyArray<{
   {
     angle: 'e',
     name: 'Angle E',
-    brief: '« salon ou 99 DH » — le rendu du salon à la maison, pour le prix du pack avec le code de la publicité.',
+    brief: '« salon ou 99 DH » — le rendu du salon à la maison, sans rendez-vous. Pas de prix dans le titre : il dépend du code promo (199 DH sans code).',
     kicker: 'Sans rendez-vous · sans vernis',
     titleCategory: 'Kit de manucure japonaise,',
-    titlePromise: 'le soin du salon chez vous, pour 99 DH',
+    // Sans prix : un visiteur sans code promo voit 199 DH, pas 99 DH.
+    titlePromise: 'le soin du salon, chez vous, sans rendez-vous',
   },
   {
     angle: 'temoin',

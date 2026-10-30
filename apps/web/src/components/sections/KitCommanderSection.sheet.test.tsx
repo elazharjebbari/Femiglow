@@ -10,17 +10,23 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 
 const { search, arriveAtCommander, emit, shellMounts } = vi.hoisted(() => ({
-  search: { value: '' },
+  search: { value: '', suspend: false },
   arriveAtCommander: vi.fn(),
   emit: vi.fn(),
   shellMounts: { count: 0 },
 }));
 
 vi.mock('next/navigation', () => ({
-  useSearchParams: () => new URLSearchParams(search.value),
+  useSearchParams: () => {
+    // Simule une synchronisation pas encore faite (Suspense en attente).
+    if (search.suspend) throw new Promise(() => undefined);
+    return new URLSearchParams(search.value);
+  },
 }));
 vi.mock('@/lib/checkout/wizard-arrival', () => ({ arriveAtCommander }));
-vi.mock('@/lib/tracking/use-tracking', () => ({ useTracking: () => ({ emit, consent: {} }) }));
+vi.mock('@/lib/tracking/use-tracking', () => ({
+  useTracking: () => ({ emit, consent: {}, isReady: true }),
+}));
 vi.mock('@/lib/tracking/identity', () => ({ getAnonymousId: () => 'aid_test' }));
 
 vi.mock('@/components/checkout/wizard/WizardShell', async () => {
@@ -59,6 +65,7 @@ vi.mock('@/components/checkout/wizard/WizardShell', async () => {
 
 import { CommanderAnchorButton } from '@/components/commerce/CommanderAnchorButton';
 import { useCommanderLauncherStore } from '@/lib/checkout/commander-launcher';
+import { __resetKitCheckoutExposureForTests } from '@/lib/checkout/kit-checkout-exposure';
 import { useWizardStore } from '@/lib/checkout/state/wizard-store';
 import type { CartSnapshot } from '@/lib/checkout/schemas/common';
 import type { KitCheckoutConfig } from '@/lib/checkout/kit-checkout-config';
@@ -89,6 +96,8 @@ let backSpy: ReturnType<typeof vi.spyOn>;
 
 beforeEach(() => {
   search.value = '';
+  search.suspend = false;
+  __resetKitCheckoutExposureForTests();
   shellMounts.count = 0;
   arriveAtCommander.mockClear();
   emit.mockClear();
@@ -104,6 +113,8 @@ afterEach(async () => {
   window.history.replaceState(null, '', '/');
   useCommanderLauncherStore.setState({
     mode: 'scroll',
+    config: null,
+    assignment: null,
     isSheetOpen: false,
     sheetHosts: 0,
     lastSource: null,
@@ -282,5 +293,119 @@ describe('KitCommanderSection — mode panneau', () => {
     unmount();
     expect(useCommanderLauncherStore.getState().mode).toBe('scroll');
     expect(useCommanderLauncherStore.getState().sheetHosts).toBe(0);
+  });
+});
+
+const exposureCalls = () => emit.mock.calls.filter(([name]) => name === 'kit_checkout_exposure');
+
+describe('KitCommanderSection — exposition A/B (kit_checkout_exposure)', () => {
+  it('une seule exposition par page vue, avec variante, origine et réglage', async () => {
+    search.value = 'cta=sheet';
+    const { unmount } = renderPage({ ctaMode: 'ab', sheetSharePct: 30 });
+    await waitFor(() => expect(exposureCalls()).toHaveLength(1));
+    expect(exposureCalls()[0]![1]).toEqual({
+      assigned_mode: 'sheet',
+      mode_source: 'override',
+      cms_mode: 'ab',
+      share_pct: 30,
+    });
+    // Remontage de la section dans le même chargement de page : pas de doublon.
+    unmount();
+    renderPage({ ctaMode: 'ab', sheetSharePct: 30 });
+    await waitFor(() => expect(section()).toHaveAttribute('data-commander-mode', 'sheet'));
+    expect(exposureCalls()).toHaveLength(1);
+  });
+
+  it('réglage fixe : origine cms ; angle publicitaire lu sur data-kit-angle', async () => {
+    const hero = document.createElement('section');
+    hero.setAttribute('data-kit-angle', 'e');
+    document.body.appendChild(hero);
+    renderPage({ ctaMode: 'scroll', sheetSharePct: 50 });
+    await waitFor(() => expect(exposureCalls()).toHaveLength(1));
+    expect(exposureCalls()[0]![1]).toEqual({
+      assigned_mode: 'scroll',
+      mode_source: 'cms',
+      cms_mode: 'scroll',
+      share_pct: 50,
+      kit_angle: 'e',
+    });
+    hero.remove();
+  });
+});
+
+describe('KitCommanderSection — clic avant la synchronisation du mode', () => {
+  it('A/B à 100 % : le clic ouvre le panneau (variante attribuée), variantKey B', async () => {
+    search.suspend = true;
+    renderPage({ ctaMode: 'ab', sheetSharePct: 100 });
+    // La synchronisation (sous Suspense) n'a pas eu lieu : rien n'est résolu.
+    expect(useCommanderLauncherStore.getState().assignment).toBeNull();
+    fireEvent.click(cta());
+    const dialog = await screen.findByRole('dialog', { name: 'Commander le rituel' });
+    expect(arriveAtCommander).not.toHaveBeenCalled();
+    expect(emit).toHaveBeenCalledWith(
+      'add_to_cart',
+      expect.objectContaining({ kit_cta_mode: 'sheet' }),
+    );
+    expect(useCommanderLauncherStore.getState().assignment).toMatchObject({
+      mode: 'sheet',
+      source: 'ab',
+    });
+    expect(within(dialog).getByTestId('wizard-shell')).toHaveAttribute('data-variant-key', 'B');
+  });
+
+  it('?cta=scroll dans l’URL : le clic défile, variantKey A', () => {
+    search.suspend = true;
+    window.history.replaceState(null, '', '/kit?cta=scroll');
+    renderPage({ ctaMode: 'sheet', sheetSharePct: 50 });
+    fireEvent.click(cta());
+    expect(arriveAtCommander).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(within(section()).getByTestId('wizard-shell')).toHaveAttribute('data-variant-key', 'A');
+  });
+});
+
+describe('KitCommanderSection — emplacement réservé (hauteur)', () => {
+  it('reprend la hauteur réelle mesurée de la carte en ligne', async () => {
+    const original = Element.prototype.getBoundingClientRect;
+    const rectSpy = vi
+      .spyOn(Element.prototype, 'getBoundingClientRect')
+      .mockImplementation(function (this: Element) {
+        if (this.getAttribute('data-testid') === 'kit-commander-card') {
+          return {
+            x: 0,
+            y: 0,
+            top: 0,
+            left: 0,
+            right: 600,
+            bottom: 712.4,
+            width: 600,
+            height: 712.4,
+            toJSON: () => ({}),
+          } as DOMRect;
+        }
+        return original.call(this);
+      });
+    search.value = 'cta=sheet';
+    renderPage();
+    await waitFor(() => expect(section()).toHaveAttribute('data-commander-mode', 'sheet'));
+    fireEvent.click(cta());
+    await screen.findByRole('dialog');
+    const card = within(section()).getByTestId('kit-commander-card');
+    expect(card.style.minHeight).toBe('712px');
+    expect(within(card).getByTestId('kit-commander-sheet-placeholder')).toBeInTheDocument();
+    rectSpy.mockRestore();
+  });
+
+  it('carte non mesurable : hauteur minimale de repli, aucun style figé', async () => {
+    search.value = 'cta=sheet';
+    renderPage();
+    await waitFor(() => expect(section()).toHaveAttribute('data-commander-mode', 'sheet'));
+    fireEvent.click(cta());
+    await screen.findByRole('dialog');
+    const card = within(section()).getByTestId('kit-commander-card');
+    expect(card.style.minHeight).toBe('');
+    expect(within(card).getByTestId('kit-commander-sheet-placeholder').className).toContain(
+      'min-h-[16rem]',
+    );
   });
 });

@@ -52,6 +52,13 @@ import {
 import type { CommanderCmsMode } from '@/lib/checkout/commander-mode';
 import { useCommanderMode } from '@/lib/checkout/use-commander-mode';
 import {
+  KIT_CHECKOUT_EXPOSURE_EVENT,
+  buildKitCheckoutExposureParams,
+  claimKitCheckoutExposure,
+} from '@/lib/checkout/kit-checkout-exposure';
+import { readKitAngleFromDocument } from '@/lib/kit/angle';
+import { useTracking } from '@/lib/tracking/use-tracking';
+import {
   DEFAULT_KIT_CHECKOUT_CONFIG,
   type KitCheckoutConfig,
 } from '@/lib/checkout/kit-checkout-config';
@@ -133,6 +140,12 @@ const KIT_FORM_CONTEXT: WizardFormContext = {
 // auto-aligne `payment_selected_at` côté `/api/checkout/order`.
 const KIT_STEPS = ['lead', 'address', 'thank_you'] as const;
 
+/**
+ * Hauteur minimale de l'emplacement réservé quand la carte n'a pas pu être
+ * mesurée (premier rendu directement en panneau, environnement sans layout).
+ */
+const PLACEHOLDER_MIN_HEIGHT_CLASS = 'min-h-[16rem]';
+
 /** Nombre max. d'images à attendre qu'un step lazy affiche son titre. */
 const STEP_FOCUS_MAX_FRAMES = 30;
 
@@ -148,15 +161,29 @@ const useIsomorphicLayoutEffect =
  * Résout le mode (override `?cta=`, réglage CMS, A/B par `fg_aid`) et le
  * pousse dans le lanceur. Isolé sous `<Suspense>` : `useSearchParams` ne
  * fait pas basculer toute la page en rendu client.
+ *
+ * Mesure du test A/B : dès que la variante est résolue (ici, ou plus tôt à
+ * la demande par un clic), UN événement first-party `kit_checkout_exposure`
+ * par page vue — après le chargement du consentement (`isReady`), sinon
+ * `/api/track` l'écarterait.
  */
 function CommanderModeSync({ cmsMode, sharePct }: { cmsMode: CommanderCmsMode; sharePct: number }) {
-  const mode = useCommanderMode({ cmsMode, sharePct });
-  const setMode = useCommanderLauncherStore((s) => s.setMode);
+  useCommanderMode({ cmsMode, sharePct });
+  const assignment = useCommanderLauncherStore((s) => s.assignment);
+  const { emit, isReady } = useTracking();
   useEffect(() => {
-    if (mode) setMode(mode);
-  }, [mode, setMode]);
-  // Section démontée : les boutons retrouvent le défilement historique.
-  useEffect(() => () => setMode('scroll'), [setMode]);
+    if (!assignment || !isReady) return;
+    if (!claimKitCheckoutExposure()) return;
+    emit(
+      KIT_CHECKOUT_EXPOSURE_EVENT,
+      buildKitCheckoutExposureParams({
+        assignment,
+        cmsMode: assignment.cmsMode,
+        sharePct: assignment.sharePct,
+        kitAngle: readKitAngleFromDocument(),
+      }),
+    );
+  }, [assignment, isReady, emit]);
   return null;
 }
 
@@ -200,13 +227,16 @@ export function KitCommanderSection({
   const isSheetOpen = useCommanderLauncherStore((s) => s.isSheetOpen);
   const closeCommander = useCommanderLauncherStore((s) => s.closeCommander);
   const registerSheetHost = useCommanderLauncherStore((s) => s.registerSheetHost);
+  const configureCommander = useCommanderLauncherStore((s) => s.configure);
   const currentStep = useWizardStore((s) => s.currentStep);
   const sheetMode = mode === 'sheet';
 
   // Phase 8 (7E-13) — injecte la langue dans le formContext du wizard. En AR/EN,
   // le dictionnaire de la langue (`useWizardTranslation`) pilote tous les libellés.
   // Kit CRO v2 — la variante d'ouverture est portée par `variantKey`
-  // (A = défilement, B = panneau) jusqu'à `orders.variant_key`.
+  // (A = défilement, B = panneau) jusqu'à `orders.variant_key`. `mode` est
+  // posé par la résolution de la variante (effet de synchronisation OU clic
+  // antérieur, résolu à la demande) : la clé suit toujours le bras attribué.
   const formContext = useMemo<WizardFormContext>(
     () => ({
       ...KIT_FORM_CONTEXT,
@@ -219,6 +249,15 @@ export function KitCommanderSection({
   // Cette section sait afficher le panneau : le lanceur peut l'utiliser.
   useEffect(() => registerSheetHost(), [registerSheetHost]);
 
+  // Réglage admin déclaré au plus tôt (effet de layout, avant tout effet
+  // passif) : un clic arrivé avant la synchronisation résout déjà la bonne
+  // variante. Section démontée : retour au défilement historique.
+  const { ctaMode, sheetSharePct } = checkoutConfig;
+  useIsomorphicLayoutEffect(() => {
+    configureCommander({ cmsMode: ctaMode, sharePct: sheetSharePct });
+  }, [configureCommander, ctaMode, sheetSharePct]);
+  useEffect(() => () => configureCommander(null), [configureCommander]);
+
   // UNE seule instance du wizard montée à la fois. Elle passe dans le panneau
   // dès l'ouverture et n'en ressort qu'après l'animation de sortie
   // (`onExitComplete`) — l'état vit dans le store persistant, le remontage ne
@@ -229,15 +268,20 @@ export function KitCommanderSection({
   const wizardInSheet = sheetMode && sheetPresent;
   const onSheetExitComplete = useCallback(() => setSheetPresent(false), []);
 
-  // Hauteur de la carte en ligne, pour que l'emplacement réservé ne fasse pas
-  // sauter la page sous le panneau.
+  // Hauteur réelle de la carte en ligne (padding responsive et bordure
+  // compris), mesurée tant qu'elle contient le wizard, donc juste avant que
+  // celui-ci parte dans le panneau. Appliquée à la carte (border-box) pendant
+  // l'ouverture : la page ne saute pas sous le panneau, quel que soit le
+  // breakpoint.
   const inlineCardRef = useRef<HTMLDivElement>(null);
   const inlineHeightRef = useRef<number | undefined>(undefined);
   useIsomorphicLayoutEffect(() => {
     if (!wizardInSheet && inlineCardRef.current) {
-      inlineHeightRef.current = inlineCardRef.current.offsetHeight || undefined;
+      const { height } = inlineCardRef.current.getBoundingClientRect();
+      inlineHeightRef.current = height > 0 ? Math.round(height) : undefined;
     }
   });
+  const reservedHeight = wizardInSheet ? inlineHeightRef.current : undefined;
 
   // Arrivée avec `#commander-femiglow` (lien partagé, bandeau promo d'une
   // autre page) : en mode panneau, on l'ouvre directement. Une seule fois.
@@ -349,14 +393,17 @@ export function KitCommanderSection({
 
         <div
           ref={inlineCardRef}
-          className="mx-auto max-w-2xl rounded border border-encre/10 bg-white p-6 shadow-sm sm:p-8 lg:p-10"
+          data-testid="kit-commander-card"
+          className={
+            'mx-auto max-w-2xl rounded border border-encre/10 bg-white p-6 shadow-sm sm:p-8 lg:p-10' +
+            (wizardInSheet ? ' flex flex-col' : '')
+          }
+          style={reservedHeight ? { minHeight: reservedHeight } : undefined}
         >
           {wizardInSheet ? (
             <div
               data-testid="kit-commander-sheet-placeholder"
-              className="flex flex-col items-center justify-center gap-4 text-center"
-              // Hauteur de la carte avant ouverture, moins son padding.
-              style={{ minHeight: inlineHeightRef.current ? inlineHeightRef.current - 48 : undefined }}
+              className={`flex flex-1 flex-col items-center justify-center gap-4 text-center ${PLACEHOLDER_MIN_HEIGHT_CLASS}`}
             >
               <Text className="font-medium">{sheetStrings.placeholderTitle}</Text>
               <Text size="small" tone="secondary">

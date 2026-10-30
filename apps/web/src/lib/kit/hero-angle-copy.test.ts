@@ -1,6 +1,8 @@
 /**
  * Tests du choix des textes du hero selon l'angle (Kit CRO v2 §3).
  */
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import type { ResolvedField, ResolvedFields } from '@/lib/db/types';
@@ -26,7 +28,9 @@ function field(value: unknown, source: ResolvedField['meta']['source'] = 'bindin
 
 describe('resolveKitHeroAngleCopy', () => {
   it('sans angle : titre par défaut', () => {
-    const fields: ResolvedFields = { e_titlePromise: field('pour 99 DH') };
+    const fields: ResolvedFields = {
+      e_titlePromise: field('le soin du salon, chez vous, sans rendez-vous'),
+    };
     expect(resolveKitHeroAngleCopy(fields, null, DEFAULTS)).toEqual(DEFAULTS);
     expect(resolveKitHeroAngleCopy(fields, undefined, DEFAULTS)).toEqual(DEFAULTS);
   });
@@ -40,13 +44,13 @@ describe('resolveKitHeroAngleCopy', () => {
     const fields: ResolvedFields = {
       e_kicker: field('Sans rendez-vous'),
       e_titleCategory: field('Kit de manucure japonaise,'),
-      e_titlePromise: field('le soin du salon chez vous'),
+      e_titlePromise: field('le soin du salon, chez vous, sans rendez-vous'),
       a_titlePromise: field('autre angle'),
     };
     expect(resolveKitHeroAngleCopy(fields, 'e', DEFAULTS)).toEqual({
       kicker: 'Sans rendez-vous',
       titleCategory: 'Kit de manucure japonaise,',
-      titlePromise: 'le soin du salon chez vous',
+      titlePromise: 'le soin du salon, chez vous, sans rendez-vous',
     });
   });
 
@@ -115,5 +119,46 @@ describe('composant CMS kit-hero-angles', () => {
   it('les clés de champ sont uniques', () => {
     const keys = (seed?.fields ?? []).map((f) => f.key);
     expect(new Set(keys).size).toBe(keys.length);
+  });
+});
+
+/**
+ * Le prix dépend du code promo (99 DH avec le code de la publicité, 199 DH
+ * sans) : il est affiché par le bouton, jamais figé dans un titre d'angle.
+ */
+describe('titres d’angle sans prix (angle E « salon ou 99 DH »)', () => {
+  const PRICE = /\d|\bDH\b|MAD|درهم/u;
+
+  it('valeurs par défaut du registre : angle E et aucun titre avec un prix', () => {
+    const fields = findComponentSeed(KIT_HERO_ANGLES_COMPONENT_KEY)?.fields ?? [];
+    const promiseE = fields.find((f) => f.key === kitHeroAngleFieldKey('e', 'titlePromise'));
+    expect(promiseE?.defaultValue).toBe('le soin du salon, chez vous, sans rendez-vous');
+    for (const def of fields) {
+      expect(String(def.defaultValue), def.key).not.toMatch(PRICE);
+    }
+  });
+
+  it('script de contenu FR/AR : angle E sans prix, longueurs dans les limites', () => {
+    const sql = readFileSync(
+      path.resolve(__dirname, '../../../scripts/content/2026-10-kit-hero-angles.sql'),
+      'utf8',
+    );
+    const rows = [...sql.matchAll(/\('([a-z]+_[A-Za-z]+)', '(fr|ar)', '([^']*)'\)/gu)].map(
+      ([, key, locale, text]) => ({ key: key!, locale: locale!, text: text! }),
+    );
+    expect(rows.length).toBeGreaterThan(0);
+    const find = (key: string, locale: string) =>
+      rows.find((r) => r.key === key && r.locale === locale)?.text;
+    expect(find('e_titlePromise', 'fr')).toBe('le soin du salon, chez vous, sans rendez-vous');
+    expect(find('e_titlePromise', 'ar')).toBe('عناية الصالون في بيتكِ، دون موعد');
+
+    const limits: Record<string, number> = { kicker: 60, titleCategory: 80, titlePromise: 90 };
+    for (const row of rows) {
+      const name = row.key.split('_')[1]!;
+      expect(row.text.length, `${row.key}/${row.locale}`).toBeLessThanOrEqual(limits[name]!);
+      if (name === 'titlePromise') {
+        expect(row.text, `${row.key}/${row.locale}`).not.toMatch(PRICE);
+      }
+    }
   });
 });

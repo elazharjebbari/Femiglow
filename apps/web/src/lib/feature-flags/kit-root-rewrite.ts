@@ -10,7 +10,9 @@
  * Source : variable d'env serveur `KIT_ROOT_REWRITE`. **Actif par défaut** ;
  * seules les valeurs `off`, `false` ou `0` (insensibles à la casse, espaces
  * ignorés) le désactivent → retour au 307 historique sans redéploiement de
- * code.
+ * code, mais avec un **redémarrage du serveur** : la variable est lue dans
+ * `process.env` du processus qui exécute le middleware, un changement n'est
+ * pas vu par un serveur déjà démarré.
  *
  * Référence : `docs/kit-cro-v2/DESIGN.md` §1.
  */

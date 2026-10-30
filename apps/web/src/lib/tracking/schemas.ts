@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { TrackingEventCategory } from '@/lib/db/types';
+import { KIT_ANGLES } from '@/lib/kit/angle';
 
 const itemSchema = z
   .object({
@@ -496,6 +497,18 @@ export const eventSchemas: Record<string, z.ZodTypeAny> = {
       sample_rate: z.number().gt(0).max(1),
     })
     .strict(),
+  // Kit CRO v2 §2 — exposition au test A/B « Commander » (défilement / panneau),
+  // une fois par page vue, cf. components/sections/KitCommanderSection.
+  // First-party uniquement (jamais relayé aux providers, cf. first-party-events).
+  kit_checkout_exposure: z
+    .object({
+      assigned_mode: z.enum(['scroll', 'sheet']),
+      mode_source: z.enum(['override', 'cms', 'ab']),
+      cms_mode: z.enum(['scroll', 'sheet', 'ab']),
+      share_pct: z.number().finite().min(0).max(100),
+      kit_angle: z.union([z.enum(KIT_ANGLES), z.literal('none')]).optional(),
+    })
+    .strict(),
 };
 
 export type KnownEventName = keyof typeof eventSchemas;
@@ -578,6 +591,8 @@ const eventCategoryByName: Record<string, TrackingEventCategory> = {
   kit_wizard_visible_first_time: 'engagement',
   // Kit CRO v2 §1 — mesures de performance (RUM).
   web_vitals: 'custom',
+  // Kit CRO v2 §2 — exposition A/B du formulaire « Commander ».
+  kit_checkout_exposure: 'custom',
 };
 
 export function getEventCategory(name: string): TrackingEventCategory {

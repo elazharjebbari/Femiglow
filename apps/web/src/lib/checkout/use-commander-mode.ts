@@ -2,18 +2,17 @@
 
 /**
  * Kit CRO v2 §2 — Hook client du mode « Commander » (`scroll` | `sheet`).
- * Logique pure dans `commander-mode.ts` ; ici on ne fait que brancher
- * `?cta=` (useSearchParams) et l'identifiant anonyme `fg_aid`.
+ * Logique pure dans `commander-mode.ts`, attribution mémorisée dans le
+ * lanceur (`commander-launcher.ts`) ; ici on ne fait que brancher `?cta=`
+ * (useSearchParams) et le réglage CMS.
  */
 
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
-import { getAnonymousId } from '@/lib/tracking/identity';
+import { useCommanderLauncherStore } from '@/lib/checkout/commander-launcher';
 import {
   COMMANDER_MODE_QUERY_PARAM,
-  parseCommanderOverride,
-  resolveCommanderMode,
   type CommanderCmsMode,
   type CommanderMode,
 } from '@/lib/checkout/commander-mode';
@@ -26,8 +25,12 @@ export interface UseCommanderModeOptions {
 /**
  * Résout le mode côté client, APRÈS le montage : le `fg_aid` vit dans le
  * `localStorage`, le résoudre au rendu serveur provoquerait un écart
- * d'hydratation. `null` tant que la résolution n'a pas eu lieu (les boutons
- * se comportent alors en `scroll`, le comportement historique).
+ * d'hydratation. `null` tant que la résolution n'a pas eu lieu. Un clic
+ * survenu entre-temps n'attend pas ce hook : le lanceur résout la variante
+ * à la demande, avec les mêmes entrées (même résultat, mémorisé).
+ *
+ * Effet de bord voulu : la variante est poussée dans le lanceur (`mode`,
+ * `assignment`).
  *
  * À rendre sous un `<Suspense>` (exigence de `useSearchParams` en Next 14
  * pour ne pas basculer toute la page en rendu client).
@@ -41,16 +44,9 @@ export function useCommanderMode({
   const [mode, setMode] = useState<CommanderMode | null>(null);
 
   useEffect(() => {
-    // Le `fg_aid` n'est lu (et créé) que si l'attribution en dépend.
-    const needsVisitor = !parseCommanderOverride(override) && cmsMode === 'ab';
-    setMode(
-      resolveCommanderMode({
-        cmsMode,
-        sharePct,
-        override,
-        visitorId: needsVisitor ? getAnonymousId() : null,
-      }),
-    );
+    const store = useCommanderLauncherStore.getState();
+    store.configure({ cmsMode, sharePct });
+    setMode(store.resolveMode(override)?.mode ?? null);
   }, [cmsMode, sharePct, override]);
 
   return mode;

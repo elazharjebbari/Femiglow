@@ -35,7 +35,7 @@ Contrainte transverse : tout ce qui est contenu ou réglage commercial doit rest
 | Vidéos des bulles | Poster seul, vidéo uniquement au tap | Lecture différée après `load` + idle, sauf `saveData`/2G | Courts teasers dédiés (3 s, < 200 Ko) | **A + B** : poster par défaut ; l'aperçu animé ne démarre qu'après `window.load` + idle, une seule bulle à la fois, et jamais si `navigator.connection.saveData` ou réseau lent. C demanderait de nouveaux médias. |
 | Redirection `/kit` | Pubs pointées sur `/fr/kit` | Rewrite interne `/kit` → `/fr/kit` (URL inchangée) | Garder la redirection | **B pour `/kit` uniquement**, derrière l'env `KIT_ROOT_REWRITE` (défaut `on`). A est exclu (pubs gelées). Le canonical reste `/fr/kit`. |
 | Polices AR | Préchargement conditionnel par locale | Préchargement global de Cairo 400/700 | Statu quo | **Correctif CSS du faux italique** + Cairo réduite à 400/700. Le préchargement conditionnel n'est pas possible avec `next/font` sans dupliquer le layout ; gain jugé faible. |
-| Mesure | `useReportWebVitals` → `/api/track` | Outil tiers (SpeedCurve…) | Lighthouse CI seul | **A + Lighthouse CI mobile sur `/fr/kit` et `/ar/kit`**. Les vitals partent dans `tracking_events_log` (événement `web_vitals`, sans Meta). |
+| Mesure | `useReportWebVitals` → `/api/track` | Outil tiers (SpeedCurve…) | Lighthouse CI seul | **A + Lighthouse CI mobile sur `/kit?code=GLOW99` (la landing publicitaire réelle, servie par rewrite), `/fr/kit` et `/ar/kit`**. Les vitals partent dans `tracking_events_log` (événement `web_vitals`, sans Meta). |
 
 ---
 
@@ -58,6 +58,8 @@ Tous les boutons « Commander » font défiler jusqu'à `#commander-femiglow` (e
 - en mode `ab`, l'attribution se fait côté client, de façon stable par visiteur (hash FNV-1a de l'identifiant anonyme `fg_aid`, via `assignVariant` déjà présent dans `lib/chat/services/ab-engine.ts`) ;
 - `?cta=sheet|scroll` force la variante, pour la recette et les tests e2e ;
 - la variante est portée par `formContext.variantKey` (`A` = scroll, `B` = sheet). Elle arrive donc déjà jusqu'à `orders.variant_key` et à tous les événements de checkout. On l'ajoute aussi sur `add_to_cart` et sur les clics boutons (`kit_cta_mode`).
+- exposition : un événement first-party `kit_checkout_exposure` par page vue (`assigned_mode`, `mode_source` = `override` | `cms` | `ab`, `cms_mode`, `share_pct`, `kit_angle`), stocké dans `tracking_events_log`, hors `dataLayer` et jamais relayé à Meta/TikTok/Google — c'est le dénominateur du test ;
+- un clic survenu avant la synchronisation du mode résout la variante à la demande (mêmes entrées : `?cta`, réglage CMS, `fg_aid`) : le comportement vécu est toujours celui du bras attribué.
 
 ### Points de conception
 

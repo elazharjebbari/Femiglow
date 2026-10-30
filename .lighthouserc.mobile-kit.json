@@ -4,6 +4,7 @@
       "startServerCommand": "pnpm --filter @femiglow/web start -- -p 3000",
       "startServerReadyPattern": "Ready in",
       "url": [
+        "http://localhost:3000/kit?code=GLOW99",
         "http://localhost:3000/fr/kit?code=GLOW99",
         "http://localhost:3000/ar/kit?code=GLOW99"
       ],

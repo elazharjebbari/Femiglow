@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { TrackingContextValue } from './provider';
 import { TrackingContext } from './provider';
-import { useFormTracking } from './use-form-tracking';
+import { __resetFormStartGuardForTests, useFormTracking } from './use-form-tracking';
 
 interface CapturedEvent {
   name: string;
@@ -196,5 +196,44 @@ describe('useFormTracking', () => {
     });
 
     expect(events.filter((e) => e.name === 'form_abandon')).toHaveLength(0);
+  });
+});
+
+describe('useFormTracking — startOncePerPageLoad', () => {
+  function Field({ formId, once }: { formId: string; once: boolean }) {
+    const { handleFieldFocus } = useFormTracking({
+      formId,
+      trackAbandon: false,
+      startOncePerPageLoad: once,
+    });
+    return <input aria-label={`champ-${formId}`} onFocus={handleFieldFocus('name')} />;
+  }
+
+  function mountAndFocus(events: CapturedEvent[], formId: string, once: boolean) {
+    const view = render(
+      <TrackingContext.Provider value={makeProviderValue(events)}>
+        <Field formId={formId} once={once} />
+      </TrackingContext.Provider>,
+    );
+    fireEvent.focus(screen.getByLabelText(`champ-${formId}`));
+    view.unmount();
+  }
+
+  beforeEach(() => __resetFormStartGuardForTests());
+
+  it('remontages : un seul form_start par formId ; un autre formId reste indépendant', () => {
+    const events: CapturedEvent[] = [];
+    mountAndFocus(events, 'wizard_kit', true);
+    mountAndFocus(events, 'wizard_kit', true);
+    mountAndFocus(events, 'wizard_cart', true);
+    const starts = events.filter((e) => e.name === 'form_start').map((e) => e.params.form_id);
+    expect(starts).toEqual(['wizard_kit', 'wizard_cart']);
+  });
+
+  it('par défaut (option absente) : une émission par montage, comportement inchangé', () => {
+    const events: CapturedEvent[] = [];
+    mountAndFocus(events, 'contact', false);
+    mountAndFocus(events, 'contact', false);
+    expect(events.filter((e) => e.name === 'form_start')).toHaveLength(2);
   });
 });

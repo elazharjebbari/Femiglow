@@ -68,27 +68,54 @@ export interface ResolveCommanderModeInput {
   visitorId?: string | null;
 }
 
-export function resolveCommanderMode({
+/**
+ * Origine de l'attribution, pour l'événement d'exposition A/B :
+ *  - `override` : `?cta=` (recette, e2e) ;
+ *  - `cms` : réglage fixe `scroll` | `sheet` (ou inconnu → `scroll`) ;
+ *  - `ab` : tirage stable par visiteur (y compris les bornes 0 % / 100 %
+ *    et le témoin `scroll` faute d'identifiant).
+ */
+export type CommanderModeSource = 'override' | 'cms' | 'ab';
+
+export interface CommanderAssignment {
+  mode: CommanderMode;
+  source: CommanderModeSource;
+}
+
+/**
+ * Le `fg_aid` n'est utile (et ne doit être lu, voire créé) que si
+ * l'attribution en dépend : réglage `ab` sans override.
+ */
+export function commanderModeNeedsVisitor(cmsMode: unknown, override: unknown): boolean {
+  return !parseCommanderOverride(override) && cmsMode === 'ab';
+}
+
+/** Variante + origine (cf. `CommanderModeSource`). */
+export function resolveCommanderAssignment({
   cmsMode,
   sharePct,
   override,
   visitorId,
-}: ResolveCommanderModeInput): CommanderMode {
+}: ResolveCommanderModeInput): CommanderAssignment {
   const forced = parseCommanderOverride(override);
-  if (forced) return forced;
+  if (forced) return { mode: forced, source: 'override' };
 
   const mode = isCommanderCmsMode(cmsMode) ? cmsMode : DEFAULT_COMMANDER_CMS_MODE;
-  if (mode !== 'ab') return mode;
+  if (mode !== 'ab') return { mode, source: 'cms' };
 
   const pct = normalizeSharePct(sharePct);
-  if (pct <= 0) return 'scroll';
-  if (pct >= 100) return 'sheet';
+  if (pct <= 0) return { mode: 'scroll', source: 'ab' };
+  if (pct >= 100) return { mode: 'sheet', source: 'ab' };
   // Sans identifiant (stockage bloqué, SSR) : on reste sur le témoin plutôt
   // que de tirer au hasard à chaque rendu (expérience instable).
-  if (!visitorId) return 'scroll';
+  if (!visitorId) return { mode: 'scroll', source: 'ab' };
 
   const variant = assignVariant(KIT_CTA_SHEET_EXPERIMENT_KEY, visitorId, [
     { key: 'sheet', weight: pct / 100 },
   ]);
-  return variant === 'sheet' ? 'sheet' : 'scroll';
+  return { mode: variant === 'sheet' ? 'sheet' : 'scroll', source: 'ab' };
+}
+
+export function resolveCommanderMode(input: ResolveCommanderModeInput): CommanderMode {
+  return resolveCommanderAssignment(input).mode;
 }

@@ -15,12 +15,14 @@ vi.mock('next/navigation', () => ({
 }));
 vi.mock('@/lib/tracking/identity', () => ({ getAnonymousId }));
 
+import { useCommanderLauncherStore } from './commander-launcher';
 import { resolveCommanderMode } from './commander-mode';
 import { useCommanderMode } from './use-commander-mode';
 
 beforeEach(() => {
   search.value = '';
   getAnonymousId.mockClear();
+  useCommanderLauncherStore.getState().configure(null);
 });
 
 afterEach(() => {
@@ -66,5 +68,30 @@ describe('useCommanderMode', () => {
     await waitFor(() => expect(result.current).toBe('scroll'));
     rerender({ cmsMode: 'sheet' });
     await waitFor(() => expect(result.current).toBe('sheet'));
+  });
+
+  it('pousse la variante et son origine dans le lanceur', async () => {
+    search.value = 'cta=sheet';
+    renderHook(() => useCommanderMode({ cmsMode: 'ab', sharePct: 50 }));
+    await waitFor(() =>
+      expect(useCommanderLauncherStore.getState().assignment).toMatchObject({
+        mode: 'sheet',
+        source: 'override',
+        cmsMode: 'ab',
+        sharePct: 50,
+      }),
+    );
+    expect(useCommanderLauncherStore.getState().mode).toBe('sheet');
+  });
+
+  it('réutilise une variante déjà résolue à la demande (un seul tirage)', async () => {
+    const store = useCommanderLauncherStore.getState();
+    store.configure({ cmsMode: 'ab', sharePct: 50 });
+    const early = store.resolveMode(null);
+    expect(getAnonymousId).toHaveBeenCalledTimes(1);
+    const { result } = renderHook(() => useCommanderMode({ cmsMode: 'ab', sharePct: 50 }));
+    await waitFor(() => expect(result.current).toBe(early?.mode));
+    expect(useCommanderLauncherStore.getState().assignment).toBe(early);
+    expect(getAnonymousId).toHaveBeenCalledTimes(1);
   });
 });

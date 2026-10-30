@@ -44,7 +44,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={{ show }}>
       {children}
-      {/* 108 px en mobile : au-dessus de la sticky /kit ET de son flag promo. */}
+      {/* 108 px en mobile : au-dessus de la sticky /kit ET de son flag promo.
+          Accessibilité avec un `BottomSheet` ouvert : Radix masque le reste de
+          la page (`hideOthers` d'aria-hidden), SAUF les éléments `[aria-live]`
+          présents à l'ouverture. La région doit donc rester rendue en
+          permanence (même vide) et garder `aria-live` : les toasts restent
+          annoncés pendant que le panneau est ouvert (cf. BottomSheet.test). */}
       <div
         aria-live="polite"
         aria-atomic="true"

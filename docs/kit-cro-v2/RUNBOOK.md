@@ -8,12 +8,12 @@ Base : `feat/kit-coherence` (9634f247), le build en prod.
 | # | Étape | Responsable | Critère de fin | État |
 |---|---|---|---|---|
 | 1 | Audit du code et conception (`DESIGN.md`) | Claude | Choix arrêtés pour les 4 chantiers | Fait |
-| 2 | Vitesse : bulles des stories, rewrite `/kit`, polices, Web Vitals, Lighthouse mobile | Claude | Tests unitaires verts, aucune `.webm` avant interaction | À faire |
-| 3 | Formulaire au clic : `BottomSheet`, `openCommander`, composant CMS `kit-checkout`, A/B | Claude | Tests unitaires + e2e sheet/scroll verts | À faire |
-| 4 | Titre par angle : composant CMS `kit-hero-angles`, résolution dans la page | Claude | Tests de résolution verts, `?utm_content=E-darija` affiche l'angle E | À faire |
-| 5 | Ton direct : composant CMS `kit-cta`, « pâte / poudre » | Claude | Garde-fou `kit-facts` et parité i18n verts | À faire |
-| 6 | Vérification complète : typecheck, lint, tests, build | Claude | Tout vert | À faire |
-| 7 | Revue de code de la branche | Claude | Aucun problème bloquant ouvert | À faire |
+| 2 | Vitesse : bulles des stories, rewrite `/kit`, polices, Web Vitals, Lighthouse mobile | Claude | Tests unitaires verts, aucune `.webm` avant interaction | Fait |
+| 3 | Formulaire au clic : `BottomSheet`, `openCommander`, composant CMS `kit-checkout`, A/B | Claude | Tests unitaires + e2e sheet/scroll verts | Fait |
+| 4 | Titre par angle : composant CMS `kit-hero-angles`, résolution dans la page | Claude | Tests de résolution verts, `?utm_content=E-darija` affiche l'angle E | Fait |
+| 5 | Ton direct : composant CMS `kit-cta`, « pâte / poudre » | Claude | Garde-fou `kit-facts` et parité i18n verts | Fait |
+| 6 | Vérification complète : typecheck, lint, tests, build | Claude | Tout vert | Fait |
+| 7 | Revue de code de la branche | Claude | Aucun problème bloquant ouvert | En cours |
 | 8 | PR vers la branche de prod | Claude | PR ouverte, description avec plan de recette | À faire |
 | 9 | Synchronisation du registre en prod (`sync:components`) puis publication des textes dans l'admin | Utilisateur ou Claude sur accord | Champs visibles dans `/admin/components` | Accord requis |
 | 10 | Déploiement en prod (script de bascule sans coupure) | Claude sur accord explicite | Page `/fr/kit` et `/ar/kit` OK, commande test OK | Accord requis |
@@ -43,5 +43,5 @@ pnpm --filter @femiglow/web build
 
 - Formulaire au clic : `kit-checkout.ctaMode = scroll` dans l'admin (effet immédiat, sans déploiement).
 - Titres par angle : vider les champs de l'angle dans l'admin (repli sur le titre par défaut).
-- Rewrite `/kit` : variable d'environnement `KIT_ROOT_REWRITE=off`, puis redémarrage.
+- Rewrite `/kit` : variable d'environnement `KIT_ROOT_REWRITE=off`, puis redémarrage du serveur (obligatoire : la variable est lue dans l'environnement du processus par le middleware ; sans redémarrage, `/kit` reste servi par rewrite). Aucun redéploiement de code n'est nécessaire.
 - Retour complet : redéployer le build `feat/kit-coherence` avec le script de bascule.

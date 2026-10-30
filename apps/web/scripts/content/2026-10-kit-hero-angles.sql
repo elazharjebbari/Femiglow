@@ -55,13 +55,14 @@ INSERT INTO kit_hero_angles (field_key, locale, new_text) VALUES
   ('d_titleCategory', 'ar', 'كيت المانيكور الياباني،'),
   ('d_titlePromise', 'ar', 'أظافر مُعتنى بها، ولا شيء يُزال قبل الوضوء'),
 
-  -- E — « salon ou 99 DH »
+  -- E — « salon ou 99 DH ». Aucun prix dans le titre : il dépend du code
+  -- promo (199 DH sans code), le prix réel est affiché par le bouton.
   ('e_kicker', 'fr', 'Sans rendez-vous · sans vernis'),
   ('e_titleCategory', 'fr', 'Kit de manucure japonaise,'),
-  ('e_titlePromise', 'fr', 'le soin du salon chez vous, pour 99 DH'),
+  ('e_titlePromise', 'fr', 'le soin du salon, chez vous, sans rendez-vous'),
   ('e_kicker', 'ar', 'دون موعد · بلا طلاء'),
   ('e_titleCategory', 'ar', 'كيت المانيكور الياباني،'),
-  ('e_titlePromise', 'ar', 'عناية الصالون في بيتكِ، بـ99 درهمًا'),
+  ('e_titlePromise', 'ar', 'عناية الصالون في بيتكِ، دون موعد'),
 
   -- Témoin — « manucure japonaise à la maison »
   ('temoin_kicker', 'fr', 'La manucure japonaise à la maison'),

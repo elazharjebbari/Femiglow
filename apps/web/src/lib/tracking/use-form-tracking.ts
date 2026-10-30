@@ -30,6 +30,24 @@ interface UseFormTrackingOptions {
   formMode?: 'wizard_embed' | 'wizard_cart' | 'legacy_cart';
   /** Si true (default), émet form_abandon au pagehide si le formulaire a été touché. */
   trackAbandon?: boolean;
+  /**
+   * Si true, `form_start` n'est émis qu'UNE fois par `formId` et par
+   * chargement de page, même si le formulaire est démonté puis remonté (ex.
+   * wizard /kit déplacé entre la page et le panneau de commande, retour à
+   * l'étape). Défaut false : une émission par montage.
+   */
+  startOncePerPageLoad?: boolean;
+}
+
+/**
+ * `formId` dont le `form_start` est déjà parti pendant ce chargement de page
+ * (`startOncePerPageLoad`). Variable de module : vit le temps de la page.
+ */
+const startedFormsThisPageLoad = new Set<string>();
+
+/** Tests uniquement : simule un nouveau chargement de page. */
+export function __resetFormStartGuardForTests(): void {
+  startedFormsThisPageLoad.clear();
 }
 
 interface UseFormTrackingResult {
@@ -47,6 +65,7 @@ export function useFormTracking({
   formId,
   formMode,
   trackAbandon = true,
+  startOncePerPageLoad = false,
 }: UseFormTrackingOptions): UseFormTrackingResult {
   const { emit } = useTracking();
   const startedRef = useRef(false);
@@ -60,12 +79,16 @@ export function useFormTracking({
     if (startedRef.current) return;
     startedRef.current = true;
     startTimeRef.current = Date.now();
+    if (startOncePerPageLoad) {
+      if (startedFormsThisPageLoad.has(formId)) return;
+      startedFormsThisPageLoad.add(formId);
+    }
     emit('form_start', {
       form_id: formId,
       ...(firstFieldRef.current ? { first_field: firstFieldRef.current } : {}),
       ...(formMode ? { form_mode: formMode } : {}),
     });
-  }, [emit, formId, formMode]);
+  }, [emit, formId, formMode, startOncePerPageLoad]);
 
   const handleFieldFocus = useCallback(
     (fieldName: string) => () => {

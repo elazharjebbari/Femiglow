@@ -3,10 +3,11 @@
  * (Échap, fond, croix, bouton retour), historique, animation.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { useState } from 'react';
 
 import { BOTTOM_SHEET_HISTORY_FLAG, BottomSheet, type BottomSheetProps } from './BottomSheet';
+import { ToastProvider, useToast } from './Toast';
 
 type HarnessProps = Partial<Omit<BottomSheetProps, 'open' | 'onOpenChange'>> & {
   initialOpen?: boolean;
@@ -194,7 +195,7 @@ describe('BottomSheet — historique (bouton retour)', () => {
     expect(pushSpy.mock.calls[0]![0]).toEqual({
       __NA: true,
       tree: 'x',
-      [BOTTOM_SHEET_HISTORY_FLAG]: true,
+      [BOTTOM_SHEET_HISTORY_FLAG]: expect.any(String),
     });
     // Pas d'URL : l'adresse (hash compris) ne change pas.
     expect(pushSpy.mock.calls[0]).toHaveLength(2);
@@ -264,5 +265,191 @@ describe('BottomSheet — historique (bouton retour)', () => {
       await new Promise((r) => setTimeout(r, 5));
     });
     expect(backSpy).toHaveBeenCalledTimes(1);
+  });
+});
+
+/** Jeton posé dans l'entrée d'historique poussée à la dernière ouverture. */
+function currentSheetToken(): string {
+  const state = window.history.state as Record<string, unknown> | null;
+  const token = state?.[BOTTOM_SHEET_HISTORY_FLAG];
+  if (typeof token !== 'string') throw new Error('aucune entrée de panneau courante');
+  return token;
+}
+
+describe('BottomSheet — historique, cas limites', () => {
+  it('chaque ouverture pose un jeton distinct', async () => {
+    render(<Harness initialOpen />);
+    await screen.findByRole('dialog');
+    const first = currentSheetToken();
+    fireEvent.click(screen.getByTestId('external-close'));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir' }));
+    await screen.findByRole('dialog');
+    expect(currentSheetToken()).not.toBe(first);
+  });
+
+  it('fermeture puis réouverture immédiates : le popstate de notre back() ne referme pas', async () => {
+    const spy = vi.fn();
+    render(<Harness initialOpen onOpenChangeSpy={spy} />);
+    await screen.findByRole('dialog');
+    const first = currentSheetToken();
+    // Fermeture (back() simulé, popstate encore en attente) puis réouverture.
+    // (Deux rendus distincts : l'effet de fermeture appelle bien back().)
+    fireEvent.click(screen.getByTestId('external-close'));
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir', hidden: true }));
+    await screen.findByRole('dialog');
+    const second = currentSheetToken();
+    expect(second).not.toBe(first);
+    expect(backSpy).toHaveBeenCalledTimes(1);
+
+    // Écho de notre back() : l'entrée d'arrivée porte encore notre marqueur.
+    act(() => {
+      window.dispatchEvent(
+        new PopStateEvent('popstate', { state: { [BOTTOM_SHEET_HISTORY_FLAG]: first } }),
+      );
+    });
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(spy).not.toHaveBeenCalledWith(false);
+
+    // L'entrée de la nouvelle ouverture est (encore) la courante : ignoré aussi.
+    act(() => {
+      window.dispatchEvent(
+        new PopStateEvent('popstate', { state: { [BOTTOM_SHEET_HISTORY_FLAG]: second } }),
+      );
+    });
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+    // Vrai retour de l'utilisateur (entrée sans marqueur) : fermeture.
+    act(() => {
+      window.dispatchEvent(new PopStateEvent('popstate', { state: null }));
+    });
+    expect(spy).toHaveBeenCalledWith(false);
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  });
+
+  it('jeton d’une ouverture antérieure (non en cours de retrait) : retour pris en compte', async () => {
+    const spy = vi.fn();
+    render(<Harness initialOpen onOpenChangeSpy={spy} />);
+    await screen.findByRole('dialog');
+    act(() => {
+      window.dispatchEvent(
+        new PopStateEvent('popstate', {
+          state: { [BOTTOM_SHEET_HISTORY_FLAG]: 'visite-precedente:1' },
+        }),
+      );
+    });
+    expect(spy).toHaveBeenCalledWith(false);
+  });
+
+  it('démontage panneau ouvert après une navigation : pas de history.back()', async () => {
+    const { unmount } = render(<Harness initialOpen />);
+    await screen.findByRole('dialog');
+    // Le routeur a poussé une autre entrée (lien cliqué dans le panneau).
+    window.history.pushState({ __NA: true }, '');
+    unmount();
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 5));
+    });
+    expect(backSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe('BottomSheet — Échap dans une liste de suggestions', () => {
+  function ComboboxContent({ expanded }: { expanded: boolean }) {
+    return (
+      <div>
+        <input
+          aria-label="Ville"
+          role="combobox"
+          aria-expanded={expanded}
+          aria-controls="villes"
+          data-testid="city-input"
+        />
+        {expanded ? (
+          <ul role="listbox" id="villes">
+            <li role="option" aria-selected="false" tabIndex={-1} data-testid="city-option">
+              Rabat
+            </li>
+          </ul>
+        ) : null}
+      </div>
+    );
+  }
+
+  it('combobox ouverte : le panneau reste ouvert, le champ reçoit la touche', async () => {
+    const spy = vi.fn();
+    const onInputKeyDown = vi.fn();
+    render(
+      <Harness initialOpen onOpenChangeSpy={spy}>
+        <div onKeyDown={onInputKeyDown}>
+          <ComboboxContent expanded />
+        </div>
+      </Harness>,
+    );
+    await screen.findByRole('dialog');
+    const input = screen.getByTestId('city-input');
+    input.focus();
+    fireEvent.keyDown(input, { key: 'Escape' });
+    expect(spy).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(onInputKeyDown).toHaveBeenCalledTimes(1);
+  });
+
+  it('focus dans la liste ouverte : idem', async () => {
+    const spy = vi.fn();
+    render(
+      <Harness initialOpen onOpenChangeSpy={spy}>
+        <ComboboxContent expanded />
+      </Harness>,
+    );
+    await screen.findByRole('dialog');
+    fireEvent.keyDown(screen.getByTestId('city-option'), { key: 'Escape' });
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('combobox fermée : Échap ferme le panneau', async () => {
+    const spy = vi.fn();
+    render(
+      <Harness initialOpen onOpenChangeSpy={spy}>
+        <ComboboxContent expanded={false} />
+      </Harness>,
+    );
+    await screen.findByRole('dialog');
+    fireEvent.keyDown(screen.getByTestId('city-input'), { key: 'Escape' });
+    expect(spy).toHaveBeenCalledWith(false);
+  });
+});
+
+describe('BottomSheet — toasts annoncés pendant l’ouverture', () => {
+  function ToastButton() {
+    const { show } = useToast();
+    return (
+      <button type="button" onClick={() => show('Code promo appliqué')}>
+        Toast
+      </button>
+    );
+  }
+
+  it('la région des toasts (aria-live) n’est pas masquée aux lecteurs d’écran', async () => {
+    render(
+      <ToastProvider>
+        <main data-testid="page">
+          <Harness initialOpen>
+            <ToastButton />
+          </Harness>
+        </main>
+      </ToastProvider>,
+    );
+    const dialog = await screen.findByRole('dialog');
+    // Témoin : le reste de la page est bien masqué par le dialogue modal.
+    expect(screen.getByTestId('page').closest('[aria-hidden="true"]')).not.toBeNull();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Toast' }));
+    const region = document.querySelector('[data-toast-region]') as HTMLElement;
+    expect(region).toHaveAttribute('aria-live', 'polite');
+    expect(region.closest('[aria-hidden="true"]')).toBeNull();
+    const status = await screen.findByRole('status');
+    expect(status).toHaveTextContent('Code promo appliqué');
+    expect(status.closest('[aria-hidden="true"]')).toBeNull();
   });
 });

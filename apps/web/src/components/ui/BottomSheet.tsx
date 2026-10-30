@@ -17,6 +17,13 @@
  *    Échap, `open=false` du parent) appelle `history.back()` UNIQUEMENT si
  *    c'est nous qui avons poussé l'entrée. L'état Next (`__NA`, arbre) est
  *    recopié dans l'entrée poussée : le routeur ne recharge pas la page.
+ *    Chaque ouverture marque son entrée d'un jeton unique : le `popstate`
+ *    produit par notre propre `back()` après une réouverture immédiate est
+ *    ignoré, et le démontage ne recule que si notre entrée est encore la
+ *    courante.
+ *  - **Échap dans une liste de suggestions** (combobox ouverte, ex. villes) :
+ *    seule la liste se ferme, pas le panneau (l'écouteur Échap de Radix, en
+ *    capture sur `document`, passe avant celui du champ).
  *  - **Clavier virtuel** : `visualViewport` → `padding-bottom` dynamique
  *    (même logique que `ChatPanel`), plus les zones sûres (`env(safe-area-*)`).
  *  - **Hauteur** : mobile `100dvh` moins une marge haute, défilement interne
@@ -38,8 +45,45 @@ import { forwardRef, useEffect, useRef, type ReactNode } from 'react';
 import { useVisualViewportKeyboardInset } from '@/components/chat/hooks/use-visual-viewport';
 import { cn } from '@/lib/utils/cn';
 
-/** Marqueur posé dans l'entrée d'historique poussée à l'ouverture. */
+/** Marqueur posé dans l'entrée d'historique poussée à l'ouverture (valeur : jeton). */
 export const BOTTOM_SHEET_HISTORY_FLAG = '__fgBottomSheet';
+
+/** Préfixe propre à ce chargement de page : un jeton d'une visite antérieure
+ *  (l'état d'historique survit au rechargement) n'est jamais pris pour le nôtre. */
+const PAGE_LOAD_ID = Math.random().toString(36).slice(2, 10);
+let historyTokenSeq = 0;
+
+function nextHistoryToken(): string {
+  historyTokenSeq += 1;
+  return `${PAGE_LOAD_ID}:${historyTokenSeq}`;
+}
+
+/** Jeton porté par un état d'historique, ou `null`. */
+function historyTokenOf(state: unknown): string | null {
+  if (!state || typeof state !== 'object') return null;
+  const token = (state as Record<string, unknown>)[BOTTOM_SHEET_HISTORY_FLAG];
+  return typeof token === 'string' ? token : null;
+}
+
+/** Combobox ouverte (`aria-expanded="true"`) ou liste de suggestions. */
+const OPEN_POPUP_SELECTOR = [
+  '[role="combobox"][aria-expanded="true"]',
+  '[aria-haspopup][aria-expanded="true"]:not([aria-haspopup="false"])',
+  '[role="listbox"]',
+].join(', ');
+
+/**
+ * L'Échap vise-t-il une liste ouverte DANS le panneau ? Elle doit alors se
+ * fermer seule (le champ gère sa touche), sans fermer le panneau.
+ */
+export function isEscapeForOpenPopup(
+  target: EventTarget | null,
+  container: Element | null,
+): boolean {
+  if (!(target instanceof Element)) return false;
+  const popup = target.closest(OPEN_POPUP_SELECTOR);
+  return Boolean(popup && (!container || container.contains(popup)));
+}
 
 /** Feuille de style locale : keyframes + respect de `prefers-reduced-motion`. */
 const SHEET_STYLES = `
@@ -98,48 +142,64 @@ function ExitSignal({ onExit }: { onExit?: () => void }) {
 
 /** Ouverture ↔ historique du navigateur (bouton retour = fermeture). */
 function useHistorySync(open: boolean, enabled: boolean, onOpenChange: (open: boolean) => void) {
-  const pushedRef = useRef(false);
+  /** Jeton de l'entrée poussée pour l'ouverture en cours (`null` : aucune). */
+  const tokenRef = useRef<string | null>(null);
+  /** Entrées que notre `back()` est en train de retirer (popstate attendu). */
+  const leavingTokensRef = useRef<Set<string>>(new Set());
   const mountedRef = useRef(false);
   const onOpenChangeRef = useRef(onOpenChange);
   onOpenChangeRef.current = onOpenChange;
 
   useEffect(() => {
     if (!enabled || typeof window === 'undefined') return;
-    if (open && !pushedRef.current) {
+    if (open && !tokenRef.current) {
       const state: unknown = window.history.state;
       const base = state && typeof state === 'object' ? (state as Record<string, unknown>) : {};
+      const token = nextHistoryToken();
       // Même URL (hash compris) : l'entrée ne sert qu'à capter « retour ».
-      window.history.pushState({ ...base, [BOTTOM_SHEET_HISTORY_FLAG]: true }, '');
-      pushedRef.current = true;
-    } else if (!open && pushedRef.current) {
-      pushedRef.current = false;
+      window.history.pushState({ ...base, [BOTTOM_SHEET_HISTORY_FLAG]: token }, '');
+      tokenRef.current = token;
+    } else if (!open && tokenRef.current) {
+      leavingTokensRef.current.add(tokenRef.current);
+      tokenRef.current = null;
       window.history.back();
     }
   }, [open, enabled]);
 
   useEffect(() => {
     if (!enabled || typeof window === 'undefined') return;
-    const onPopState = () => {
-      if (!pushedRef.current) return;
+    const onPopState = (event: PopStateEvent) => {
+      const landed = historyTokenOf(event.state);
+      // Notre `back()` est arrivé (quelle que soit l'entrée d'arrivée) :
+      // plus rien n'est en cours de retrait.
+      const echoOfOurBack = landed !== null && leavingTokensRef.current.has(landed);
+      leavingTokensRef.current.clear();
+      if (!tokenRef.current) return;
+      // Fermeture puis réouverture dans la même tâche : l'entrée d'arrivée
+      // porte encore notre marqueur (celle que nous quittions, ou celle de la
+      // nouvelle ouverture) — ce n'est pas l'utilisateur qui recule.
+      if (echoOfOurBack || landed === tokenRef.current) return;
       // L'entrée a déjà été retirée par le navigateur : pas de `back()`.
-      pushedRef.current = false;
+      tokenRef.current = null;
       onOpenChangeRef.current(false);
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, [enabled]);
 
-  // Démontage panneau ouvert : on retire l'entrée poussée. Différé d'une
-  // tâche pour ignorer le démontage/remontage immédiat du StrictMode.
+  // Démontage panneau ouvert : on retire l'entrée poussée, SEULEMENT si elle
+  // est encore la courante (une navigation a pu en pousser une autre entre-
+  // temps : reculer annulerait alors cette navigation). Différé d'une tâche
+  // pour ignorer le démontage/remontage immédiat du StrictMode.
   useEffect(() => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
       window.setTimeout(() => {
-        if (!mountedRef.current && pushedRef.current) {
-          pushedRef.current = false;
-          window.history.back();
-        }
+        const token = tokenRef.current;
+        if (mountedRef.current || !token) return;
+        tokenRef.current = null;
+        if (historyTokenOf(window.history.state) === token) window.history.back();
       }, 0);
     };
   }, []);
@@ -207,6 +267,11 @@ export const BottomSheet = forwardRef<HTMLDivElement, BottomSheetProps>(function
               const target = returnFocusRef.current;
               returnFocusRef.current = null;
               if (target?.isConnected) target.focus({ preventScroll: true });
+            }}
+            onEscapeKeyDown={(event) => {
+              // Liste de suggestions ouverte (combobox des villes…) : Échap la
+              // ferme, elle seule ; le champ reçoit toujours la touche.
+              if (isEscapeForOpenPopup(event.target, contentRef.current)) event.preventDefault();
             }}
             onInteractOutside={(event) => {
               // Un clic sur un toast (au-dessus du panneau) ne ferme pas le panneau.

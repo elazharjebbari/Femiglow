@@ -191,12 +191,12 @@ describe('HeroProduit', () => {
           kicker: 'Sans rendez-vous · sans vernis',
           ctaLabel: 'Je commande — {price}',
           titleCategory: 'Kit de manucure japonaise,',
-          titlePromise: 'le soin du salon chez vous, pour 99 DH',
+          titlePromise: 'le soin du salon, chez vous, sans rendez-vous',
         },
         kitAngle: 'e',
       });
       const h1 = screen.getByRole('heading', { level: 1 });
-      expect(h1).toHaveTextContent('Kit de manucure japonaise, le soin du salon chez vous, pour 99 DH');
+      expect(h1).toHaveTextContent('Kit de manucure japonaise, le soin du salon, chez vous, sans rendez-vous');
       expect(screen.getByText('Sans rendez-vous · sans vernis')).toBeInTheDocument();
     });
 

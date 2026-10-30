@@ -6,9 +6,11 @@ import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_SHEET_SHARE_PCT,
   KIT_CTA_SHEET_EXPERIMENT_KEY,
+  commanderModeNeedsVisitor,
   isCommanderCmsMode,
   normalizeSharePct,
   parseCommanderOverride,
+  resolveCommanderAssignment,
   resolveCommanderMode,
 } from './commander-mode';
 
@@ -158,5 +160,44 @@ describe('resolveCommanderMode', () => {
 
   it('clé d’expérience figée (changer la clé re-mélangerait les visiteurs)', () => {
     expect(KIT_CTA_SHEET_EXPERIMENT_KEY).toBe('kit_cta_sheet_v1');
+  });
+});
+
+describe('resolveCommanderAssignment — origine de la variante (exposition A/B)', () => {
+  it('override, réglage fixe, A/B', () => {
+    expect(resolveCommanderAssignment({ cmsMode: 'scroll', override: 'sheet' })).toEqual({
+      mode: 'sheet',
+      source: 'override',
+    });
+    expect(resolveCommanderAssignment({ cmsMode: 'sheet' })).toEqual({
+      mode: 'sheet',
+      source: 'cms',
+    });
+    expect(resolveCommanderAssignment({ cmsMode: 'bogus' })).toEqual({
+      mode: 'scroll',
+      source: 'cms',
+    });
+    expect(resolveCommanderAssignment({ cmsMode: 'ab', sharePct: 100, visitorId: null })).toEqual({
+      mode: 'sheet',
+      source: 'ab',
+    });
+    expect(resolveCommanderAssignment({ cmsMode: 'ab', sharePct: 50, visitorId: null })).toEqual({
+      mode: 'scroll',
+      source: 'ab',
+    });
+  });
+
+  it('même variante que resolveCommanderMode', () => {
+    for (const id of visitorIds(200, 11)) {
+      const input = { cmsMode: 'ab', sharePct: 37, visitorId: id };
+      expect(resolveCommanderAssignment(input).mode).toBe(resolveCommanderMode(input));
+    }
+  });
+
+  it('commanderModeNeedsVisitor : uniquement en ab sans override', () => {
+    expect(commanderModeNeedsVisitor('ab', null)).toBe(true);
+    expect(commanderModeNeedsVisitor('ab', 'sheet')).toBe(false);
+    expect(commanderModeNeedsVisitor('ab', 'nope')).toBe(true);
+    expect(commanderModeNeedsVisitor('sheet', null)).toBe(false);
   });
 });

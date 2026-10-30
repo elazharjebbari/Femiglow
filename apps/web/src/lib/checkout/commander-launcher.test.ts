@@ -3,8 +3,12 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { arriveAtCommander } = vi.hoisted(() => ({ arriveAtCommander: vi.fn() }));
+const { arriveAtCommander, getAnonymousId } = vi.hoisted(() => ({
+  arriveAtCommander: vi.fn(),
+  getAnonymousId: vi.fn(() => 'aid_fixture'),
+}));
 vi.mock('@/lib/checkout/wizard-arrival', () => ({ arriveAtCommander }));
+vi.mock('@/lib/tracking/identity', () => ({ getAnonymousId }));
 
 import {
   closeCommander,
@@ -12,19 +16,24 @@ import {
   openCommander,
   useCommanderLauncherStore,
 } from './commander-launcher';
+import { resolveCommanderMode } from './commander-mode';
 
 function reset() {
   useCommanderLauncherStore.setState({
     mode: 'scroll',
+    config: null,
+    assignment: null,
     isSheetOpen: false,
     sheetHosts: 0,
     lastSource: null,
   });
+  window.history.replaceState(null, '', '/');
 }
 
 beforeEach(() => {
   reset();
   arriveAtCommander.mockClear();
+  getAnonymousId.mockClear();
 });
 
 afterEach(reset);
@@ -97,5 +106,64 @@ describe('registerSheetHost', () => {
     unregisterB();
     expect(useCommanderLauncherStore.getState().sheetHosts).toBe(0);
     expect(useCommanderLauncherStore.getState().isSheetOpen).toBe(false);
+  });
+});
+
+describe('résolution synchrone à la demande (clic avant la synchronisation)', () => {
+  beforeEach(() => {
+    useCommanderLauncherStore.getState().registerSheetHost();
+  });
+
+  it('sans réglage déclaré (hors /kit) : défilement, aucune lecture du fg_aid', () => {
+    expect(openCommander({ source: 'hero' })).toBe('scroll');
+    expect(arriveAtCommander).toHaveBeenCalledTimes(1);
+    expect(getAnonymousId).not.toHaveBeenCalled();
+    expect(useCommanderLauncherStore.getState().assignment).toBeNull();
+  });
+
+  it('réglage sheet déclaré mais non encore résolu : le clic ouvre le panneau', () => {
+    useCommanderLauncherStore.getState().configure({ cmsMode: 'sheet', sharePct: 50 });
+    expect(openCommander({ source: 'hero' })).toBe('sheet');
+    expect(arriveAtCommander).not.toHaveBeenCalled();
+    expect(useCommanderLauncherStore.getState().assignment).toMatchObject({
+      mode: 'sheet',
+      source: 'cms',
+    });
+  });
+
+  it('?cta= lu dans l’URL courante', () => {
+    window.history.replaceState(null, '', '/kit?cta=sheet');
+    useCommanderLauncherStore.getState().configure({ cmsMode: 'scroll', sharePct: 0 });
+    expect(openCommander({ source: 'hero' })).toBe('sheet');
+    expect(useCommanderLauncherStore.getState().assignment?.source).toBe('override');
+  });
+
+  it('A/B : même variante que l’attribution par fg_aid, tirée une seule fois', () => {
+    useCommanderLauncherStore.getState().configure({ cmsMode: 'ab', sharePct: 50 });
+    const expected = resolveCommanderMode({
+      cmsMode: 'ab',
+      sharePct: 50,
+      visitorId: 'aid_fixture',
+    });
+    expect(getEffectiveCommanderMode()).toBe(expected);
+    expect(openCommander({ source: 'hero' })).toBe(expected);
+    expect(getAnonymousId).toHaveBeenCalledTimes(1);
+  });
+
+  it('un réglage modifié invalide l’attribution ; le retrait remet le défilement', () => {
+    const store = useCommanderLauncherStore.getState();
+    store.configure({ cmsMode: 'sheet', sharePct: 50 });
+    expect(store.resolveMode(null)?.mode).toBe('sheet');
+    store.configure({ cmsMode: 'sheet', sharePct: 50 });
+    expect(useCommanderLauncherStore.getState().assignment).not.toBeNull();
+    store.configure({ cmsMode: 'scroll', sharePct: 50 });
+    expect(useCommanderLauncherStore.getState().assignment).toBeNull();
+    expect(store.resolveMode(null)?.mode).toBe('scroll');
+    store.configure(null);
+    expect(useCommanderLauncherStore.getState()).toMatchObject({
+      config: null,
+      assignment: null,
+      mode: 'scroll',
+    });
   });
 });
