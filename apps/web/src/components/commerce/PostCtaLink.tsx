@@ -7,7 +7,8 @@
  *  - Attention §12 — directional words (« ↓ Voir le pack ci-dessous »)
  *  - Pas de bouton primary surdimensionné ici, juste un lien chuchoté
  *  - Click émet `composition_post_cta_click` (catégorie engagement)
- *  - Scroll smooth natif si l'ancre cible existe
+ *  - Ancre du formulaire : `openCommander` (défilement centré ou panneau,
+ *    selon le mode `kit-checkout`) ; autre ancre : scroll smooth natif
  *
  * cf. docs/ingredients-detail-optim-2026-05/05-frontend-public-design.md §8
  */
@@ -15,6 +16,11 @@
 
 import { useCallback } from 'react';
 
+import {
+  COMMANDER_ANCHOR_ID,
+  getEffectiveCommanderMode,
+  openCommander,
+} from '@/lib/checkout/commander-launcher';
 import { useTracking } from '@/lib/tracking/use-tracking';
 
 export interface PostCtaLinkProps {
@@ -35,10 +41,17 @@ export function PostCtaLink({
 
   const handleClick = useCallback(
     (event: React.MouseEvent<HTMLAnchorElement>) => {
+      const toCommander = href === `#${COMMANDER_ANCHOR_ID}`;
       emit('composition_post_cta_click', {
         sub_product_id: subProductId,
         cta_target: href,
+        ...(toCommander ? { kit_cta_mode: getEffectiveCommanderMode() } : {}),
       });
+      if (toCommander && document.getElementById(COMMANDER_ANCHOR_ID)) {
+        event.preventDefault();
+        openCommander({ source: `composition_post_cta:${subProductId}` });
+        return;
+      }
       if (href.startsWith('#')) {
         const target = document.getElementById(href.slice(1));
         if (target) {

@@ -430,7 +430,14 @@
       "commander": {
         "kicker_default": "Order the ritual",
         "title_default": "Four gestures, delivered to your home.",
-        "subtitle_default": "A few details, an address in Morocco, and we take care of the rest. Delivery: Rabat 24 h, rest of Morocco 48 to 72 h."
+        "subtitle_default": "A few details, an address in Morocco, and we take care of the rest. Delivery: Rabat 24 h, rest of Morocco 48 to 72 h.",
+        "sheet": {
+          "title": "Order the ritual",
+          "close": "Close the order form",
+          "placeholder_title": "Your order form is open",
+          "placeholder_body": "Your details are saved: pick up where you left off.",
+          "reopen": "Resume my order"
+        }
       },
       "sticky": {
         "aria_region": "Quick purchase",

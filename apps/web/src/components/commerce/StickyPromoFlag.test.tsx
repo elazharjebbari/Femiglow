@@ -1,27 +1,29 @@
 /**
  * StickyPromoFlag — l'onglet « Code X appliqué » n'existe QUE pour un code
  * promo réellement appliqué ; au clic : message « déjà appliqué », tracking,
- * scroll vers le formulaire.
+ * ouverture du formulaire (`openCommander` : défilement ou panneau).
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 
-const { emit, scrollToCommander } = vi.hoisted(() => ({ emit: vi.fn(), scrollToCommander: vi.fn() }));
+const { emit, arriveAtCommander } = vi.hoisted(() => ({ emit: vi.fn(), arriveAtCommander: vi.fn() }));
 vi.mock('@/lib/tracking/use-tracking', () => ({ useTracking: () => ({ emit }) }));
-vi.mock('@/components/commerce/CommanderAnchorButton', () => ({ scrollToCommander }));
+vi.mock('@/lib/checkout/wizard-arrival', () => ({ arriveAtCommander }));
 vi.mock('@/components/chat/chat-store', () => ({ useChatStore: () => false }));
 
 import { ToastProvider } from '@/components/ui/Toast';
 import { useWizardStore } from '@/lib/checkout/state/wizard-store';
+import { useCommanderLauncherStore } from '@/lib/checkout/commander-launcher';
 import { StickyCartCTA } from './StickyCartCTA';
 import { StickyPromoFlag } from './StickyPromoFlag';
 
 beforeEach(() => {
   emit.mockClear();
-  scrollToCommander.mockClear();
+  arriveAtCommander.mockClear();
 });
 
 afterEach(() => {
+  useCommanderLauncherStore.setState({ mode: 'scroll', isSheetOpen: false, sheetHosts: 0 });
   useWizardStore.getState().clearCoupon();
   vi.useRealTimers();
   cleanup();
@@ -72,10 +74,27 @@ describe('StickyPromoFlag', () => {
       label: 'GLOW99',
       destination: '#commander-femiglow',
       component_id: 'sticky_promo_flag',
+      kit_cta_mode: 'scroll',
     });
     // Lancé dans le geste (jamais différé : un smooth différé peut être ignoré),
     // en réservant la place du toast pour qu'il ne masque pas le bouton.
-    expect(scrollToCommander).toHaveBeenCalledWith('commander-femiglow', { extraBottomInset: 96 });
+    expect(arriveAtCommander).toHaveBeenCalledWith('commander-femiglow', { extraBottomInset: 96 });
+  });
+
+  it('mode panneau : le clic ouvre le panneau au lieu de défiler', () => {
+    vi.useFakeTimers();
+    applyPromo();
+    useCommanderLauncherStore.setState({ mode: 'sheet', isSheetOpen: false, sheetHosts: 1 });
+    render(
+      <ToastProvider>
+        <StickyPromoFlag currency="MAD" />
+      </ToastProvider>,
+    );
+    fireEvent.click(screen.getByTestId('sticky-promo-flag'));
+    expect(arriveAtCommander).not.toHaveBeenCalled();
+    expect(useCommanderLauncherStore.getState().isSheetOpen).toBe(true);
+    expect(useCommanderLauncherStore.getState().lastSource).toBe('sticky_promo_flag');
+    expect(emit).toHaveBeenCalledWith('cta_click', expect.objectContaining({ kit_cta_mode: 'sheet' }));
   });
 
   it('hors ToastProvider : le clic ne lève pas et scrolle quand même', () => {
@@ -83,7 +102,7 @@ describe('StickyPromoFlag', () => {
     applyPromo();
     render(<StickyPromoFlag currency="MAD" />);
     expect(() => fireEvent.click(screen.getByTestId('sticky-promo-flag'))).not.toThrow();
-    expect(scrollToCommander).toHaveBeenCalledTimes(1);
+    expect(arriveAtCommander).toHaveBeenCalledTimes(1);
   });
 
   it('libellés localisés (AR) : le code reste en LTR dans la phrase', () => {

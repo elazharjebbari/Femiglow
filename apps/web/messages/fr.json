@@ -435,7 +435,14 @@
       "commander": {
         "kicker_default": "Commander le rituel",
         "title_default": "Quatre gestes, livrés chez vous.",
-        "subtitle_default": "Quelques coordonnées, une adresse au Maroc, et nous nous occupons du reste. Livraison : Rabat 24 h, reste du Maroc 48 à 72 h."
+        "subtitle_default": "Quelques coordonnées, une adresse au Maroc, et nous nous occupons du reste. Livraison : Rabat 24 h, reste du Maroc 48 à 72 h.",
+        "sheet": {
+          "title": "Commander le rituel",
+          "close": "Fermer le formulaire de commande",
+          "placeholder_title": "Votre commande est ouverte",
+          "placeholder_body": "Vos informations sont gardées : reprenez où vous en étiez.",
+          "reopen": "Reprendre ma commande"
+        }
       },
       "sticky": {
         "aria_region": "Achat rapide",

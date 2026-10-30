@@ -31,7 +31,7 @@ async function applyCode(page: Page): Promise<boolean> {
 test.describe('/kit — propagation crédit fidélité @kit-coupon-credit', () => {
   test('KCC-E001 un code valide réduit tous les prix de la page', async ({ page }) => {
     test.setTimeout(60_000);
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     const block = page.getByTestId('pack-price-block');
     const applied = await applyCode(page);
     test.skip(!applied, 'FG-E2E-0001 non actif dans cet environnement (lancer seed-e2e-loyalty).');
@@ -50,7 +50,7 @@ test.describe('/kit — propagation crédit fidélité @kit-coupon-credit', () =
 
   test('KCC-E002 le sticky CTA reflète le prix réduit', async ({ page }) => {
     test.setTimeout(60_000);
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     const applied = await applyCode(page);
     test.skip(!applied, 'FG-E2E-0001 non actif dans cet environnement.');
     // Faire apparaître le sticky CTA (scroll au-delà du sentinel hero).

@@ -66,6 +66,7 @@ describe('VideoPostCta — interaction', () => {
       video_id: 'rituel-4-gestes',
       cta_label: 'Voir le pack ci-dessous',
       cta_target: '#commander-femiglow',
+      kit_cta_mode: 'scroll',
     });
   });
 

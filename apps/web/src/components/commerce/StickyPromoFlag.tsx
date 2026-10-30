@@ -16,7 +16,8 @@
  * Mouvement (une seule fois, à l'apparition de la barre) : l'onglet monte et
  * apparaît, la coche se trace, un reflet unique traverse la puce. Au survol :
  * léger soulèvement et le reflet repasse. Au clic : onde autour de la coche,
- * message « déjà appliqué » puis scroll vers le formulaire.
+ * message « déjà appliqué » puis ouverture du formulaire (`openCommander` :
+ * défilement ou panneau selon le mode).
  * `prefers-reduced-motion` : aucune animation, rendu final direct.
  *
  * Positionné en `left` PHYSIQUE (comme le lanceur du chat est forcé à droite
@@ -28,7 +29,7 @@
 
 import { useCallback, useState } from 'react';
 
-import { scrollToCommander } from '@/components/commerce/CommanderAnchorButton';
+import { getEffectiveCommanderMode, openCommander } from '@/lib/checkout/commander-launcher';
 import { useOptionalToast } from '@/components/ui/Toast';
 import type { Currency } from '@/lib/products/currency';
 import { useAppliedCoupon } from '@/lib/checkout/state/use-applied-coupon';
@@ -88,11 +89,17 @@ export function StickyPromoFlag({
       label: code,
       destination: `#${anchorId}`,
       component_id: 'sticky_promo_flag',
+      kit_cta_mode: getEffectiveCommanderMode(),
     });
-    // Défilement lancé DANS le geste : différé (setTimeout), un défilement
+    // Ouverture lancée DANS le geste : différé (setTimeout), un défilement
     // `smooth` peut être ignoré par certains navigateurs. L'onde reste visible
-    // (la sticky ne bouge pas pendant le trajet).
-    scrollToCommander(anchorId, toast ? { extraBottomInset: TOAST_RESERVE_PX } : undefined);
+    // (la sticky ne bouge pas pendant le trajet). En mode défilement, on garde
+    // la place du toast au-dessus de la sticky.
+    openCommander({
+      source: 'sticky_promo_flag',
+      anchorId,
+      ...(toast ? { extraBottomInset: TOAST_RESERVE_PX } : {}),
+    });
   }, [toast, strings.toast, code, amount, emit, anchorId]);
 
   if (!coupon.hasDiscount || !coupon.isPromo || !code) return null;

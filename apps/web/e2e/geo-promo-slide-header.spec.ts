@@ -37,7 +37,7 @@ test.describe('Geo promo slide header', () => {
   });
 
   test('appears on /kit with tags and scroll CTA', async ({ page }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
 
     const banner = page.getByTestId('geo-promo-slide-header');
     await expect(banner).toBeVisible();
@@ -58,7 +58,7 @@ test.describe('Geo promo slide header', () => {
   });
 
   test('dismissal persists after reload', async ({ page }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     await expect(page.getByTestId('geo-promo-slide-header')).toBeVisible();
     await page.getByRole('button', { name: "Fermer l'offre" }).click();
     await expect(page.getByTestId('geo-promo-slide-header')).toHaveCount(0);

@@ -18,7 +18,7 @@ import AxeBuilder from '@axe-core/playwright';
 
 test.describe('/kit vidéo — rendu @video-render', () => {
   test('section vidéo visible avec heading « Quatre gestes »', async ({ page }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     const heading = page.getByRole('heading', {
       name: /quatre gestes,? en un seul plan/i,
       level: 2,
@@ -38,7 +38,7 @@ test.describe('/kit vidéo — rendu @video-render', () => {
       }
     });
 
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     const poster = page.getByTestId('video-poster-cover');
     await expect(poster).toBeVisible();
     expect(await page.locator('iframe[src*="youtube"]').count()).toBe(0);
@@ -53,7 +53,7 @@ test.describe('/kit vidéo — rendu @video-render', () => {
   });
 
   test('mini-timeline avec 4 chapitres visible sous la vidéo', async ({ page }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     const nav = page.getByTestId('video-chapters');
     await expect(nav).toBeVisible();
     const items = nav.locator('[data-testid^="video-chapter-"]');
@@ -61,14 +61,14 @@ test.describe('/kit vidéo — rendu @video-render', () => {
   });
 
   test('badge durée affiché sur le poster', async ({ page }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     const badge = page.getByTestId('video-poster-duration-badge');
     await expect(badge).toBeVisible();
     await expect(badge).toContainText(/\d+/);
   });
 
   test('CTA « Voir le pack » pointe sur #commander-femiglow', async ({ page }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     const cta = page.getByTestId('video-post-cta');
     await expect(cta).toBeVisible();
     await expect(cta).toHaveAttribute('href', '#commander-femiglow');
@@ -79,7 +79,7 @@ test.describe('/kit vidéo — interactions @video-interaction', () => {
   test('clic poster monte une iframe YouTube avec autoplay + mute + captions FR', async ({
     page,
   }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     await page.getByTestId('video-poster-cover').click();
     const iframe = page.locator('iframe[src*="youtube"]').first();
     await expect(iframe).toBeVisible({ timeout: 5_000 });
@@ -95,7 +95,7 @@ test.describe('/kit vidéo — interactions @video-interaction', () => {
   test('iframe garde les params privacy YouTube (modestbranding, rel=0, etc.)', async ({
     page,
   }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     await page.getByTestId('video-poster-cover').click();
     const iframe = page.locator('iframe[src*="youtube"]').first();
     const src = (await iframe.getAttribute('src')) ?? '';
@@ -109,7 +109,7 @@ test.describe('/kit vidéo — interactions @video-interaction', () => {
   test('iframe attributs a11y/perf : title, loading=lazy, referrerpolicy, allow', async ({
     page,
   }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     await page.getByTestId('video-poster-cover').click();
     const iframe = page.locator('iframe[src*="youtube"]').first();
     await expect(iframe).toHaveAttribute('title', /vidéo|gestes/i);
@@ -126,7 +126,7 @@ test.describe('/kit vidéo — interactions @video-interaction', () => {
   test('clic chapitre conserve un seul aria-current="step" dans la timeline', async ({
     page,
   }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     await page.getByTestId('video-chapter-powder').click();
     const active = page.locator(
       '[data-testid^="video-chapter-"][aria-current="step"]',
@@ -135,7 +135,7 @@ test.describe('/kit vidéo — interactions @video-interaction', () => {
   });
 
   test('clic CTA scrolle vers #commander-femiglow', async ({ page }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     const cta = page.getByTestId('video-post-cta');
     await cta.scrollIntoViewIfNeeded();
     await cta.click();
@@ -147,7 +147,7 @@ test.describe('/kit vidéo — interactions @video-interaction', () => {
 
 test.describe('/kit vidéo — cover SVG @video-cover', () => {
   test('cover SVG (mode URL) visible au paint initial (default mock)', async ({ page }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     const cover = page.getByTestId('video-poster-svg-url');
     await expect(cover).toBeVisible({ timeout: 10_000 });
     const ariaLabel = await cover.getAttribute('aria-label');
@@ -155,7 +155,7 @@ test.describe('/kit vidéo — cover SVG @video-cover', () => {
   });
 
   test('cover pointe vers le SVG maison /products/kit-principale.svg', async ({ page }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     const cover = page.getByTestId('video-poster-svg-url');
     const src = await cover.getAttribute('src');
     expect(src).toBe('/products/kit-principale.svg');
@@ -164,7 +164,7 @@ test.describe('/kit vidéo — cover SVG @video-cover', () => {
   test('voile encre 20 % toujours rendu (contraste bouton + badge)', async ({
     page,
   }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     const button = page.getByTestId('video-poster-cover');
     await expect(button).toBeVisible();
     const html = (await button.innerHTML()) ?? '';
@@ -174,7 +174,7 @@ test.describe('/kit vidéo — cover SVG @video-cover', () => {
 
 test.describe('/kit vidéo — a11y @video-a11y', () => {
   test('0 violation axe sérieuse/critique sur la section vidéo', async ({ page }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     await page.waitForLoadState('domcontentloaded');
     const results = await new AxeBuilder({ page })
       .include('section[data-testid="video-section-youtube"]')

@@ -5,8 +5,10 @@
  * embarquée (#commander-femiglow). Remplace l'ancien CTA qui redirigeait
  * vers `/panier` — désormais la commande se finalise sans quitter `/kit`.
  *
- * - `scrollIntoView({behavior:'smooth'})` avec fallback instant si
- *   `prefers-reduced-motion` est actif (respect a11y).
+ * - Kit CRO v2 §2 — passe par `openCommander` : défilement centré
+ *   (`arriveAtCommander`, instantané sous `prefers-reduced-motion`) ou
+ *   ouverture du panneau de commande selon le mode (CMS `kit-checkout`).
+ *   Le mode appliqué part dans le tracking (`kit_cta_mode`).
  * - Émet l'event tracking `cta_commander_click` (proxy `add_to_cart` côté
  *   GA4 pour conserver la conversion funnel — voir `lib/tracking`).
  * - Évite tout double-tir via la garde busy/timeout standard.
@@ -15,6 +17,7 @@
 import { useCallback, type ReactNode } from 'react';
 
 import { useAppliedCoupon } from '@/lib/checkout/state/use-applied-coupon';
+import { openCommander } from '@/lib/checkout/commander-launcher';
 import { arriveAtCommander, type ArriveOptions } from '@/lib/checkout/wizard-arrival';
 
 import { Button, type ButtonSize } from '@/components/ui/Button';
@@ -86,9 +89,11 @@ interface CommanderAnchorButtonProps {
 }
 
 /**
- * Arrivée sur le funnel embarqué : step actif centré dans la bande visible,
- * puis accueil très doux (cf. `wizard-arrival`). Partagé avec le flag promo
- * de la sticky (`StickyPromoFlag`).
+ * Arrivée sur le funnel embarqué par DÉFILEMENT uniquement : step actif
+ * centré dans la bande visible, puis accueil très doux (cf. `wizard-arrival`).
+ * Les boutons « Commander » passent désormais par `openCommander`
+ * (`commander-launcher`), qui choisit entre défilement et panneau ; cette
+ * fonction reste pour les usages qui veulent explicitement défiler.
  */
 export function scrollToCommander(
   anchorId = 'commander-femiglow',
@@ -126,10 +131,11 @@ export function CommanderAnchorButton({
         : priceCents;
 
   const onClick = useCallback(() => {
-    scrollToCommander(anchorId);
+    const kitCtaMode = openCommander({ source: source ?? 'commander_button', anchorId });
 
     if (trackedPriceCents !== undefined && productId && productName) {
       emit('add_to_cart', {
+        kit_cta_mode: kitCtaMode,
         currency,
         value: trackedPriceCents / 100,
         items: [
@@ -148,6 +154,7 @@ export function CommanderAnchorButton({
     // ecommerce `add_to_cart` (qui agrège tous les CTA d'ajout).
     if (source === 'pack_section') {
       emit('pack_cta_click', {
+        kit_cta_mode: kitCtaMode,
         source: 'pack_section',
         cta_label:
           trackingLabel ??

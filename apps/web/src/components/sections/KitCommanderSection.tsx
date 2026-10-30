@@ -22,16 +22,39 @@
  * du markup statique autour du WizardShell qui est déjà côté client).
  */
 
-import type { ReactNode } from 'react';
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 
+import { BottomSheet } from '@/components/ui/BottomSheet';
+import { Button } from '@/components/ui/Button';
 import { Container } from '@/components/ui/Container';
 import { Heading } from '@/components/ui/Heading';
 import { Text } from '@/components/ui/Text';
 import { WizardShell } from '@/components/checkout/wizard/WizardShell';
 import { WizardMobilePackThumb } from '@/components/checkout/wizard/WizardMobilePackThumb';
 import { DEFAULT_WIZARD_FEATURES } from '@/lib/checkout/copy/wizard-copy';
+import { WizardScrollContainerProvider } from '@/components/checkout/wizard/wizard-scroll-container';
 import type { CartSnapshot } from '@/lib/checkout/schemas/common';
-import type { WizardFormContext } from '@/lib/checkout/state/wizard-store';
+import { useWizardStore, type WizardFormContext } from '@/lib/checkout/state/wizard-store';
+import {
+  COMMANDER_ANCHOR_ID,
+  openCommander,
+  useCommanderLauncherStore,
+} from '@/lib/checkout/commander-launcher';
+import type { CommanderCmsMode } from '@/lib/checkout/commander-mode';
+import { useCommanderMode } from '@/lib/checkout/use-commander-mode';
+import {
+  DEFAULT_KIT_CHECKOUT_CONFIG,
+  type KitCheckoutConfig,
+} from '@/lib/checkout/kit-checkout-config';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Props
@@ -67,7 +90,33 @@ export interface KitCommanderSectionProps {
   wizardLanguage?: 'fr' | 'ar' | 'en';
   /** Coupon d'accueil résolu serveur → mention « geste d'accueil » au récap. */
   welcomeCoupon?: { active: boolean; postPurchaseCreditCents?: number };
+  /**
+   * Kit CRO v2 §2 — réglage CMS `kit-checkout` (défilement, panneau ou A/B).
+   * Défaut : `scroll` (comportement historique).
+   */
+  checkoutConfig?: KitCheckoutConfig;
+  /** Libellés localisés du panneau de commande (défaut FR). */
+  sheetStrings?: KitCommanderSheetStrings;
 }
+
+export interface KitCommanderSheetStrings {
+  /** Titre du panneau (nom accessible du dialogue). */
+  title: string;
+  /** `aria-label` du bouton de fermeture. */
+  close: string;
+  /** Emplacement réservé en ligne pendant que le panneau est ouvert. */
+  placeholderTitle: string;
+  placeholderBody: string;
+  reopen: string;
+}
+
+export const DEFAULT_KIT_COMMANDER_SHEET_STRINGS: KitCommanderSheetStrings = {
+  title: 'Commander le rituel',
+  close: 'Fermer le formulaire de commande',
+  placeholderTitle: 'Votre commande est ouverte',
+  placeholderBody: 'Vos informations sont gardées\u00A0: reprenez où vous en étiez.',
+  reopen: 'Reprendre ma commande',
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Const — profil Mode A figé pour /kit
@@ -84,6 +133,53 @@ const KIT_FORM_CONTEXT: WizardFormContext = {
 // auto-aligne `payment_selected_at` côté `/api/checkout/order`.
 const KIT_STEPS = ['lead', 'address', 'thank_you'] as const;
 
+/** Nombre max. d'images à attendre qu'un step lazy affiche son titre. */
+const STEP_FOCUS_MAX_FRAMES = 30;
+
+// SSR-safe : `useLayoutEffect` n'existe pas côté serveur.
+const useIsomorphicLayoutEffect =
+  typeof window !== 'undefined' ? useLayoutEffect : useEffect;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Mode d'ouverture (scroll | sheet)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Résout le mode (override `?cta=`, réglage CMS, A/B par `fg_aid`) et le
+ * pousse dans le lanceur. Isolé sous `<Suspense>` : `useSearchParams` ne
+ * fait pas basculer toute la page en rendu client.
+ */
+function CommanderModeSync({ cmsMode, sharePct }: { cmsMode: CommanderCmsMode; sharePct: number }) {
+  const mode = useCommanderMode({ cmsMode, sharePct });
+  const setMode = useCommanderLauncherStore((s) => s.setMode);
+  useEffect(() => {
+    if (mode) setMode(mode);
+  }, [mode, setMode]);
+  // Section démontée : les boutons retrouvent le défilement historique.
+  useEffect(() => () => setMode('scroll'), [setMode]);
+  return null;
+}
+
+/** Remonte le panneau en haut et place le focus sur le titre du step actif. */
+function focusStepHeading(container: HTMLElement): () => void {
+  container.scrollTop = 0;
+  let frames = 0;
+  let rafId = 0;
+  const tryFocus = () => {
+    const heading = container.querySelector<HTMLElement>('section[data-testid^="wizard-step-"] h2');
+    if (heading) {
+      if (!heading.hasAttribute('tabindex')) heading.setAttribute('tabindex', '-1');
+      heading.focus({ preventScroll: true });
+      return;
+    }
+    // Step chargé en lazy (Suspense) : on réessaie à l'image suivante.
+    frames += 1;
+    if (frames < STEP_FOCUS_MAX_FRAMES) rafId = window.requestAnimationFrame(tryFocus);
+  };
+  rafId = window.requestAnimationFrame(tryFocus);
+  return () => window.cancelAnimationFrame(rafId);
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Component
 // ─────────────────────────────────────────────────────────────────────────────
@@ -97,19 +193,120 @@ export function KitCommanderSection({
   packImage,
   wizardLanguage,
   welcomeCoupon,
+  checkoutConfig = DEFAULT_KIT_CHECKOUT_CONFIG,
+  sheetStrings = DEFAULT_KIT_COMMANDER_SHEET_STRINGS,
 }: KitCommanderSectionProps) {
+  const mode = useCommanderLauncherStore((s) => s.mode);
+  const isSheetOpen = useCommanderLauncherStore((s) => s.isSheetOpen);
+  const closeCommander = useCommanderLauncherStore((s) => s.closeCommander);
+  const registerSheetHost = useCommanderLauncherStore((s) => s.registerSheetHost);
+  const currentStep = useWizardStore((s) => s.currentStep);
+  const sheetMode = mode === 'sheet';
+
   // Phase 8 (7E-13) — injecte la langue dans le formContext du wizard. En AR/EN,
   // le dictionnaire de la langue (`useWizardTranslation`) pilote tous les libellés.
-  const formContext: WizardFormContext = wizardLanguage
-    ? { ...KIT_FORM_CONTEXT, language: wizardLanguage }
-    : KIT_FORM_CONTEXT;
+  // Kit CRO v2 — la variante d'ouverture est portée par `variantKey`
+  // (A = défilement, B = panneau) jusqu'à `orders.variant_key`.
+  const formContext = useMemo<WizardFormContext>(
+    () => ({
+      ...KIT_FORM_CONTEXT,
+      variantKey: sheetMode ? 'B' : 'A',
+      ...(wizardLanguage ? { language: wizardLanguage } : {}),
+    }),
+    [sheetMode, wizardLanguage],
+  );
+
+  // Cette section sait afficher le panneau : le lanceur peut l'utiliser.
+  useEffect(() => registerSheetHost(), [registerSheetHost]);
+
+  // UNE seule instance du wizard montée à la fois. Elle passe dans le panneau
+  // dès l'ouverture et n'en ressort qu'après l'animation de sortie
+  // (`onExitComplete`) — l'état vit dans le store persistant, le remontage ne
+  // perd rien. Mise à jour pendant le rendu (état dérivé) : aucune image où
+  // les deux emplacements montent le wizard.
+  const [sheetPresent, setSheetPresent] = useState(false);
+  if (sheetMode && isSheetOpen && !sheetPresent) setSheetPresent(true);
+  const wizardInSheet = sheetMode && sheetPresent;
+  const onSheetExitComplete = useCallback(() => setSheetPresent(false), []);
+
+  // Hauteur de la carte en ligne, pour que l'emplacement réservé ne fasse pas
+  // sauter la page sous le panneau.
+  const inlineCardRef = useRef<HTMLDivElement>(null);
+  const inlineHeightRef = useRef<number | undefined>(undefined);
+  useIsomorphicLayoutEffect(() => {
+    if (!wizardInSheet && inlineCardRef.current) {
+      inlineHeightRef.current = inlineCardRef.current.offsetHeight || undefined;
+    }
+  });
+
+  // Arrivée avec `#commander-femiglow` (lien partagé, bandeau promo d'une
+  // autre page) : en mode panneau, on l'ouvre directement. Une seule fois.
+  const handledHashRef = useRef(false);
+  useEffect(() => {
+    if (!sheetMode || handledHashRef.current) return;
+    handledHashRef.current = true;
+    if (window.location.hash === `#${COMMANDER_ANCHOR_ID}`) openCommander({ source: 'hash' });
+  }, [sheetMode]);
+
+  // Changement d'étape dans le panneau (et ouverture) : haut du panneau +
+  // focus sur le titre du step (lecteur d'écran, clavier).
+  // Ref-état : le corps du panneau est monté par le portail Radix, parfois
+  // un rendu APRÈS l'ouverture — l'effet doit se relancer à son arrivée.
+  const sheetBodyRef = useRef<HTMLDivElement | null>(null);
+  const [sheetBody, setSheetBody] = useState<HTMLDivElement | null>(null);
+  const attachSheetBody = useCallback((node: HTMLDivElement | null) => {
+    sheetBodyRef.current = node;
+    setSheetBody(node);
+  }, []);
+  useEffect(() => {
+    if (!wizardInSheet || !isSheetOpen || !sheetBody) return;
+    return focusStepHeading(sheetBody);
+  }, [currentStep, wizardInSheet, isSheetOpen, sheetBody]);
+  const getSheetBody = useCallback(() => sheetBodyRef.current, []);
+
+  const onSheetOpenChange = useCallback(
+    (open: boolean) => {
+      if (!open) closeCommander();
+    },
+    [closeCommander],
+  );
+
+  const wizard = (
+    <WizardShell
+      formContext={formContext}
+      steps={[...KIT_STEPS]}
+      initialCart={initialCart}
+      welcomeCoupon={welcomeCoupon}
+      cartRecapThumbnailSrc={packImage?.src}
+      // FR : override marketing custom. AR/EN : pas d'override → le
+      // dictionnaire complet de la langue fournit tous les libellés.
+      copy={
+        wizardLanguage && wizardLanguage !== 'fr'
+          ? undefined
+          : {
+              title: 'Commander le rituel FemiGlow',
+              // Kolenda §5 W1 (P2) — CTA outcome qui désamorce la peur
+              // du paiement upfront (Trust #1 loss aversion).
+              ctaLead: 'Continuer · paiement à la livraison',
+              ctaAddress: 'Confirmer la commande',
+              thankYouTitle: 'Commande reçue, on vous rappelle.',
+            }
+      }
+      paymentMethods={['cod']}
+    />
+  );
+
   return (
     <section
-      id="commander-femiglow"
+      id={COMMANDER_ANCHOR_ID}
       aria-labelledby="kit-commander-heading"
       data-testid="kit-commander-section"
+      data-commander-mode={mode}
       className="scroll-mt-24 bg-creme py-16 lg:py-24"
     >
+      <Suspense fallback={null}>
+        <CommanderModeSync cmsMode={checkoutConfig.ctaMode} sharePct={checkoutConfig.sheetSharePct} />
+      </Suspense>
       <Container width="content" padded>
         {/* Kolenda §5 W3 P7 — thumb pack 64×80 mobile only (< lg).
             Image résolue côté server depuis `kit-hero-produit/primary`
@@ -150,31 +347,54 @@ export function KitCommanderSection({
 
         {preface}
 
-        <div className="mx-auto max-w-2xl rounded border border-encre/10 bg-white p-6 shadow-sm sm:p-8 lg:p-10">
-          <WizardShell
-            formContext={formContext}
-            steps={[...KIT_STEPS]}
-            initialCart={initialCart}
-            welcomeCoupon={welcomeCoupon}
-            cartRecapThumbnailSrc={packImage?.src}
-            // FR : override marketing custom. AR/EN : pas d'override → le
-            // dictionnaire complet de la langue fournit tous les libellés.
-            copy={
-              wizardLanguage && wizardLanguage !== 'fr'
-                ? undefined
-                : {
-                    title: 'Commander le rituel FemiGlow',
-                    // Kolenda §5 W1 (P2) — CTA outcome qui désamorce la peur
-                    // du paiement upfront (Trust #1 loss aversion).
-                    ctaLead: 'Continuer · paiement à la livraison',
-                    ctaAddress: 'Confirmer la commande',
-                    thankYouTitle: 'Commande reçue, on vous rappelle.',
-                  }
-            }
-            paymentMethods={['cod']}
-          />
+        <div
+          ref={inlineCardRef}
+          className="mx-auto max-w-2xl rounded border border-encre/10 bg-white p-6 shadow-sm sm:p-8 lg:p-10"
+        >
+          {wizardInSheet ? (
+            <div
+              data-testid="kit-commander-sheet-placeholder"
+              className="flex flex-col items-center justify-center gap-4 text-center"
+              // Hauteur de la carte avant ouverture, moins son padding.
+              style={{ minHeight: inlineHeightRef.current ? inlineHeightRef.current - 48 : undefined }}
+            >
+              <Text className="font-medium">{sheetStrings.placeholderTitle}</Text>
+              <Text size="small" tone="secondary">
+                {sheetStrings.placeholderBody}
+              </Text>
+              <Button
+                variant="secondary"
+                onClick={() => openCommander({ source: 'inline_placeholder' })}
+                data-testid="kit-commander-sheet-reopen"
+              >
+                {sheetStrings.reopen}
+              </Button>
+            </div>
+          ) : (
+            wizard
+          )}
         </div>
       </Container>
+
+      {sheetMode && (
+        <BottomSheet
+          ref={attachSheetBody}
+          open={isSheetOpen}
+          onOpenChange={onSheetOpenChange}
+          onExitComplete={onSheetExitComplete}
+          title={sheetStrings.title}
+          closeLabel={sheetStrings.close}
+          dir={wizardLanguage === 'ar' ? 'rtl' : 'ltr'}
+          data-testid="kit-commander-sheet"
+          // p-6 en mobile : le récap panier (`sticky top-0 -mx-6 -mt-6`) se
+          // colle en haut du panneau, bord à bord, comme dans la carte.
+          bodyClassName="px-6 pb-10 pt-6 sm:p-8"
+        >
+          {wizardInSheet ? (
+            <WizardScrollContainerProvider getContainer={getSheetBody}>{wizard}</WizardScrollContainerProvider>
+          ) : null}
+        </BottomSheet>
+      )}
     </section>
   );
 }

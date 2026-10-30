@@ -78,6 +78,7 @@ export default async function LocaleKitLayout({
           priceCents={effectivePriceCents}
           deductCredit
           currency={product.currency}
+          source="sticky"
           label={t('commander')}
         />
       </StickyCartCTA>

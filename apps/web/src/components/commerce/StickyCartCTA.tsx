@@ -7,6 +7,7 @@ import {
   type StickyPromoFlagStrings,
 } from '@/components/commerce/StickyPromoFlag';
 import { useChatStore } from '@/components/chat/chat-store';
+import { useCommanderLauncherStore } from '@/lib/checkout/commander-launcher';
 import { useWizardStore } from '@/lib/checkout/state/wizard-store';
 import type { Currency } from '@/lib/products/currency';
 
@@ -58,6 +59,9 @@ export function StickyCartCTA({
   // est ouvert pour libérer la zone composer/clavier du panel chat.
   // cf. docs/admin-config/43-chat-mobile-ux-fix-runbook.md §B.
   const chatOpen = useChatStore((s) => s.isOpen);
+  // Kit CRO v2 §2 — même retrait pendant que le panneau de commande est
+  // ouvert : le formulaire est déjà à l'écran, la barre ferait doublon.
+  const sheetOpen = useCommanderLauncherStore((s) => s.isSheetOpen);
 
   useEffect(() => {
     const sentinel = document.getElementById(observeId);
@@ -78,7 +82,7 @@ export function StickyCartCTA({
   // déclencher l'animation `translate-y-full` même si la CTA était
   // visible. À la fermeture du chat, l'IntersectionObserver remettra
   // `visible` à sa vraie valeur.
-  const dataVisible = chatOpen ? false : visible;
+  const dataVisible = chatOpen || sheetOpen ? false : visible;
 
   return (
     <div
@@ -87,9 +91,10 @@ export function StickyCartCTA({
       data-testid="sticky-cart-cta"
       data-visible={dataVisible}
       data-chat-open={chatOpen ? 'true' : 'false'}
-      aria-hidden={chatOpen}
+      data-commander-sheet-open={sheetOpen ? 'true' : 'false'}
+      aria-hidden={chatOpen || sheetOpen}
       style={{ zIndex: 'var(--z-sticky)' }}
-      className="group/sticky fixed inset-x-0 bottom-0 border-t border-encre/10 bg-creme/95 px-4 py-3 backdrop-blur transition-[transform,opacity] duration-base ease-out-soft data-[visible=false]:translate-y-full data-[chat-open=true]:opacity-0 data-[chat-open=true]:pointer-events-none motion-reduce:transition-none motion-reduce:data-[visible=false]:opacity-0 motion-reduce:data-[visible=false]:translate-y-0 lg:bottom-6 lg:start-auto lg:end-6 lg:w-[340px] lg:rounded-md lg:border"
+      className="group/sticky fixed inset-x-0 bottom-0 border-t border-encre/10 bg-creme/95 px-4 py-3 backdrop-blur transition-[transform,opacity] duration-base ease-out-soft data-[visible=false]:translate-y-full data-[chat-open=true]:opacity-0 data-[chat-open=true]:pointer-events-none data-[commander-sheet-open=true]:opacity-0 data-[commander-sheet-open=true]:pointer-events-none motion-reduce:transition-none motion-reduce:data-[visible=false]:opacity-0 motion-reduce:data-[visible=false]:translate-y-0 lg:bottom-6 lg:start-auto lg:end-6 lg:w-[340px] lg:rounded-md lg:border"
     >
       {/* Onglet « Code X appliqué » : rendu seulement si un code promo réduit
           le prix (sinon `null`, barre inchangée). */}

@@ -8,7 +8,7 @@ import AxeBuilder from '@axe-core/playwright';
 
 test.describe('/kit — section pack @pack-render', () => {
   test('rend la section #product-feed avec prix, savings et CTA', async ({ page }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
 
     const section = page.locator('[data-testid="product-feed-section"]');
     await expect(section).toBeVisible();
@@ -37,7 +37,7 @@ test.describe('/kit — section pack @pack-render', () => {
   });
 
   test('packshot visible (PackVisual)', async ({ page }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     const visual = page.locator('[data-testid="pack-visual"]');
     await expect(visual).toBeVisible();
     await expect(visual).toHaveAttribute('data-src', /kit-principale\.svg/);
@@ -46,7 +46,7 @@ test.describe('/kit — section pack @pack-render', () => {
 
 test.describe('/kit — interaction @pack-interaction', () => {
   test('click CTA → scroll vers #commander-femiglow', async ({ page }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     const cta = page.locator('[data-testid="pack-price-block"] [data-testid="kit-commander-anchor-button"]');
     await cta.scrollIntoViewIfNeeded();
     await cta.click();
@@ -58,7 +58,7 @@ test.describe('/kit — interaction @pack-interaction', () => {
 test.describe('/kit — responsive @pack-responsive', () => {
   test('mobile 375×812 : layout 1 colonne, pas de scroll horizontal', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     await expect(page.locator('[data-testid="pack-price-block"]')).toBeVisible();
     const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
     const innerWidth = await page.evaluate(() => window.innerWidth);
@@ -67,7 +67,7 @@ test.describe('/kit — responsive @pack-responsive', () => {
 
   test('desktop 1280×800 : prix et packshot tous deux visibles', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     await expect(page.locator('[data-testid="pack-price-block"]')).toBeVisible();
     await expect(page.locator('[data-testid="pack-visual"]')).toBeVisible();
   });
@@ -75,7 +75,7 @@ test.describe('/kit — responsive @pack-responsive', () => {
 
 test.describe('/kit — a11y @pack-a11y', () => {
   test('0 violation axe sérieuse/critique sur la section pack', async ({ page }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     await page.locator('[data-testid="product-feed-section"]').scrollIntoViewIfNeeded();
     const results = await new AxeBuilder({ page })
       .include('[data-testid="product-feed-section"]')

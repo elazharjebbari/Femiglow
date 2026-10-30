@@ -24,6 +24,7 @@ import {
 import type { CartSnapshot } from '@/lib/checkout/schemas/common';
 import { projectCartSnapshotFromVariant } from '@/lib/checkout/helpers/cart-snapshot-builder';
 import { getKitHeroGalleryImages } from '@/lib/products/kit-hero-gallery';
+import { getKitCheckoutConfig } from '@/lib/checkout/kit-checkout-config.server';
 
 // Fallback fixe utilisé UNIQUEMENT si la DB est vide ou le produit non publié
 // (env. local sans seed, snapshot mock). On garde la valeur stable pour ne pas
@@ -74,11 +75,16 @@ export async function KitCommanderSectionBound({
   locale,
   ...rest
 }: KitCommanderSectionBoundProps) {
-  const { kicker, title, subtitle, ...restProps } = rest;
-  const t = await getTranslations({
-    locale: locale ?? DEFAULT_LOCALE,
-    namespace: 'marketing.kit.commander',
-  });
+  const { kicker, title, subtitle, checkoutConfig: checkoutConfigOverride, ...restProps } = rest;
+  // Kit CRO v2 §2 — réglage CMS `kit-checkout` (défilement / panneau / A/B),
+  // résolu en parallèle des libellés. Tolérant (repli `scroll`).
+  const [t, resolvedCheckoutConfig] = await Promise.all([
+    getTranslations({
+      locale: locale ?? DEFAULT_LOCALE,
+      namespace: 'marketing.kit.commander',
+    }),
+    checkoutConfigOverride ? Promise.resolve(checkoutConfigOverride) : getKitCheckoutConfig(),
+  ]);
   let initialCart: CartSnapshot;
 
   if (initialCartOverride) {
@@ -172,6 +178,14 @@ export async function KitCommanderSectionBound({
       // Phase 8 (7E-13) — langue d'affichage du wizard checkout (fr/ar/en).
       // La persistance reste fr|ar : `en` est ramené à `fr` côté serveur (CHA-232).
       wizardLanguage={locale}
+      checkoutConfig={resolvedCheckoutConfig}
+      sheetStrings={{
+        title: t('sheet.title'),
+        close: t('sheet.close'),
+        placeholderTitle: t('sheet.placeholder_title'),
+        placeholderBody: t('sheet.placeholder_body'),
+        reopen: t('sheet.reopen'),
+      }}
       {...restProps}
     />
   );

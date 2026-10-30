@@ -932,6 +932,58 @@ export const SITE_COMPONENT_REGISTRY: SiteComponentSeed[] = [
     defaultFetchPriority: 'auto',
     supportsAnimation: false,
   },
+  {
+    // Kit CRO v2 §2 — réglage commercial du formulaire de commande /kit :
+    // les boutons « Commander » font défiler jusqu'au formulaire (`scroll`),
+    // l'ouvrent dans un panneau en bas d'écran (`sheet`), ou répartissent les
+    // visiteurs entre les deux (`ab`, attribution stable par visiteur).
+    // Réglage global : lu sur la locale `fr` (cf. `kit-checkout-config.server`).
+    key: 'kit-checkout',
+    name: 'Formulaire de commande /kit',
+    description:
+      "Mode d'ouverture du formulaire au clic sur « Commander » : défilement, panneau en bas d'écran, ou test A/B entre les deux.",
+    category: 'form',
+    pageGroup: 'kit',
+    filePath: 'src/components/sections/KitCommanderSection.tsx',
+    slots: [],
+    defaultSvgFallback: null,
+    defaultLoadingStrategy: 'eager',
+    defaultFetchPriority: 'auto',
+    supportsAnimation: false,
+    metadata: { routeScope: '/kit', adminFirst: true },
+    fields: [
+      {
+        key: 'ctaMode',
+        label: 'Ouverture du formulaire',
+        type: 'enum',
+        required: true,
+        defaultValue: 'scroll',
+        description:
+          "« Défilement » : comportement historique. « Panneau » : le formulaire s'ouvre par-dessus la page. « Test A/B » : chaque visiteur voit toujours la même version, selon la part ci-dessous. Recette : ajouter ?cta=sheet ou ?cta=scroll à l'URL.",
+        group: 'Comportement',
+        order: 1,
+        config: {
+          options: [
+            { value: 'scroll', label: 'Défilement jusqu’au formulaire' },
+            { value: 'sheet', label: 'Panneau en bas d’écran' },
+            { value: 'ab', label: 'Test A/B (défilement / panneau)' },
+          ],
+        },
+      },
+      {
+        key: 'sheetSharePct',
+        label: 'Part des visiteurs en panneau (%)',
+        type: 'number',
+        required: true,
+        defaultValue: 50,
+        description:
+          "Utilisé uniquement en « Test A/B ». 0 = tout le monde en défilement, 100 = tout le monde en panneau. Modifier la part en cours de test réattribue une partie des visiteurs.",
+        group: 'Comportement',
+        order: 2,
+        config: { min: 0, max: 100, step: 1 },
+      },
+    ],
+  },
 
   /* ───── Maison ───── */
   {

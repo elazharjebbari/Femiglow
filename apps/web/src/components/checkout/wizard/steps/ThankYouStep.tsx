@@ -38,6 +38,7 @@ import { useCallback, useId, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/Button';
 import { Heading } from '@/components/ui/Heading';
+import { useScrollWizardToTop } from '@/components/checkout/wizard/wizard-scroll-container';
 import { Text } from '@/components/ui/Text';
 import { TextField } from '@/components/forms/Field';
 import { useWizardTranslation } from '@/lib/checkout/i18n/use-wizard-translation';
@@ -73,12 +74,13 @@ export function ThankYouStep({ title, subtitle }: ThankYouStepProps) {
 
   const optIn = useOrderEmailConfirmationMutation();
 
+  // Kit CRO v2 — dans le panneau de commande, la page est verrouillée : on
+  // remonte le corps du panneau, sinon la fenêtre (comportement historique).
+  const scrollWizardToTop = useScrollWizardToTop();
   const onNewOrder = useCallback(() => {
     resetWizard();
-    if (typeof window !== 'undefined') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  }, [resetWizard]);
+    scrollWizardToTop();
+  }, [resetWizard, scrollWizardToTop]);
 
   const [email, setEmail] = useState('');
   const [consent, setConsent] = useState(false);

@@ -11,7 +11,7 @@ import { expect, test, type Page } from '@playwright/test';
 const uniquePhone = () => `06${String(Date.now()).slice(-8)}`;
 
 async function gotoWizard(page: Page) {
-  await page.goto('/kit');
+  await page.goto('/kit?cta=scroll');
   // Serveur dev froid : la 1ʳᵉ compilation de /kit peut dépasser 5 s.
   await expect(page.getByTestId('wizard-step-lead')).toBeVisible({ timeout: 30_000 });
 }

@@ -11,7 +11,7 @@ test.describe('/kit — wizard render @wizard-render', () => {
   test('KitCommanderSection + WizardShell + indicator visibles', async ({
     page,
   }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     const section = page.locator('[data-testid="kit-commander-section"]');
     await section.scrollIntoViewIfNeeded();
     await expect(section).toBeVisible();
@@ -21,7 +21,7 @@ test.describe('/kit — wizard render @wizard-render', () => {
   });
 
   test('WizardCartRecap affiche pack + total + barré', async ({ page }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     await page
       .locator('[data-testid="kit-commander-section"]')
       .scrollIntoViewIfNeeded();
@@ -37,7 +37,7 @@ test.describe('/kit — wizard render @wizard-render', () => {
   });
 
   test('TimeEstimateBadge ≈ 90 secondes affiché', async ({ page }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     await page
       .locator('[data-testid="kit-commander-section"]')
       .scrollIntoViewIfNeeded();
@@ -47,7 +47,7 @@ test.describe('/kit — wizard render @wizard-render', () => {
   });
 
   test('Step Indicator affiche durées per step', async ({ page }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     await page
       .locator('[data-testid="kit-commander-section"]')
       .scrollIntoViewIfNeeded();
@@ -62,7 +62,7 @@ test.describe('/kit — wizard render @wizard-render', () => {
   test('CTA Step 1 label = « Continuer · paiement à la livraison »', async ({
     page,
   }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     await page
       .locator('[data-testid="kit-commander-section"]')
       .scrollIntoViewIfNeeded();
@@ -72,7 +72,7 @@ test.describe('/kit — wizard render @wizard-render', () => {
   });
 
   test('Consent reformulé en « Je veux être rappelée »', async ({ page }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     await page
       .locator('[data-testid="kit-commander-section"]')
       .scrollIntoViewIfNeeded();
@@ -90,7 +90,7 @@ test.describe('/kit — wizard responsive @wizard-responsive', () => {
     page,
   }) => {
     await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     await page
       .locator('[data-testid="kit-commander-section"]')
       .scrollIntoViewIfNeeded();
@@ -112,7 +112,7 @@ test.describe('/kit — wizard responsive @wizard-responsive', () => {
     page,
   }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     await page
       .locator('[data-testid="kit-commander-section"]')
       .scrollIntoViewIfNeeded();
@@ -129,7 +129,7 @@ test.describe('/kit — wizard responsive @wizard-responsive', () => {
 
 test.describe('/kit — wizard a11y @wizard-a11y', () => {
   test('0 violation axe sérieuse/critique sur le wizard', async ({ page }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     await page
       .locator('[data-testid="kit-commander-section"]')
       .scrollIntoViewIfNeeded();

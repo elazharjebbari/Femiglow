@@ -48,6 +48,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       <div
         aria-live="polite"
         aria-atomic="true"
+        // Repère du `BottomSheet` : un clic sur un toast ne ferme pas le panneau.
+        data-toast-region=""
         className="pointer-events-none fixed inset-x-0 bottom-[108px] mx-auto flex w-full max-w-sm flex-col items-center gap-2 px-4 lg:bottom-8"
         style={{ zIndex: 'var(--z-toast)' }}
       >

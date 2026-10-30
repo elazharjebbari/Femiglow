@@ -13,7 +13,7 @@ import { E2E_LOYALTY_CODE } from '../scripts/loyalty-e2e-fixtures';
 const uniquePhone = () => `06${String(Date.now()).slice(-8)}`;
 
 async function reachAddress(page: Page) {
-  await page.goto('/kit');
+  await page.goto('/kit?cta=scroll');
   const lead = page.getByTestId('wizard-step-lead');
   await expect(lead).toBeVisible({ timeout: 30_000 });
   await lead.locator('input[name="firstName"]').fill('Yasmine');

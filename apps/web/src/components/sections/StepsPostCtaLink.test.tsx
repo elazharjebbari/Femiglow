@@ -51,6 +51,7 @@ describe('StepsPostCtaLink', () => {
     expect(emitMock.mock.calls[0]![0]).toBe('pack_steps_cta_click');
     expect(emitMock.mock.calls[0]![1]).toEqual({
       cta_target: '#commander-femiglow',
+      kit_cta_mode: 'scroll',
     });
   });
 

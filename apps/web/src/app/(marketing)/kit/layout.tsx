@@ -50,6 +50,7 @@ export default async function KitLayout({
           priceCents={effectivePriceCents}
           deductCredit
           currency={product.currency}
+          source="sticky"
         >
           Commander
         </CommanderAnchorButton>
