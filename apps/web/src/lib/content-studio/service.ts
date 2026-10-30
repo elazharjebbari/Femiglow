@@ -7,6 +7,7 @@ import { enqueueJob } from '@/lib/db/queries/media-jobs';
 import { env } from '@/lib/env';
 import { getStorage } from '@/lib/media/storage';
 import { runWorkerOnce } from '@/lib/media/worker/process-job';
+import { revalidateForMediaChange } from '@/lib/components/media-variants/revalidate.server';
 import { reviewDraftContent } from './brand-rules';
 import { generateForIdea } from './generation';
 import { generateStudioImage } from './image-generation';
@@ -297,7 +298,12 @@ export async function generateVisualForDraft(input: {
   const sourceKey = `sources/${media.id}/${createId('src')}.png`;
   await getStorage().put({ key: sourceKey, body: generated.buffer, contentType: generated.mime });
   await enqueueJob({ mediaId: media.id, kind: 'optimize', payload: { sourceKey } });
-  await runWorkerOnce();
+  // Le worker peut traiter d'autres jobs en attente que celui-ci : invalider
+  // le cache des composants qui affichent les médias (re)générés.
+  const worker = await runWorkerOnce();
+  if (worker.mediaIds.length > 0) {
+    await revalidateForMediaChange(worker.mediaIds, 'content-studio.generate_image');
+  }
   await upsertPrimaryAsset({ draftId: draft.id, mediaId: media.id });
   await insertGenerationRun({
     ideaId: null,
