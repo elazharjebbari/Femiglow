@@ -1,0 +1,2068 @@
+{
+  "schema": "femiglow.hero-media-pack/v1",
+  "component": "kit-hero-produit",
+  "createdAt": "2026-10-30",
+  "importRoot": "generated/",
+  "importConvention": "generated/<componentKey>/<slot>/<variant>/<locale>/<nn>-<slug>[.mobile].png + <nn>-<slug>.alt.json (05 §4.8)",
+  "promptAssembly": [
+    "prompts/_shared/style-bible.md#PROMPT-BLOCK",
+    "prompts/_shared/product-lock.md#PROMPT-BLOCK-FULL|ABSENT (selon productLock)",
+    "<promptFile>#PROMPT",
+    "prompts/_shared/negative.md#PROMPT-BLOCK"
+  ],
+  "targets": {
+    "desktop": {
+      "ratio": "4:5",
+      "width": 1200,
+      "height": 1500
+    },
+    "mobile": {
+      "ratio": "3:4",
+      "width": 1125,
+      "height": 1500
+    },
+    "master": "portrait le plus grand disponible (ex. 1024x1536), recadré par tools/hero_pack.py"
+  },
+  "referencesDir": "references/",
+  "summary": {
+    "slidesToGenerate": 17,
+    "generationCalls": 23,
+    "copies": 14,
+    "outputImageFilesGenerated": 34,
+    "outputImageFilesTotal": 62,
+    "byPriority": {
+      "P1": {
+        "slides": 10,
+        "generationCalls": 13,
+        "copies": 1
+      },
+      "P2": {
+        "slides": 7,
+        "generationCalls": 10,
+        "copies": 13
+      }
+    }
+  },
+  "images": [
+    {
+      "id": "HP-PRI-DEF-ALL-01",
+      "type": "copy",
+      "copyOf": "HP-PRI-TEMOIN-ALL-01",
+      "component": "kit-hero-produit",
+      "slot": "primary",
+      "variant": "default",
+      "locale": "_all",
+      "crossLocale": true,
+      "position": "01",
+      "slug": "resultat-main-kit-ouvert",
+      "title": "Résultat générique : main au-dessus du kit ouvert (copie)",
+      "priority": "P1",
+      "promptFile": "prompts/kit-hero-produit/primary/angle-temoin/_all/01-resultat-main-kit-ouvert.md",
+      "outputs": {
+        "desktop": "generated/kit-hero-produit/primary/default/_all/01-resultat-main-kit-ouvert.png",
+        "mobile": "generated/kit-hero-produit/primary/default/_all/01-resultat-main-kit-ouvert.mobile.png",
+        "alt": "generated/kit-hero-produit/primary/default/_all/01-resultat-main-kit-ouvert.alt.json"
+      },
+      "targets": {
+        "desktop": {
+          "ratio": "4:5",
+          "width": 1200,
+          "height": 1500
+        },
+        "mobile": {
+          "ratio": "3:4",
+          "width": 1125,
+          "height": 1500
+        }
+      },
+      "alt": {
+        "fr": "Ongles naturels brillants au-dessus du kit de manucure japonaise FemiGlow ouvert",
+        "ar": "أظافر طبيعية لامعة فوق كيت المانيكير الياباني FemiGlow المفتوح",
+        "en": "Shiny natural nails above the open FemiGlow Japanese manicure kit"
+      },
+      "rationale": "Copie octet pour octet de HP-PRI-TEMOIN-ALL-01 : une liste secondaire est publiée en entier (pas de mélange de listes, 05 §4.1), donc la variante doit contenir aussi les slides partagées. L'import dédoublonne par sha256 (05 §4.8).",
+      "generations": 0
+    },
+    {
+      "id": "HP-PRI-A-ALL-01",
+      "type": "generate",
+      "component": "kit-hero-produit",
+      "slot": "primary",
+      "variant": "angle-a",
+      "locale": "_all",
+      "crossLocale": true,
+      "position": "01",
+      "slug": "reflet-ongle-naturel-macro",
+      "title": "Reflet net sur ongles naturels (macro)",
+      "priority": "P1",
+      "composition": "single",
+      "productLock": "full",
+      "promptFile": "prompts/kit-hero-produit/primary/angle-a/_all/01-reflet-ongle-naturel-macro.md",
+      "promptVersion": "v1",
+      "references": [
+        {
+          "ref": "REF-08",
+          "role": "hand",
+          "roleLabel": "main / peau / ongles"
+        },
+        {
+          "ref": "REF-04b",
+          "role": "shine",
+          "roleLabel": "niveau de brillance des ongles"
+        },
+        {
+          "ref": "REF-02",
+          "role": "product",
+          "roleLabel": "fidélité produit"
+        },
+        {
+          "ref": "REF-09",
+          "role": "light",
+          "roleLabel": "lumière / ambiance"
+        }
+      ],
+      "talent": "Peau medium olive (Fitzpatrick III–IV), ~30 ans, manche longue en lin crème",
+      "outputs": {
+        "desktop": "generated/kit-hero-produit/primary/angle-a/_all/01-reflet-ongle-naturel-macro.png",
+        "mobile": "generated/kit-hero-produit/primary/angle-a/_all/01-reflet-ongle-naturel-macro.mobile.png",
+        "alt": "generated/kit-hero-produit/primary/angle-a/_all/01-reflet-ongle-naturel-macro.alt.json"
+      },
+      "targets": {
+        "desktop": {
+          "ratio": "4:5",
+          "width": 1200,
+          "height": 1500
+        },
+        "mobile": {
+          "ratio": "3:4",
+          "width": 1125,
+          "height": 1500
+        }
+      },
+      "focalZone": "Ongles index/majeur/annulaire entre 15 % et 50 % de la hauteur, légèrement à droite du centre",
+      "safeZones": "Point focal dans les 60 % supérieurs ; rien d'essentiel dans les 30 % inférieurs ni dans les 8 % latéraux",
+      "alt": {
+        "fr": "Gros plan d’ongles naturels avec un reflet net, sans vernis, après la manucure japonaise FemiGlow",
+        "ar": "لقطة قريبة لأظافر طبيعية بلمعان واضح دون طلاء بعد المانيكير الياباني FemiGlow",
+        "en": "Close-up of natural nails with a crisp shine, no polish, after the FemiGlow Japanese manicure"
+      },
+      "rationale": "Slide 1 (LCP) de l'angle A « ça brille, et ce n'est pas du vernis » : prouver par la macro que la brillance vient de l'ongle nu (cuticule, texture et bord libre visibles, aucune épaisseur de vernis).",
+      "principles": [
+        "01-A1 résultat en slide 1",
+        "01-A4 main droite 1re personne",
+        "01-A6 geste d'évaluation / macro",
+        "01-A12 un seul point focal",
+        "01-C angle A",
+        "01-E zones de sécurité"
+      ],
+      "generations": 1,
+      "workFile": "generated/_work/HP-PRI-A-ALL-01/master.png",
+      "cropAnchor": 0.4
+    },
+    {
+      "id": "HP-PRI-B-ALL-01",
+      "type": "generate",
+      "component": "kit-hero-produit",
+      "slot": "primary",
+      "variant": "angle-b",
+      "locale": "_all",
+      "crossLocale": true,
+      "position": "01",
+      "slug": "main-verre-de-the-ongles-nus",
+      "title": "Geste du quotidien : la main saisit un verre de thé",
+      "priority": "P1",
+      "composition": "single",
+      "productLock": "full",
+      "promptFile": "prompts/kit-hero-produit/primary/angle-b/_all/01-main-verre-de-the-ongles-nus.md",
+      "promptVersion": "v1",
+      "references": [
+        {
+          "ref": "REF-07",
+          "role": "hand",
+          "roleLabel": "main / peau / ongles"
+        },
+        {
+          "ref": "REF-04b",
+          "role": "shine",
+          "roleLabel": "niveau de brillance des ongles"
+        },
+        {
+          "ref": "REF-06",
+          "role": "product",
+          "roleLabel": "fidélité produit"
+        },
+        {
+          "ref": "REF-09",
+          "role": "light",
+          "roleLabel": "lumière / ambiance"
+        }
+      ],
+      "talent": "Peau brun foncé (Fitzpatrick V–VI), ~36 ans, manche mi-longue en maille crème",
+      "outputs": {
+        "desktop": "generated/kit-hero-produit/primary/angle-b/_all/01-main-verre-de-the-ongles-nus.png",
+        "mobile": "generated/kit-hero-produit/primary/angle-b/_all/01-main-verre-de-the-ongles-nus.mobile.png",
+        "alt": "generated/kit-hero-produit/primary/angle-b/_all/01-main-verre-de-the-ongles-nus.alt.json"
+      },
+      "targets": {
+        "desktop": {
+          "ratio": "4:5",
+          "width": 1200,
+          "height": 1500
+        },
+        "mobile": {
+          "ratio": "3:4",
+          "width": 1125,
+          "height": 1500
+        }
+      },
+      "focalZone": "Ongles + bord du verre entre 20 % et 55 % de la hauteur, au centre",
+      "safeZones": "Point focal dans les 60 % supérieurs ; rien d'essentiel dans les 30 % inférieurs ni dans les 8 % latéraux",
+      "alt": {
+        "fr": "Main aux ongles nus et brillants qui saisit un verre de thé à la menthe",
+        "ar": "يد بأظافر طبيعية لامعة تمسك كأس شاي بالنعناع",
+        "en": "Hand with bare, shiny nails reaching for a glass of mint tea"
+      },
+      "rationale": "Slide 1 de l'angle B « zéro vernis, et vos ongles brillent » : la liberté au quotidien. Les ongles nus brillent pendant un geste ordinaire (prendre son verre de thé), sans rien à poser.",
+      "principles": [
+        "01-A1 résultat",
+        "01-A4/A5 main droite qui saisit (simulation d'usage)",
+        "01-A6 geste suggérant le mouvement",
+        "01-C angle B",
+        "01-D décor marocain sobre"
+      ],
+      "generations": 1,
+      "workFile": "generated/_work/HP-PRI-B-ALL-01/master.png",
+      "cropAnchor": 0.4
+    },
+    {
+      "id": "HP-PRI-C-ALL-01",
+      "type": "generate",
+      "component": "kit-hero-produit",
+      "slot": "primary",
+      "variant": "angle-c",
+      "locale": "_all",
+      "crossLocale": true,
+      "position": "01",
+      "slug": "ongles-nus-sains-brillants",
+      "title": "Ongles nus, sains et brillants (après le semi-permanent)",
+      "priority": "P1",
+      "composition": "single",
+      "productLock": "full",
+      "promptFile": "prompts/kit-hero-produit/primary/angle-c/_all/01-ongles-nus-sains-brillants.md",
+      "promptVersion": "v1",
+      "references": [
+        {
+          "ref": "REF-08",
+          "role": "hand",
+          "roleLabel": "main / peau / ongles"
+        },
+        {
+          "ref": "REF-04b",
+          "role": "shine",
+          "roleLabel": "niveau de brillance des ongles"
+        },
+        {
+          "ref": "REF-02",
+          "role": "product",
+          "roleLabel": "fidélité produit"
+        },
+        {
+          "ref": "REF-09",
+          "role": "light",
+          "roleLabel": "lumière / ambiance"
+        }
+      ],
+      "talent": "Peau claire olive (Fitzpatrick III), ~41 ans, manche longue en coton vieux rose",
+      "outputs": {
+        "desktop": "generated/kit-hero-produit/primary/angle-c/_all/01-ongles-nus-sains-brillants.png",
+        "mobile": "generated/kit-hero-produit/primary/angle-c/_all/01-ongles-nus-sains-brillants.mobile.png",
+        "alt": "generated/kit-hero-produit/primary/angle-c/_all/01-ongles-nus-sains-brillants.alt.json"
+      },
+      "targets": {
+        "desktop": {
+          "ratio": "4:5",
+          "width": 1200,
+          "height": 1500
+        },
+        "mobile": {
+          "ratio": "3:4",
+          "width": 1125,
+          "height": 1500
+        }
+      },
+      "focalZone": "Ongles entre 18 % et 50 % de la hauteur, centre-droit",
+      "safeZones": "Point focal dans les 60 % supérieurs ; rien d'essentiel dans les 30 % inférieurs ni dans les 8 % latéraux",
+      "alt": {
+        "fr": "Ongles naturels sains et brillants, sans semi-permanent, à côté du kit FemiGlow",
+        "ar": "أظافر طبيعية صحية ولامعة دون طلاء شبه دائم، بجانب كيت FemiGlow",
+        "en": "Healthy, shiny natural nails with no gel polish, next to the FemiGlow kit"
+      },
+      "rationale": "Slide 1 de l'angle C « une pause avec le semi-permanent : des ongles nus qui brillent » : l'ongle naturel sain et brillant, sans le rendu « glossy » d'un gel.",
+      "principles": [
+        "01-A1 résultat",
+        "01-A4 main droite 1re personne",
+        "01-C angle C (sain, pas glossy gel)",
+        "01-A2 contexte réel flou"
+      ],
+      "generations": 1,
+      "workFile": "generated/_work/HP-PRI-C-ALL-01/master.png",
+      "cropAnchor": 0.4
+    },
+    {
+      "id": "HP-PRI-D-ALL-01",
+      "type": "generate",
+      "component": "kit-hero-produit",
+      "slot": "primary",
+      "variant": "angle-d",
+      "locale": "_all",
+      "crossLocale": true,
+      "position": "01",
+      "slug": "gouttes-eau-ongles-brillants",
+      "title": "Main sous un filet d'eau, gouttes sur ongles brillants",
+      "priority": "P1",
+      "composition": "single",
+      "productLock": "full",
+      "promptFile": "prompts/kit-hero-produit/primary/angle-d/_all/01-gouttes-eau-ongles-brillants.md",
+      "promptVersion": "v1",
+      "references": [
+        {
+          "ref": "REF-07",
+          "role": "hand",
+          "roleLabel": "main / peau / ongles"
+        },
+        {
+          "ref": "REF-04b",
+          "role": "shine",
+          "roleLabel": "niveau de brillance des ongles"
+        },
+        {
+          "ref": "REF-10",
+          "role": "home",
+          "roleLabel": "lumière / ambiance (vraie vie à la maison)"
+        },
+        {
+          "ref": "REF-06",
+          "role": "product",
+          "roleLabel": "fidélité produit"
+        }
+      ],
+      "talent": "Peau medium-mate (Fitzpatrick IV–V), ~27 ans, manche longue en lin écru retenue au poignet",
+      "outputs": {
+        "desktop": "generated/kit-hero-produit/primary/angle-d/_all/01-gouttes-eau-ongles-brillants.png",
+        "mobile": "generated/kit-hero-produit/primary/angle-d/_all/01-gouttes-eau-ongles-brillants.mobile.png",
+        "alt": "generated/kit-hero-produit/primary/angle-d/_all/01-gouttes-eau-ongles-brillants.alt.json"
+      },
+      "targets": {
+        "desktop": {
+          "ratio": "4:5",
+          "width": 1200,
+          "height": 1500
+        },
+        "mobile": {
+          "ratio": "3:4",
+          "width": 1125,
+          "height": 1500
+        }
+      },
+      "focalZone": "Filet d'eau + ongles entre 15 % et 55 % de la hauteur, centre",
+      "safeZones": "Point focal dans les 60 % supérieurs ; rien d'essentiel dans les 30 % inférieurs ni dans les 8 % latéraux",
+      "alt": {
+        "fr": "Gouttes d’eau sur des ongles naturels brillants sous le robinet, rien à retirer",
+        "ar": "قطرات ماء على أظافر طبيعية لامعة تحت الصنبور، دون أي طبقة تُزال",
+        "en": "Water drops on shiny natural nails under the tap, nothing to remove"
+      },
+      "rationale": "Slide 1 de l'angle D « compatible woudou : rien à retirer avant le woudou » : l'eau passe sur l'ongle nu qui brille. Sobre, pudique, aucune mise en scène religieuse.",
+      "principles": [
+        "01-A1 résultat",
+        "01-C angle D (eau, gouttes, cadrage sobre, poignets couverts)",
+        "01-D pudeur, pas de prière",
+        "01-A6 mouvement suggéré (filet d'eau)"
+      ],
+      "generations": 1,
+      "workFile": "generated/_work/HP-PRI-D-ALL-01/master.png",
+      "cropAnchor": 0.35
+    },
+    {
+      "id": "HP-PRI-E-ALL-01",
+      "type": "generate",
+      "component": "kit-hero-produit",
+      "slot": "primary",
+      "variant": "angle-e",
+      "locale": "_all",
+      "crossLocale": true,
+      "position": "01",
+      "slug": "fini-salon-a-la-maison",
+      "title": "Fini salon, chez soi : main sur un coussin de salon marocain",
+      "priority": "P1",
+      "composition": "single",
+      "productLock": "full",
+      "promptFile": "prompts/kit-hero-produit/primary/angle-e/_all/01-fini-salon-a-la-maison.md",
+      "promptVersion": "v1",
+      "references": [
+        {
+          "ref": "REF-05",
+          "role": "box",
+          "roleLabel": "fidélité produit (coffret réel)"
+        },
+        {
+          "ref": "REF-02",
+          "role": "product",
+          "roleLabel": "fidélité produit"
+        },
+        {
+          "ref": "REF-08",
+          "role": "hand",
+          "roleLabel": "main / peau / ongles"
+        },
+        {
+          "ref": "REF-09",
+          "role": "light",
+          "roleLabel": "lumière / ambiance"
+        }
+      ],
+      "talent": "Peau medium olive (Fitzpatrick III–IV), main mûre ~52 ans, manche longue sauge avec fine passementerie ton sur ton",
+      "outputs": {
+        "desktop": "generated/kit-hero-produit/primary/angle-e/_all/01-fini-salon-a-la-maison.png",
+        "mobile": "generated/kit-hero-produit/primary/angle-e/_all/01-fini-salon-a-la-maison.mobile.png",
+        "alt": "generated/kit-hero-produit/primary/angle-e/_all/01-fini-salon-a-la-maison.alt.json"
+      },
+      "targets": {
+        "desktop": {
+          "ratio": "4:5",
+          "width": 1200,
+          "height": 1500
+        },
+        "mobile": {
+          "ratio": "3:4",
+          "width": 1125,
+          "height": 1500
+        }
+      },
+      "focalZone": "Ongles entre 20 % et 55 % de la hauteur, centre-droit ; kit à gauche du même bandeau",
+      "safeZones": "Point focal dans les 60 % supérieurs ; rien d'essentiel dans les 30 % inférieurs ni dans les 8 % latéraux",
+      "alt": {
+        "fr": "Main aux ongles brillants posée sur un coussin de salon marocain, kit FemiGlow à côté",
+        "ar": "يد بأظافر لامعة على وسادة صالون مغربي، وبجانبها كيت FemiGlow",
+        "en": "Hand with shiny nails on a Moroccan sofa cushion, FemiGlow kit beside it"
+      },
+      "rationale": "Slide 1 de l'angle E « le soin du salon, chez vous, sans rendez-vous » : rendu « fini salon » obtenu à la maison, dans un salon marocain, kit et verre de thé à côté.",
+      "principles": [
+        "01-A1 résultat",
+        "01-A2 contexte réel (femmes)",
+        "01-C angle E",
+        "01-D au moins une main mûre",
+        "01-A4 main droite"
+      ],
+      "generations": 1,
+      "workFile": "generated/_work/HP-PRI-E-ALL-01/master.png",
+      "cropAnchor": 0.4
+    },
+    {
+      "id": "HP-PRI-TEMOIN-ALL-01",
+      "type": "generate",
+      "component": "kit-hero-produit",
+      "slot": "primary",
+      "variant": "angle-temoin",
+      "locale": "_all",
+      "crossLocale": true,
+      "position": "01",
+      "slug": "resultat-main-kit-ouvert",
+      "title": "Résultat générique : main au-dessus du kit ouvert",
+      "priority": "P1",
+      "composition": "single",
+      "productLock": "full",
+      "promptFile": "prompts/kit-hero-produit/primary/angle-temoin/_all/01-resultat-main-kit-ouvert.md",
+      "promptVersion": "v1",
+      "references": [
+        {
+          "ref": "REF-02",
+          "role": "product",
+          "roleLabel": "fidélité produit"
+        },
+        {
+          "ref": "REF-06",
+          "role": "box",
+          "roleLabel": "fidélité produit (coffret réel)"
+        },
+        {
+          "ref": "REF-08",
+          "role": "hand",
+          "roleLabel": "main / peau / ongles"
+        },
+        {
+          "ref": "REF-09",
+          "role": "light",
+          "roleLabel": "lumière / ambiance"
+        }
+      ],
+      "talent": "Peau claire-medium (Fitzpatrick III), ~29 ans, manche longue en lin crème",
+      "outputs": {
+        "desktop": "generated/kit-hero-produit/primary/angle-temoin/_all/01-resultat-main-kit-ouvert.png",
+        "mobile": "generated/kit-hero-produit/primary/angle-temoin/_all/01-resultat-main-kit-ouvert.mobile.png",
+        "alt": "generated/kit-hero-produit/primary/angle-temoin/_all/01-resultat-main-kit-ouvert.alt.json"
+      },
+      "targets": {
+        "desktop": {
+          "ratio": "4:5",
+          "width": 1200,
+          "height": 1500
+        },
+        "mobile": {
+          "ratio": "3:4",
+          "width": 1125,
+          "height": 1500
+        }
+      },
+      "focalZone": "Ongles entre 15 % et 45 % de la hauteur ; kit entre 40 % et 62 %",
+      "safeZones": "Point focal dans les 60 % supérieurs ; rien d'essentiel dans les 30 % inférieurs ni dans les 8 % latéraux",
+      "alt": {
+        "fr": "Ongles naturels brillants au-dessus du kit de manucure japonaise FemiGlow ouvert",
+        "ar": "أظافر طبيعية لامعة فوق كيت المانيكير الياباني FemiGlow المفتوح",
+        "en": "Shiny natural nails above the open FemiGlow Japanese manicure kit"
+      },
+      "rationale": "Slide 1 témoin « la manucure japonaise à la maison » (contrôle de l'A/B test) et slide 1 par défaut : main aux ongles brillants + kit ouvert, sans argument d'angle.",
+      "principles": [
+        "01-A1 résultat + kit secondaire",
+        "01-B slide 1 générique",
+        "01-C témoin",
+        "01-F anti-pattern 1 (pas de packshot seul)"
+      ],
+      "generations": 1,
+      "workFile": "generated/_work/HP-PRI-TEMOIN-ALL-01/master.png",
+      "cropAnchor": 0.4
+    },
+    {
+      "id": "HP-SEC-DEF-ALL-01",
+      "type": "generate",
+      "component": "kit-hero-produit",
+      "slot": "secondary",
+      "variant": "default",
+      "locale": "_all",
+      "crossLocale": true,
+      "position": "01",
+      "slug": "avant-apres-terne-brillant",
+      "title": "Avant/après vertical : terne → brillant",
+      "priority": "P1",
+      "composition": "stack2",
+      "productLock": "absent",
+      "promptFile": "prompts/kit-hero-produit/secondary/default/_all/01-avant-apres-terne-brillant.md",
+      "promptVersion": "v1",
+      "references": [
+        {
+          "ref": "REF-07",
+          "role": "hand",
+          "roleLabel": "main / peau / ongles"
+        },
+        {
+          "ref": "REF-04b",
+          "role": "shine",
+          "roleLabel": "niveau de brillance des ongles"
+        },
+        {
+          "ref": "REF-09",
+          "role": "light",
+          "roleLabel": "lumière / ambiance"
+        }
+      ],
+      "talent": "Peau brun foncé (Fitzpatrick V–VI), ~34 ans, manche longue en lin sauge",
+      "outputs": {
+        "desktop": "generated/kit-hero-produit/secondary/default/_all/01-avant-apres-terne-brillant.png",
+        "mobile": "generated/kit-hero-produit/secondary/default/_all/01-avant-apres-terne-brillant.mobile.png",
+        "alt": "generated/kit-hero-produit/secondary/default/_all/01-avant-apres-terne-brillant.alt.json"
+      },
+      "targets": {
+        "desktop": {
+          "ratio": "4:5",
+          "width": 1200,
+          "height": 1500
+        },
+        "mobile": {
+          "ratio": "3:4",
+          "width": 1125,
+          "height": 1500
+        }
+      },
+      "focalZone": "Haut : ongles entre 30 % et 70 % du panneau. Bas : ongles entre 10 % et 40 % du panneau (soit 55–70 % de l'image finale)",
+      "safeZones": "Point focal dans les 60 % supérieurs ; rien d'essentiel dans les 30 % inférieurs ni dans les 8 % latéraux",
+      "alt": {
+        "fr": "Avant, en haut : ongles naturels ternes. Après, en bas : les mêmes ongles brillants, sans vernis",
+        "ar": "قبل، في الأعلى: أظافر طبيعية باهتة. بعد، في الأسفل: الأظافر نفسها لامعة دون طلاء",
+        "en": "Before, top: dull natural nails. After, bottom: the same nails shining, no polish"
+      },
+      "rationale": "Slide 2 partagée : preuve du contraste, honnête (même main, même lumière, même cadrage). Verticale : avant en haut, après en bas, donc neutre FR/AR/EN.",
+      "principles": [
+        "01-A9 avant/après honnête",
+        "01-A10 / 01-D vertical = neutre LTR/RTL",
+        "01-B slide 2",
+        "01-F anti-patterns 6 et 7"
+      ],
+      "generations": 2,
+      "panels": [
+        {
+          "key": "bas-apres",
+          "position": "bas",
+          "generationOrder": 1,
+          "cropAnchor": 0.3,
+          "references": [
+            {
+              "ref": "REF-07",
+              "role": "hand",
+              "roleLabel": "main / peau / ongles"
+            },
+            {
+              "ref": "REF-04b",
+              "role": "shine",
+              "roleLabel": "niveau de brillance des ongles"
+            },
+            {
+              "ref": "REF-09",
+              "role": "light",
+              "roleLabel": "lumière / ambiance"
+            }
+          ],
+          "workFile": "generated/_work/HP-SEC-DEF-ALL-01/bas-apres.png"
+        },
+        {
+          "key": "haut-avant",
+          "position": "haut",
+          "generationOrder": 2,
+          "cropAnchor": 0.5,
+          "references": [
+            {
+              "ref": "PANEL:bas-apres",
+              "role": "same",
+              "roleLabel": "même main, même lumière (panneau déjà validé)"
+            },
+            {
+              "ref": "REF-07",
+              "role": "hand",
+              "roleLabel": "main / peau / ongles"
+            }
+          ],
+          "workFile": "generated/_work/HP-SEC-DEF-ALL-01/haut-avant.png"
+        }
+      ]
+    },
+    {
+      "id": "HP-SEC-DEF-ALL-02",
+      "type": "generate",
+      "component": "kit-hero-produit",
+      "slot": "secondary",
+      "variant": "default",
+      "locale": "_all",
+      "crossLocale": true,
+      "position": "02",
+      "slug": "rituel-3-gestes-vertical",
+      "title": "Rituel en 3 gestes, de haut en bas : pâte → poudre → polissoir",
+      "priority": "P1",
+      "composition": "stack3",
+      "productLock": "full",
+      "promptFile": "prompts/kit-hero-produit/secondary/default/_all/02-rituel-3-gestes-vertical.md",
+      "promptVersion": "v1",
+      "references": [
+        {
+          "ref": "REF-04b",
+          "role": "hand",
+          "roleLabel": "main / peau / ongles"
+        },
+        {
+          "ref": "REF-02",
+          "role": "product",
+          "roleLabel": "fidélité produit"
+        },
+        {
+          "ref": "REF-06",
+          "role": "box",
+          "roleLabel": "fidélité produit (coffret réel)"
+        },
+        {
+          "ref": "REF-09",
+          "role": "light",
+          "roleLabel": "lumière / ambiance"
+        }
+      ],
+      "talent": "Peau medium (Fitzpatrick IV), ~25 ans, manches longues en lin crème",
+      "outputs": {
+        "desktop": "generated/kit-hero-produit/secondary/default/_all/02-rituel-3-gestes-vertical.png",
+        "mobile": "generated/kit-hero-produit/secondary/default/_all/02-rituel-3-gestes-vertical.mobile.png",
+        "alt": "generated/kit-hero-produit/secondary/default/_all/02-rituel-3-gestes-vertical.alt.json"
+      },
+      "targets": {
+        "desktop": {
+          "ratio": "4:5",
+          "width": 1200,
+          "height": 1500
+        },
+        "mobile": {
+          "ratio": "3:4",
+          "width": 1125,
+          "height": 1500
+        }
+      },
+      "focalZone": "Chaque geste dans la bande centrale (25–70 %) de son panneau",
+      "safeZones": "Point focal dans les 60 % supérieurs ; rien d'essentiel dans les 30 % inférieurs ni dans les 8 % latéraux",
+      "alt": {
+        "fr": "Les trois gestes de haut en bas : la pâte n° 1, la poudre n° 2, puis le polissoir",
+        "ar": "الخطوات الثلاث من الأعلى إلى الأسفل: المعجون رقم 1، ثم البودرة رقم 2، ثم أداة التلميع",
+        "en": "The three steps, top to bottom: paste no. 1, powder no. 2, then the buffer"
+      },
+      "rationale": "Slide 3 partagée : facilité / usage. Séquence verticale (haut → bas) lisible dans les trois langues, sans chiffres incrustés : les numéros sont ceux des étiquettes (« 1 paste », « 2 powder », « Step ④ »).",
+      "principles": [
+        "01-B slide 3",
+        "01-A4 main droite, polissoir poignée à droite",
+        "01-A16 vue plongeante = facile",
+        "01-D séquence verticale = pas de miroir AR"
+      ],
+      "generations": 3,
+      "panels": [
+        {
+          "key": "1-pate",
+          "position": "haut",
+          "generationOrder": 1,
+          "cropAnchor": 0.5,
+          "references": [
+            {
+              "ref": "REF-04b",
+              "role": "hand",
+              "roleLabel": "main / peau / ongles"
+            },
+            {
+              "ref": "REF-02",
+              "role": "product",
+              "roleLabel": "fidélité produit"
+            },
+            {
+              "ref": "REF-03",
+              "role": "product",
+              "roleLabel": "fidélité produit"
+            },
+            {
+              "ref": "REF-09",
+              "role": "light",
+              "roleLabel": "lumière / ambiance"
+            }
+          ],
+          "workFile": "generated/_work/HP-SEC-DEF-ALL-02/1-pate.png"
+        },
+        {
+          "key": "2-poudre",
+          "position": "milieu",
+          "generationOrder": 2,
+          "cropAnchor": 0.5,
+          "references": [
+            {
+              "ref": "PANEL:1-pate",
+              "role": "same",
+              "roleLabel": "même main, même lumière (panneau déjà validé)"
+            },
+            {
+              "ref": "REF-02",
+              "role": "product",
+              "roleLabel": "fidélité produit"
+            },
+            {
+              "ref": "REF-04b",
+              "role": "hand",
+              "roleLabel": "main / peau / ongles"
+            }
+          ],
+          "workFile": "generated/_work/HP-SEC-DEF-ALL-02/2-poudre.png"
+        },
+        {
+          "key": "3-polissoir",
+          "position": "bas",
+          "generationOrder": 3,
+          "cropAnchor": 0.45,
+          "references": [
+            {
+              "ref": "PANEL:1-pate",
+              "role": "same",
+              "roleLabel": "même main, même lumière (panneau déjà validé)"
+            },
+            {
+              "ref": "REF-02",
+              "role": "product",
+              "roleLabel": "fidélité produit"
+            },
+            {
+              "ref": "REF-06",
+              "role": "box",
+              "roleLabel": "fidélité produit (coffret réel)"
+            }
+          ],
+          "workFile": "generated/_work/HP-SEC-DEF-ALL-02/3-polissoir.png"
+        }
+      ]
+    },
+    {
+      "id": "HP-SEC-DEF-ALL-03",
+      "type": "generate",
+      "component": "kit-hero-produit",
+      "slot": "secondary",
+      "variant": "default",
+      "locale": "_all",
+      "crossLocale": true,
+      "position": "03",
+      "slug": "kit-en-main-echelle",
+      "title": "Le coffret tenu en main (échelle) à côté d'un verre de thé",
+      "priority": "P1",
+      "composition": "single",
+      "productLock": "full",
+      "promptFile": "prompts/kit-hero-produit/secondary/default/_all/03-kit-en-main-echelle.md",
+      "promptVersion": "v1",
+      "references": [
+        {
+          "ref": "REF-05",
+          "role": "box",
+          "roleLabel": "fidélité produit (coffret réel)"
+        },
+        {
+          "ref": "REF-06",
+          "role": "box",
+          "roleLabel": "fidélité produit (coffret réel)"
+        },
+        {
+          "ref": "REF-02",
+          "role": "product",
+          "roleLabel": "fidélité produit"
+        },
+        {
+          "ref": "REF-08",
+          "role": "hand",
+          "roleLabel": "main / peau / ongles"
+        }
+      ],
+      "talent": "Peau claire olive (Fitzpatrick III), main mûre ~46 ans, manche longue en coton crème",
+      "outputs": {
+        "desktop": "generated/kit-hero-produit/secondary/default/_all/03-kit-en-main-echelle.png",
+        "mobile": "generated/kit-hero-produit/secondary/default/_all/03-kit-en-main-echelle.mobile.png",
+        "alt": "generated/kit-hero-produit/secondary/default/_all/03-kit-en-main-echelle.alt.json"
+      },
+      "targets": {
+        "desktop": {
+          "ratio": "4:5",
+          "width": 1200,
+          "height": 1500
+        },
+        "mobile": {
+          "ratio": "3:4",
+          "width": 1125,
+          "height": 1500
+        }
+      },
+      "focalZone": "Main + coffret entre 12 % et 55 % de la hauteur",
+      "safeZones": "Point focal dans les 60 % supérieurs ; rien d'essentiel dans les 30 % inférieurs ni dans les 8 % latéraux",
+      "alt": {
+        "fr": "Le coffret FemiGlow tenu dans la main, à côté d’un verre de thé, pour juger sa taille",
+        "ar": "علبة FemiGlow في اليد بجانب كأس شاي لتقدير حجمها",
+        "en": "The FemiGlow box held in one hand next to a tea glass, to show its size"
+      },
+      "rationale": "Slide 4 partagée « In Scale » : faire comprendre la taille réelle du kit (évite la déception à la livraison COD et les refus de colis).",
+      "principles": [
+        "01-A13 échelle (Baymard)",
+        "01-A5 main qui tient le produit",
+        "01-B slide 4"
+      ],
+      "generations": 1,
+      "workFile": "generated/_work/HP-SEC-DEF-ALL-03/master.png",
+      "cropAnchor": 0.4
+    },
+    {
+      "id": "HP-SEC-DEF-ALL-04",
+      "type": "generate",
+      "component": "kit-hero-produit",
+      "slot": "secondary",
+      "variant": "default",
+      "locale": "_all",
+      "crossLocale": true,
+      "position": "04",
+      "slug": "contenu-du-kit-plongee",
+      "title": "Contenu du kit, vue plongeante (packshot en contexte)",
+      "priority": "P1",
+      "composition": "single",
+      "productLock": "full",
+      "promptFile": "prompts/kit-hero-produit/secondary/default/_all/04-contenu-du-kit-plongee.md",
+      "promptVersion": "v1",
+      "references": [
+        {
+          "ref": "REF-06",
+          "role": "box",
+          "roleLabel": "fidélité produit (coffret réel)"
+        },
+        {
+          "ref": "REF-05",
+          "role": "box",
+          "roleLabel": "fidélité produit (coffret réel)"
+        },
+        {
+          "ref": "REF-02",
+          "role": "product",
+          "roleLabel": "fidélité produit"
+        },
+        {
+          "ref": "REF-09",
+          "role": "light",
+          "roleLabel": "lumière / ambiance"
+        }
+      ],
+      "talent": "Aucune main",
+      "outputs": {
+        "desktop": "generated/kit-hero-produit/secondary/default/_all/04-contenu-du-kit-plongee.png",
+        "mobile": "generated/kit-hero-produit/secondary/default/_all/04-contenu-du-kit-plongee.mobile.png",
+        "alt": "generated/kit-hero-produit/secondary/default/_all/04-contenu-du-kit-plongee.alt.json"
+      },
+      "targets": {
+        "desktop": {
+          "ratio": "4:5",
+          "width": 1200,
+          "height": 1500
+        },
+        "mobile": {
+          "ratio": "3:4",
+          "width": 1125,
+          "height": 1500
+        }
+      },
+      "focalZone": "Coffret ouvert + pots + polissoir entre 10 % et 62 % de la hauteur",
+      "safeZones": "Point focal dans les 60 % supérieurs ; rien d'essentiel dans les 30 % inférieurs ni dans les 8 % latéraux",
+      "alt": {
+        "fr": "Contenu du kit : coffret, pot de pâte n° 1, pot de poudre n° 2 et polissoir",
+        "ar": "محتوى الكيت: العلبة، وعلبة المعجون رقم 1، وعلبة البودرة رقم 2، وأداة التلميع",
+        "en": "What’s in the kit: box, paste jar no. 1, powder jar no. 2 and buffer"
+      },
+      "rationale": "Slide « ce qu'il y a dans la boîte » : photo isolée qui aide à choisir, en vue plongeante (« facile »), avec un verre de thé comme repère d'échelle.",
+      "principles": [
+        "01-A3 isolé + contextuel",
+        "01-A13 échelle",
+        "01-A16 vue plongeante",
+        "01-B slide 4"
+      ],
+      "generations": 1,
+      "workFile": "generated/_work/HP-SEC-DEF-ALL-04/master.png",
+      "cropAnchor": 0.35
+    },
+    {
+      "id": "HP-SEC-A-ALL-01",
+      "type": "generate",
+      "component": "kit-hero-produit",
+      "slot": "secondary",
+      "variant": "angle-a",
+      "locale": "_all",
+      "crossLocale": true,
+      "position": "01",
+      "slug": "texture-bord-ongle-sans-epaisseur",
+      "title": "Macro du bord de l'ongle : aucune épaisseur de vernis",
+      "priority": "P2",
+      "composition": "single",
+      "productLock": "absent",
+      "promptFile": "prompts/kit-hero-produit/secondary/angle-a/_all/01-texture-bord-ongle-sans-epaisseur.md",
+      "promptVersion": "v1",
+      "references": [
+        {
+          "ref": "REF-07",
+          "role": "hand",
+          "roleLabel": "main / peau / ongles"
+        },
+        {
+          "ref": "REF-04b",
+          "role": "shine",
+          "roleLabel": "niveau de brillance des ongles"
+        },
+        {
+          "ref": "REF-09",
+          "role": "light",
+          "roleLabel": "lumière / ambiance"
+        }
+      ],
+      "talent": "Peau medium-mate (Fitzpatrick IV–V), ~31 ans",
+      "outputs": {
+        "desktop": "generated/kit-hero-produit/secondary/angle-a/_all/01-texture-bord-ongle-sans-epaisseur.png",
+        "mobile": "generated/kit-hero-produit/secondary/angle-a/_all/01-texture-bord-ongle-sans-epaisseur.mobile.png",
+        "alt": "generated/kit-hero-produit/secondary/angle-a/_all/01-texture-bord-ongle-sans-epaisseur.alt.json"
+      },
+      "targets": {
+        "desktop": {
+          "ratio": "4:5",
+          "width": 1200,
+          "height": 1500
+        },
+        "mobile": {
+          "ratio": "3:4",
+          "width": 1125,
+          "height": 1500
+        }
+      },
+      "focalZone": "Bord de l'ongle + reflet entre 20 % et 50 % de la hauteur",
+      "safeZones": "Point focal dans les 60 % supérieurs ; rien d'essentiel dans les 30 % inférieurs ni dans les 8 % latéraux",
+      "alt": {
+        "fr": "Bord d’un ongle naturel en macro : aucune épaisseur de vernis, seulement la brillance",
+        "ar": "حافة ظفر طبيعي عن قرب: لا سماكة لطلاء، لمعان فقط",
+        "en": "Macro of a natural nail edge: no layer of polish, just shine"
+      },
+      "rationale": "Slide 2 de l'angle A : macro de texture. Vu de profil, le bord libre est fin et naturel : la brillance n'est pas une couche.",
+      "principles": [
+        "01-A6 macro / haptique",
+        "01-A14 texture",
+        "01-C angle A slide 2"
+      ],
+      "generations": 1,
+      "workFile": "generated/_work/HP-SEC-A-ALL-01/master.png",
+      "cropAnchor": 0.4
+    },
+    {
+      "id": "HP-SEC-A-ALL-02",
+      "type": "copy",
+      "copyOf": "HP-SEC-DEF-ALL-02",
+      "component": "kit-hero-produit",
+      "slot": "secondary",
+      "variant": "angle-a",
+      "locale": "_all",
+      "crossLocale": true,
+      "position": "02",
+      "slug": "rituel-3-gestes-vertical",
+      "title": "Rituel en 3 gestes, de haut en bas : pâte → poudre → polissoir (copie)",
+      "priority": "P2",
+      "promptFile": "prompts/kit-hero-produit/secondary/default/_all/02-rituel-3-gestes-vertical.md",
+      "outputs": {
+        "desktop": "generated/kit-hero-produit/secondary/angle-a/_all/02-rituel-3-gestes-vertical.png",
+        "mobile": "generated/kit-hero-produit/secondary/angle-a/_all/02-rituel-3-gestes-vertical.mobile.png",
+        "alt": "generated/kit-hero-produit/secondary/angle-a/_all/02-rituel-3-gestes-vertical.alt.json"
+      },
+      "targets": {
+        "desktop": {
+          "ratio": "4:5",
+          "width": 1200,
+          "height": 1500
+        },
+        "mobile": {
+          "ratio": "3:4",
+          "width": 1125,
+          "height": 1500
+        }
+      },
+      "alt": {
+        "fr": "Les trois gestes de haut en bas : la pâte n° 1, la poudre n° 2, puis le polissoir",
+        "ar": "الخطوات الثلاث من الأعلى إلى الأسفل: المعجون رقم 1، ثم البودرة رقم 2، ثم أداة التلميع",
+        "en": "The three steps, top to bottom: paste no. 1, powder no. 2, then the buffer"
+      },
+      "rationale": "Copie octet pour octet de HP-SEC-DEF-ALL-02 : une liste secondaire est publiée en entier (pas de mélange de listes, 05 §4.1), donc la variante doit contenir aussi les slides partagées. L'import dédoublonne par sha256 (05 §4.8).",
+      "generations": 0
+    },
+    {
+      "id": "HP-SEC-A-ALL-03",
+      "type": "copy",
+      "copyOf": "HP-SEC-DEF-ALL-01",
+      "component": "kit-hero-produit",
+      "slot": "secondary",
+      "variant": "angle-a",
+      "locale": "_all",
+      "crossLocale": true,
+      "position": "03",
+      "slug": "avant-apres-terne-brillant",
+      "title": "Avant/après vertical : terne → brillant (copie)",
+      "priority": "P2",
+      "promptFile": "prompts/kit-hero-produit/secondary/default/_all/01-avant-apres-terne-brillant.md",
+      "outputs": {
+        "desktop": "generated/kit-hero-produit/secondary/angle-a/_all/03-avant-apres-terne-brillant.png",
+        "mobile": "generated/kit-hero-produit/secondary/angle-a/_all/03-avant-apres-terne-brillant.mobile.png",
+        "alt": "generated/kit-hero-produit/secondary/angle-a/_all/03-avant-apres-terne-brillant.alt.json"
+      },
+      "targets": {
+        "desktop": {
+          "ratio": "4:5",
+          "width": 1200,
+          "height": 1500
+        },
+        "mobile": {
+          "ratio": "3:4",
+          "width": 1125,
+          "height": 1500
+        }
+      },
+      "alt": {
+        "fr": "Avant, en haut : ongles naturels ternes. Après, en bas : les mêmes ongles brillants, sans vernis",
+        "ar": "قبل، في الأعلى: أظافر طبيعية باهتة. بعد، في الأسفل: الأظافر نفسها لامعة دون طلاء",
+        "en": "Before, top: dull natural nails. After, bottom: the same nails shining, no polish"
+      },
+      "rationale": "Copie octet pour octet de HP-SEC-DEF-ALL-01 : une liste secondaire est publiée en entier (pas de mélange de listes, 05 §4.1), donc la variante doit contenir aussi les slides partagées. L'import dédoublonne par sha256 (05 §4.8).",
+      "generations": 0
+    },
+    {
+      "id": "HP-SEC-A-ALL-04",
+      "type": "copy",
+      "copyOf": "HP-SEC-DEF-ALL-03",
+      "component": "kit-hero-produit",
+      "slot": "secondary",
+      "variant": "angle-a",
+      "locale": "_all",
+      "crossLocale": true,
+      "position": "04",
+      "slug": "kit-en-main-echelle",
+      "title": "Le coffret tenu en main (échelle) à côté d'un verre de thé (copie)",
+      "priority": "P2",
+      "promptFile": "prompts/kit-hero-produit/secondary/default/_all/03-kit-en-main-echelle.md",
+      "outputs": {
+        "desktop": "generated/kit-hero-produit/secondary/angle-a/_all/04-kit-en-main-echelle.png",
+        "mobile": "generated/kit-hero-produit/secondary/angle-a/_all/04-kit-en-main-echelle.mobile.png",
+        "alt": "generated/kit-hero-produit/secondary/angle-a/_all/04-kit-en-main-echelle.alt.json"
+      },
+      "targets": {
+        "desktop": {
+          "ratio": "4:5",
+          "width": 1200,
+          "height": 1500
+        },
+        "mobile": {
+          "ratio": "3:4",
+          "width": 1125,
+          "height": 1500
+        }
+      },
+      "alt": {
+        "fr": "Le coffret FemiGlow tenu dans la main, à côté d’un verre de thé, pour juger sa taille",
+        "ar": "علبة FemiGlow في اليد بجانب كأس شاي لتقدير حجمها",
+        "en": "The FemiGlow box held in one hand next to a tea glass, to show its size"
+      },
+      "rationale": "Copie octet pour octet de HP-SEC-DEF-ALL-03 : une liste secondaire est publiée en entier (pas de mélange de listes, 05 §4.1), donc la variante doit contenir aussi les slides partagées. L'import dédoublonne par sha256 (05 §4.8).",
+      "generations": 0
+    },
+    {
+      "id": "HP-SEC-B-ALL-01",
+      "type": "generate",
+      "component": "kit-hero-produit",
+      "slot": "secondary",
+      "variant": "angle-b",
+      "locale": "_all",
+      "crossLocale": true,
+      "position": "01",
+      "slug": "avant-apres-quotidien-verre-de-the",
+      "title": "Avant/après vertical au quotidien (près d'un verre de thé)",
+      "priority": "P2",
+      "composition": "stack2",
+      "productLock": "absent",
+      "promptFile": "prompts/kit-hero-produit/secondary/angle-b/_all/01-avant-apres-quotidien-verre-de-the.md",
+      "promptVersion": "v1",
+      "references": [
+        {
+          "ref": "REF-08",
+          "role": "hand",
+          "roleLabel": "main / peau / ongles"
+        },
+        {
+          "ref": "REF-04b",
+          "role": "shine",
+          "roleLabel": "niveau de brillance des ongles"
+        },
+        {
+          "ref": "REF-09",
+          "role": "light",
+          "roleLabel": "lumière / ambiance"
+        }
+      ],
+      "talent": "Peau claire olive (Fitzpatrick III), ~24 ans, manche longue en coton bleu encre doux",
+      "outputs": {
+        "desktop": "generated/kit-hero-produit/secondary/angle-b/_all/01-avant-apres-quotidien-verre-de-the.png",
+        "mobile": "generated/kit-hero-produit/secondary/angle-b/_all/01-avant-apres-quotidien-verre-de-the.mobile.png",
+        "alt": "generated/kit-hero-produit/secondary/angle-b/_all/01-avant-apres-quotidien-verre-de-the.alt.json"
+      },
+      "targets": {
+        "desktop": {
+          "ratio": "4:5",
+          "width": 1200,
+          "height": 1500
+        },
+        "mobile": {
+          "ratio": "3:4",
+          "width": 1125,
+          "height": 1500
+        }
+      },
+      "focalZone": "Haut : ongles 30–70 % du panneau. Bas : ongles 10–40 % du panneau",
+      "safeZones": "Point focal dans les 60 % supérieurs ; rien d'essentiel dans les 30 % inférieurs ni dans les 8 % latéraux",
+      "alt": {
+        "fr": "Avant, en haut : ongles ternes près d’un verre de thé. Après, en bas : les mêmes ongles brillants",
+        "ar": "قبل، في الأعلى: أظافر باهتة بجانب كأس شاي. بعد، في الأسفل: الأظافر نفسها لامعة",
+        "en": "Before, top: dull nails by a tea glass. After, bottom: the same nails shining"
+      },
+      "rationale": "Slide 2 de l'angle B : avant/après terne → brillant dans une scène du quotidien. Vertical, neutre FR/AR/EN.",
+      "principles": [
+        "01-A9 avant/après honnête",
+        "01-A10 vertical",
+        "01-C angle B slide 2"
+      ],
+      "generations": 2,
+      "panels": [
+        {
+          "key": "bas-apres",
+          "position": "bas",
+          "generationOrder": 1,
+          "cropAnchor": 0.3,
+          "references": [
+            {
+              "ref": "REF-08",
+              "role": "hand",
+              "roleLabel": "main / peau / ongles"
+            },
+            {
+              "ref": "REF-04b",
+              "role": "shine",
+              "roleLabel": "niveau de brillance des ongles"
+            },
+            {
+              "ref": "REF-09",
+              "role": "light",
+              "roleLabel": "lumière / ambiance"
+            }
+          ],
+          "workFile": "generated/_work/HP-SEC-B-ALL-01/bas-apres.png"
+        },
+        {
+          "key": "haut-avant",
+          "position": "haut",
+          "generationOrder": 2,
+          "cropAnchor": 0.5,
+          "references": [
+            {
+              "ref": "PANEL:bas-apres",
+              "role": "same",
+              "roleLabel": "même main, même lumière (panneau déjà validé)"
+            },
+            {
+              "ref": "REF-08",
+              "role": "hand",
+              "roleLabel": "main / peau / ongles"
+            }
+          ],
+          "workFile": "generated/_work/HP-SEC-B-ALL-01/haut-avant.png"
+        }
+      ]
+    },
+    {
+      "id": "HP-SEC-B-ALL-02",
+      "type": "generate",
+      "component": "kit-hero-produit",
+      "slot": "secondary",
+      "variant": "angle-b",
+      "locale": "_all",
+      "crossLocale": true,
+      "position": "02",
+      "slug": "geste-quotidien-page-carnet",
+      "title": "Geste du quotidien : tourner la page d'un carnet",
+      "priority": "P2",
+      "composition": "single",
+      "productLock": "absent",
+      "promptFile": "prompts/kit-hero-produit/secondary/angle-b/_all/02-geste-quotidien-page-carnet.md",
+      "promptVersion": "v1",
+      "references": [
+        {
+          "ref": "REF-07",
+          "role": "hand",
+          "roleLabel": "main / peau / ongles"
+        },
+        {
+          "ref": "REF-04b",
+          "role": "shine",
+          "roleLabel": "niveau de brillance des ongles"
+        },
+        {
+          "ref": "REF-09",
+          "role": "light",
+          "roleLabel": "lumière / ambiance"
+        }
+      ],
+      "talent": "Peau brun foncé (Fitzpatrick V–VI), ~29 ans, manche longue en lin sauge",
+      "outputs": {
+        "desktop": "generated/kit-hero-produit/secondary/angle-b/_all/02-geste-quotidien-page-carnet.png",
+        "mobile": "generated/kit-hero-produit/secondary/angle-b/_all/02-geste-quotidien-page-carnet.mobile.png",
+        "alt": "generated/kit-hero-produit/secondary/angle-b/_all/02-geste-quotidien-page-carnet.alt.json"
+      },
+      "targets": {
+        "desktop": {
+          "ratio": "4:5",
+          "width": 1200,
+          "height": 1500
+        },
+        "mobile": {
+          "ratio": "3:4",
+          "width": 1125,
+          "height": 1500
+        }
+      },
+      "focalZone": "Ongles + coin de page entre 20 % et 55 % de la hauteur",
+      "safeZones": "Point focal dans les 60 % supérieurs ; rien d'essentiel dans les 30 % inférieurs ni dans les 8 % latéraux",
+      "alt": {
+        "fr": "Main aux ongles nus et brillants qui tourne la page d’un carnet",
+        "ar": "يد بأظافر طبيعية لامعة تقلب صفحة دفتر",
+        "en": "Hand with bare, shiny nails turning a notebook page"
+      },
+      "rationale": "Slide de l'angle B : la brillance tient dans les gestes de tous les jours, sans rien à poser ni à faire sécher.",
+      "principles": [
+        "01-A5 main vicariante",
+        "01-A6 mouvement suggéré",
+        "01-C angle B (liberté)"
+      ],
+      "generations": 1,
+      "workFile": "generated/_work/HP-SEC-B-ALL-02/master.png",
+      "cropAnchor": 0.4
+    },
+    {
+      "id": "HP-SEC-B-ALL-03",
+      "type": "copy",
+      "copyOf": "HP-SEC-DEF-ALL-02",
+      "component": "kit-hero-produit",
+      "slot": "secondary",
+      "variant": "angle-b",
+      "locale": "_all",
+      "crossLocale": true,
+      "position": "03",
+      "slug": "rituel-3-gestes-vertical",
+      "title": "Rituel en 3 gestes, de haut en bas : pâte → poudre → polissoir (copie)",
+      "priority": "P2",
+      "promptFile": "prompts/kit-hero-produit/secondary/default/_all/02-rituel-3-gestes-vertical.md",
+      "outputs": {
+        "desktop": "generated/kit-hero-produit/secondary/angle-b/_all/03-rituel-3-gestes-vertical.png",
+        "mobile": "generated/kit-hero-produit/secondary/angle-b/_all/03-rituel-3-gestes-vertical.mobile.png",
+        "alt": "generated/kit-hero-produit/secondary/angle-b/_all/03-rituel-3-gestes-vertical.alt.json"
+      },
+      "targets": {
+        "desktop": {
+          "ratio": "4:5",
+          "width": 1200,
+          "height": 1500
+        },
+        "mobile": {
+          "ratio": "3:4",
+          "width": 1125,
+          "height": 1500
+        }
+      },
+      "alt": {
+        "fr": "Les trois gestes de haut en bas : la pâte n° 1, la poudre n° 2, puis le polissoir",
+        "ar": "الخطوات الثلاث من الأعلى إلى الأسفل: المعجون رقم 1، ثم البودرة رقم 2، ثم أداة التلميع",
+        "en": "The three steps, top to bottom: paste no. 1, powder no. 2, then the buffer"
+      },
+      "rationale": "Copie octet pour octet de HP-SEC-DEF-ALL-02 : une liste secondaire est publiée en entier (pas de mélange de listes, 05 §4.1), donc la variante doit contenir aussi les slides partagées. L'import dédoublonne par sha256 (05 §4.8).",
+      "generations": 0
+    },
+    {
+      "id": "HP-SEC-B-ALL-04",
+      "type": "copy",
+      "copyOf": "HP-SEC-DEF-ALL-03",
+      "component": "kit-hero-produit",
+      "slot": "secondary",
+      "variant": "angle-b",
+      "locale": "_all",
+      "crossLocale": true,
+      "position": "04",
+      "slug": "kit-en-main-echelle",
+      "title": "Le coffret tenu en main (échelle) à côté d'un verre de thé (copie)",
+      "priority": "P2",
+      "promptFile": "prompts/kit-hero-produit/secondary/default/_all/03-kit-en-main-echelle.md",
+      "outputs": {
+        "desktop": "generated/kit-hero-produit/secondary/angle-b/_all/04-kit-en-main-echelle.png",
+        "mobile": "generated/kit-hero-produit/secondary/angle-b/_all/04-kit-en-main-echelle.mobile.png",
+        "alt": "generated/kit-hero-produit/secondary/angle-b/_all/04-kit-en-main-echelle.alt.json"
+      },
+      "targets": {
+        "desktop": {
+          "ratio": "4:5",
+          "width": 1200,
+          "height": 1500
+        },
+        "mobile": {
+          "ratio": "3:4",
+          "width": 1125,
+          "height": 1500
+        }
+      },
+      "alt": {
+        "fr": "Le coffret FemiGlow tenu dans la main, à côté d’un verre de thé, pour juger sa taille",
+        "ar": "علبة FemiGlow في اليد بجانب كأس شاي لتقدير حجمها",
+        "en": "The FemiGlow box held in one hand next to a tea glass, to show its size"
+      },
+      "rationale": "Copie octet pour octet de HP-SEC-DEF-ALL-03 : une liste secondaire est publiée en entier (pas de mélange de listes, 05 §4.1), donc la variante doit contenir aussi les slides partagées. L'import dédoublonne par sha256 (05 §4.8).",
+      "generations": 0
+    },
+    {
+      "id": "HP-SEC-C-ALL-01",
+      "type": "generate",
+      "component": "kit-hero-produit",
+      "slot": "secondary",
+      "variant": "angle-c",
+      "locale": "_all",
+      "crossLocale": true,
+      "position": "01",
+      "slug": "avant-apres-semi-permanent",
+      "title": "Avant/après vertical : ongle abîmé par le semi-permanent → ongle naturel sain et brillant",
+      "priority": "P2",
+      "composition": "stack2",
+      "productLock": "absent",
+      "promptFile": "prompts/kit-hero-produit/secondary/angle-c/_all/01-avant-apres-semi-permanent.md",
+      "promptVersion": "v1",
+      "references": [
+        {
+          "ref": "REF-08",
+          "role": "hand",
+          "roleLabel": "main / peau / ongles"
+        },
+        {
+          "ref": "REF-04b",
+          "role": "shine",
+          "roleLabel": "niveau de brillance des ongles"
+        },
+        {
+          "ref": "REF-09",
+          "role": "light",
+          "roleLabel": "lumière / ambiance"
+        }
+      ],
+      "talent": "Peau medium (Fitzpatrick IV), main mûre ~44 ans, manche longue en lin crème",
+      "outputs": {
+        "desktop": "generated/kit-hero-produit/secondary/angle-c/_all/01-avant-apres-semi-permanent.png",
+        "mobile": "generated/kit-hero-produit/secondary/angle-c/_all/01-avant-apres-semi-permanent.mobile.png",
+        "alt": "generated/kit-hero-produit/secondary/angle-c/_all/01-avant-apres-semi-permanent.alt.json"
+      },
+      "targets": {
+        "desktop": {
+          "ratio": "4:5",
+          "width": 1200,
+          "height": 1500
+        },
+        "mobile": {
+          "ratio": "3:4",
+          "width": 1125,
+          "height": 1500
+        }
+      },
+      "focalZone": "Haut : ongles 30–70 % du panneau. Bas : ongles 10–40 % du panneau",
+      "safeZones": "Point focal dans les 60 % supérieurs ; rien d'essentiel dans les 30 % inférieurs ni dans les 8 % latéraux",
+      "alt": {
+        "fr": "Avant, en haut : ongles abîmés après le semi-permanent. Après, en bas : ongles naturels lisses et brillants",
+        "ar": "قبل، في الأعلى: أظافر متضررة بعد الطلاء شبه الدائم. بعد، في الأسفل: أظافر طبيعية ناعمة ولامعة",
+        "en": "Before, top: nails damaged by gel polish. After, bottom: smooth, shiny natural nails"
+      },
+      "rationale": "Slide 2 de l'angle C : l'ongle fragilisé après le semi-permanent (sans couleur résiduelle) puis le même ongle lisse et brillant. Vertical, neutre FR/AR/EN.",
+      "principles": [
+        "01-A9 avant/après honnête (dégrader modérément)",
+        "01-A10 vertical",
+        "01-C angle C slide 2"
+      ],
+      "generations": 2,
+      "panels": [
+        {
+          "key": "bas-apres",
+          "position": "bas",
+          "generationOrder": 1,
+          "cropAnchor": 0.3,
+          "references": [
+            {
+              "ref": "REF-08",
+              "role": "hand",
+              "roleLabel": "main / peau / ongles"
+            },
+            {
+              "ref": "REF-04b",
+              "role": "shine",
+              "roleLabel": "niveau de brillance des ongles"
+            },
+            {
+              "ref": "REF-09",
+              "role": "light",
+              "roleLabel": "lumière / ambiance"
+            }
+          ],
+          "workFile": "generated/_work/HP-SEC-C-ALL-01/bas-apres.png"
+        },
+        {
+          "key": "haut-avant",
+          "position": "haut",
+          "generationOrder": 2,
+          "cropAnchor": 0.5,
+          "references": [
+            {
+              "ref": "PANEL:bas-apres",
+              "role": "same",
+              "roleLabel": "même main, même lumière (panneau déjà validé)"
+            },
+            {
+              "ref": "REF-08",
+              "role": "hand",
+              "roleLabel": "main / peau / ongles"
+            }
+          ],
+          "workFile": "generated/_work/HP-SEC-C-ALL-01/haut-avant.png"
+        }
+      ]
+    },
+    {
+      "id": "HP-SEC-C-ALL-02",
+      "type": "copy",
+      "copyOf": "HP-SEC-DEF-ALL-02",
+      "component": "kit-hero-produit",
+      "slot": "secondary",
+      "variant": "angle-c",
+      "locale": "_all",
+      "crossLocale": true,
+      "position": "02",
+      "slug": "rituel-3-gestes-vertical",
+      "title": "Rituel en 3 gestes, de haut en bas : pâte → poudre → polissoir (copie)",
+      "priority": "P2",
+      "promptFile": "prompts/kit-hero-produit/secondary/default/_all/02-rituel-3-gestes-vertical.md",
+      "outputs": {
+        "desktop": "generated/kit-hero-produit/secondary/angle-c/_all/02-rituel-3-gestes-vertical.png",
+        "mobile": "generated/kit-hero-produit/secondary/angle-c/_all/02-rituel-3-gestes-vertical.mobile.png",
+        "alt": "generated/kit-hero-produit/secondary/angle-c/_all/02-rituel-3-gestes-vertical.alt.json"
+      },
+      "targets": {
+        "desktop": {
+          "ratio": "4:5",
+          "width": 1200,
+          "height": 1500
+        },
+        "mobile": {
+          "ratio": "3:4",
+          "width": 1125,
+          "height": 1500
+        }
+      },
+      "alt": {
+        "fr": "Les trois gestes de haut en bas : la pâte n° 1, la poudre n° 2, puis le polissoir",
+        "ar": "الخطوات الثلاث من الأعلى إلى الأسفل: المعجون رقم 1، ثم البودرة رقم 2، ثم أداة التلميع",
+        "en": "The three steps, top to bottom: paste no. 1, powder no. 2, then the buffer"
+      },
+      "rationale": "Copie octet pour octet de HP-SEC-DEF-ALL-02 : une liste secondaire est publiée en entier (pas de mélange de listes, 05 §4.1), donc la variante doit contenir aussi les slides partagées. L'import dédoublonne par sha256 (05 §4.8).",
+      "generations": 0
+    },
+    {
+      "id": "HP-SEC-C-ALL-03",
+      "type": "copy",
+      "copyOf": "HP-SEC-DEF-ALL-03",
+      "component": "kit-hero-produit",
+      "slot": "secondary",
+      "variant": "angle-c",
+      "locale": "_all",
+      "crossLocale": true,
+      "position": "03",
+      "slug": "kit-en-main-echelle",
+      "title": "Le coffret tenu en main (échelle) à côté d'un verre de thé (copie)",
+      "priority": "P2",
+      "promptFile": "prompts/kit-hero-produit/secondary/default/_all/03-kit-en-main-echelle.md",
+      "outputs": {
+        "desktop": "generated/kit-hero-produit/secondary/angle-c/_all/03-kit-en-main-echelle.png",
+        "mobile": "generated/kit-hero-produit/secondary/angle-c/_all/03-kit-en-main-echelle.mobile.png",
+        "alt": "generated/kit-hero-produit/secondary/angle-c/_all/03-kit-en-main-echelle.alt.json"
+      },
+      "targets": {
+        "desktop": {
+          "ratio": "4:5",
+          "width": 1200,
+          "height": 1500
+        },
+        "mobile": {
+          "ratio": "3:4",
+          "width": 1125,
+          "height": 1500
+        }
+      },
+      "alt": {
+        "fr": "Le coffret FemiGlow tenu dans la main, à côté d’un verre de thé, pour juger sa taille",
+        "ar": "علبة FemiGlow في اليد بجانب كأس شاي لتقدير حجمها",
+        "en": "The FemiGlow box held in one hand next to a tea glass, to show its size"
+      },
+      "rationale": "Copie octet pour octet de HP-SEC-DEF-ALL-03 : une liste secondaire est publiée en entier (pas de mélange de listes, 05 §4.1), donc la variante doit contenir aussi les slides partagées. L'import dédoublonne par sha256 (05 §4.8).",
+      "generations": 0
+    },
+    {
+      "id": "HP-SEC-C-ALL-04",
+      "type": "copy",
+      "copyOf": "HP-SEC-DEF-ALL-04",
+      "component": "kit-hero-produit",
+      "slot": "secondary",
+      "variant": "angle-c",
+      "locale": "_all",
+      "crossLocale": true,
+      "position": "04",
+      "slug": "contenu-du-kit-plongee",
+      "title": "Contenu du kit, vue plongeante (packshot en contexte) (copie)",
+      "priority": "P2",
+      "promptFile": "prompts/kit-hero-produit/secondary/default/_all/04-contenu-du-kit-plongee.md",
+      "outputs": {
+        "desktop": "generated/kit-hero-produit/secondary/angle-c/_all/04-contenu-du-kit-plongee.png",
+        "mobile": "generated/kit-hero-produit/secondary/angle-c/_all/04-contenu-du-kit-plongee.mobile.png",
+        "alt": "generated/kit-hero-produit/secondary/angle-c/_all/04-contenu-du-kit-plongee.alt.json"
+      },
+      "targets": {
+        "desktop": {
+          "ratio": "4:5",
+          "width": 1200,
+          "height": 1500
+        },
+        "mobile": {
+          "ratio": "3:4",
+          "width": 1125,
+          "height": 1500
+        }
+      },
+      "alt": {
+        "fr": "Contenu du kit : coffret, pot de pâte n° 1, pot de poudre n° 2 et polissoir",
+        "ar": "محتوى الكيت: العلبة، وعلبة المعجون رقم 1، وعلبة البودرة رقم 2، وأداة التلميع",
+        "en": "What’s in the kit: box, paste jar no. 1, powder jar no. 2 and buffer"
+      },
+      "rationale": "Copie octet pour octet de HP-SEC-DEF-ALL-04 : une liste secondaire est publiée en entier (pas de mélange de listes, 05 §4.1), donc la variante doit contenir aussi les slides partagées. L'import dédoublonne par sha256 (05 §4.8).",
+      "generations": 0
+    },
+    {
+      "id": "HP-SEC-D-ALL-01",
+      "type": "generate",
+      "component": "kit-hero-produit",
+      "slot": "secondary",
+      "variant": "angle-d",
+      "locale": "_all",
+      "crossLocale": true,
+      "position": "01",
+      "slug": "eau-perle-sur-ongle-macro",
+      "title": "Macro : l'eau perle sur l'ongle naturel",
+      "priority": "P2",
+      "composition": "single",
+      "productLock": "absent",
+      "promptFile": "prompts/kit-hero-produit/secondary/angle-d/_all/01-eau-perle-sur-ongle-macro.md",
+      "promptVersion": "v1",
+      "references": [
+        {
+          "ref": "REF-07",
+          "role": "hand",
+          "roleLabel": "main / peau / ongles"
+        },
+        {
+          "ref": "REF-04b",
+          "role": "shine",
+          "roleLabel": "niveau de brillance des ongles"
+        },
+        {
+          "ref": "REF-09",
+          "role": "light",
+          "roleLabel": "lumière / ambiance"
+        }
+      ],
+      "talent": "Peau brun foncé (Fitzpatrick V–VI), ~38 ans",
+      "outputs": {
+        "desktop": "generated/kit-hero-produit/secondary/angle-d/_all/01-eau-perle-sur-ongle-macro.png",
+        "mobile": "generated/kit-hero-produit/secondary/angle-d/_all/01-eau-perle-sur-ongle-macro.mobile.png",
+        "alt": "generated/kit-hero-produit/secondary/angle-d/_all/01-eau-perle-sur-ongle-macro.alt.json"
+      },
+      "targets": {
+        "desktop": {
+          "ratio": "4:5",
+          "width": 1200,
+          "height": 1500
+        },
+        "mobile": {
+          "ratio": "3:4",
+          "width": 1125,
+          "height": 1500
+        }
+      },
+      "focalZone": "Ongle + gouttes entre 18 % et 50 % de la hauteur",
+      "safeZones": "Point focal dans les 60 % supérieurs ; rien d'essentiel dans les 30 % inférieurs ni dans les 8 % latéraux",
+      "alt": {
+        "fr": "Gouttes d’eau qui perlent sur un ongle naturel brillant",
+        "ar": "قطرات ماء على ظفر طبيعي لامع",
+        "en": "Water droplets beading on a shiny natural nail"
+      },
+      "rationale": "Slide 2 de l'angle D : l'eau touche directement l'ongle nu et la brillance reste. Macro sobre, sans élément religieux.",
+      "principles": [
+        "01-C angle D slide 2",
+        "01-A6 macro",
+        "01-D pudeur"
+      ],
+      "generations": 1,
+      "workFile": "generated/_work/HP-SEC-D-ALL-01/master.png",
+      "cropAnchor": 0.4
+    },
+    {
+      "id": "HP-SEC-D-ALL-02",
+      "type": "generate",
+      "component": "kit-hero-produit",
+      "slot": "secondary",
+      "variant": "angle-d",
+      "locale": "_all",
+      "crossLocale": true,
+      "position": "02",
+      "slug": "main-sechee-serviette",
+      "title": "Main séchée dans une serviette : la brillance reste",
+      "priority": "P2",
+      "composition": "single",
+      "productLock": "absent",
+      "promptFile": "prompts/kit-hero-produit/secondary/angle-d/_all/02-main-sechee-serviette.md",
+      "promptVersion": "v1",
+      "references": [
+        {
+          "ref": "REF-08",
+          "role": "hand",
+          "roleLabel": "main / peau / ongles"
+        },
+        {
+          "ref": "REF-04b",
+          "role": "shine",
+          "roleLabel": "niveau de brillance des ongles"
+        },
+        {
+          "ref": "REF-10",
+          "role": "home",
+          "roleLabel": "lumière / ambiance (vraie vie à la maison)"
+        }
+      ],
+      "talent": "Peau claire-medium (Fitzpatrick III), ~33 ans, manche longue en lin écru",
+      "outputs": {
+        "desktop": "generated/kit-hero-produit/secondary/angle-d/_all/02-main-sechee-serviette.png",
+        "mobile": "generated/kit-hero-produit/secondary/angle-d/_all/02-main-sechee-serviette.mobile.png",
+        "alt": "generated/kit-hero-produit/secondary/angle-d/_all/02-main-sechee-serviette.alt.json"
+      },
+      "targets": {
+        "desktop": {
+          "ratio": "4:5",
+          "width": 1200,
+          "height": 1500
+        },
+        "mobile": {
+          "ratio": "3:4",
+          "width": 1125,
+          "height": 1500
+        }
+      },
+      "focalZone": "Ongles entre 20 % et 52 % de la hauteur",
+      "safeZones": "Point focal dans les 60 % supérieurs ; rien d'essentiel dans les 30 % inférieurs ni dans les 8 % latéraux",
+      "alt": {
+        "fr": "Main séchée avec une serviette : les ongles naturels restent brillants",
+        "ar": "يد تُجفَّف بمنشفة، والأظافر الطبيعية تبقى لامعة",
+        "en": "Hand patted dry with a towel, the natural nails still shining"
+      },
+      "rationale": "Slide de l'angle D : après l'eau, on s'essuie et les ongles brillent toujours (rien à retirer, rien à reposer).",
+      "principles": [
+        "01-C angle D",
+        "01-A5 main vicariante",
+        "01-D pudeur, poignets couverts"
+      ],
+      "generations": 1,
+      "workFile": "generated/_work/HP-SEC-D-ALL-02/master.png",
+      "cropAnchor": 0.4
+    },
+    {
+      "id": "HP-SEC-D-ALL-03",
+      "type": "copy",
+      "copyOf": "HP-SEC-DEF-ALL-02",
+      "component": "kit-hero-produit",
+      "slot": "secondary",
+      "variant": "angle-d",
+      "locale": "_all",
+      "crossLocale": true,
+      "position": "03",
+      "slug": "rituel-3-gestes-vertical",
+      "title": "Rituel en 3 gestes, de haut en bas : pâte → poudre → polissoir (copie)",
+      "priority": "P2",
+      "promptFile": "prompts/kit-hero-produit/secondary/default/_all/02-rituel-3-gestes-vertical.md",
+      "outputs": {
+        "desktop": "generated/kit-hero-produit/secondary/angle-d/_all/03-rituel-3-gestes-vertical.png",
+        "mobile": "generated/kit-hero-produit/secondary/angle-d/_all/03-rituel-3-gestes-vertical.mobile.png",
+        "alt": "generated/kit-hero-produit/secondary/angle-d/_all/03-rituel-3-gestes-vertical.alt.json"
+      },
+      "targets": {
+        "desktop": {
+          "ratio": "4:5",
+          "width": 1200,
+          "height": 1500
+        },
+        "mobile": {
+          "ratio": "3:4",
+          "width": 1125,
+          "height": 1500
+        }
+      },
+      "alt": {
+        "fr": "Les trois gestes de haut en bas : la pâte n° 1, la poudre n° 2, puis le polissoir",
+        "ar": "الخطوات الثلاث من الأعلى إلى الأسفل: المعجون رقم 1، ثم البودرة رقم 2، ثم أداة التلميع",
+        "en": "The three steps, top to bottom: paste no. 1, powder no. 2, then the buffer"
+      },
+      "rationale": "Copie octet pour octet de HP-SEC-DEF-ALL-02 : une liste secondaire est publiée en entier (pas de mélange de listes, 05 §4.1), donc la variante doit contenir aussi les slides partagées. L'import dédoublonne par sha256 (05 §4.8).",
+      "generations": 0
+    },
+    {
+      "id": "HP-SEC-D-ALL-04",
+      "type": "copy",
+      "copyOf": "HP-SEC-DEF-ALL-03",
+      "component": "kit-hero-produit",
+      "slot": "secondary",
+      "variant": "angle-d",
+      "locale": "_all",
+      "crossLocale": true,
+      "position": "04",
+      "slug": "kit-en-main-echelle",
+      "title": "Le coffret tenu en main (échelle) à côté d'un verre de thé (copie)",
+      "priority": "P2",
+      "promptFile": "prompts/kit-hero-produit/secondary/default/_all/03-kit-en-main-echelle.md",
+      "outputs": {
+        "desktop": "generated/kit-hero-produit/secondary/angle-d/_all/04-kit-en-main-echelle.png",
+        "mobile": "generated/kit-hero-produit/secondary/angle-d/_all/04-kit-en-main-echelle.mobile.png",
+        "alt": "generated/kit-hero-produit/secondary/angle-d/_all/04-kit-en-main-echelle.alt.json"
+      },
+      "targets": {
+        "desktop": {
+          "ratio": "4:5",
+          "width": 1200,
+          "height": 1500
+        },
+        "mobile": {
+          "ratio": "3:4",
+          "width": 1125,
+          "height": 1500
+        }
+      },
+      "alt": {
+        "fr": "Le coffret FemiGlow tenu dans la main, à côté d’un verre de thé, pour juger sa taille",
+        "ar": "علبة FemiGlow في اليد بجانب كأس شاي لتقدير حجمها",
+        "en": "The FemiGlow box held in one hand next to a tea glass, to show its size"
+      },
+      "rationale": "Copie octet pour octet de HP-SEC-DEF-ALL-03 : une liste secondaire est publiée en entier (pas de mélange de listes, 05 §4.1), donc la variante doit contenir aussi les slides partagées. L'import dédoublonne par sha256 (05 §4.8).",
+      "generations": 0
+    },
+    {
+      "id": "HP-SEC-E-ALL-01",
+      "type": "generate",
+      "component": "kit-hero-produit",
+      "slot": "secondary",
+      "variant": "angle-e",
+      "locale": "_all",
+      "crossLocale": true,
+      "position": "01",
+      "slug": "salon-vs-maison-vertical",
+      "title": "Comparaison verticale : au salon (haut) / chez soi avec le kit (bas)",
+      "priority": "P2",
+      "composition": "stack2",
+      "productLock": "full",
+      "promptFile": "prompts/kit-hero-produit/secondary/angle-e/_all/01-salon-vs-maison-vertical.md",
+      "promptVersion": "v1",
+      "references": [
+        {
+          "ref": "REF-02",
+          "role": "product",
+          "roleLabel": "fidélité produit"
+        },
+        {
+          "ref": "REF-06",
+          "role": "box",
+          "roleLabel": "fidélité produit (coffret réel)"
+        },
+        {
+          "ref": "REF-10",
+          "role": "home",
+          "roleLabel": "lumière / ambiance (vraie vie à la maison)"
+        },
+        {
+          "ref": "REF-09",
+          "role": "light",
+          "roleLabel": "lumière / ambiance"
+        }
+      ],
+      "talent": "Peau medium-mate (Fitzpatrick IV–V), ~39 ans, manche longue sauge (même cliente dans les deux panneaux)",
+      "outputs": {
+        "desktop": "generated/kit-hero-produit/secondary/angle-e/_all/01-salon-vs-maison-vertical.png",
+        "mobile": "generated/kit-hero-produit/secondary/angle-e/_all/01-salon-vs-maison-vertical.mobile.png",
+        "alt": "generated/kit-hero-produit/secondary/angle-e/_all/01-salon-vs-maison-vertical.alt.json"
+      },
+      "targets": {
+        "desktop": {
+          "ratio": "4:5",
+          "width": 1200,
+          "height": 1500
+        },
+        "mobile": {
+          "ratio": "3:4",
+          "width": 1125,
+          "height": 1500
+        }
+      },
+      "focalZone": "Haut : mains 30–70 % du panneau. Bas : ongles + polissoir 10–45 % du panneau",
+      "safeZones": "Point focal dans les 60 % supérieurs ; rien d'essentiel dans les 30 % inférieurs ni dans les 8 % latéraux",
+      "alt": {
+        "fr": "En haut, une manucure au salon ; en bas, le même soin chez soi avec le kit FemiGlow",
+        "ar": "في الأعلى: مانيكير في الصالون. في الأسفل: العناية نفسها في البيت مع كيت FemiGlow",
+        "en": "Top: a manicure at the salon. Bottom: the same care at home with the FemiGlow kit"
+      },
+      "rationale": "Slide 2 de l'angle E : le même soin, au salon (rendez-vous, attente, lumière froide) puis chez soi avec le kit. Vertical sans prix ni texte → neutre FR/AR/EN.",
+      "principles": [
+        "01-C angle E slide 2",
+        "01-A9 contraste (dégrader le cadrage « problème »)",
+        "01-D pas de texte / prix en HTML",
+        "01-A10 vertical"
+      ],
+      "generations": 2,
+      "panels": [
+        {
+          "key": "bas-maison",
+          "position": "bas",
+          "generationOrder": 1,
+          "cropAnchor": 0.3,
+          "references": [
+            {
+              "ref": "REF-02",
+              "role": "product",
+              "roleLabel": "fidélité produit"
+            },
+            {
+              "ref": "REF-06",
+              "role": "box",
+              "roleLabel": "fidélité produit (coffret réel)"
+            },
+            {
+              "ref": "REF-07",
+              "role": "hand",
+              "roleLabel": "main / peau / ongles"
+            },
+            {
+              "ref": "REF-09",
+              "role": "light",
+              "roleLabel": "lumière / ambiance"
+            }
+          ],
+          "workFile": "generated/_work/HP-SEC-E-ALL-01/bas-maison.png"
+        },
+        {
+          "key": "haut-salon",
+          "position": "haut",
+          "generationOrder": 2,
+          "cropAnchor": 0.5,
+          "references": [
+            {
+              "ref": "PANEL:bas-maison",
+              "role": "same",
+              "roleLabel": "même main, même lumière (panneau déjà validé)"
+            },
+            {
+              "ref": "REF-08",
+              "role": "hand",
+              "roleLabel": "main / peau / ongles"
+            }
+          ],
+          "workFile": "generated/_work/HP-SEC-E-ALL-01/haut-salon.png"
+        }
+      ]
+    },
+    {
+      "id": "HP-SEC-E-ALL-02",
+      "type": "copy",
+      "copyOf": "HP-SEC-DEF-ALL-03",
+      "component": "kit-hero-produit",
+      "slot": "secondary",
+      "variant": "angle-e",
+      "locale": "_all",
+      "crossLocale": true,
+      "position": "02",
+      "slug": "kit-en-main-echelle",
+      "title": "Le coffret tenu en main (échelle) à côté d'un verre de thé (copie)",
+      "priority": "P2",
+      "promptFile": "prompts/kit-hero-produit/secondary/default/_all/03-kit-en-main-echelle.md",
+      "outputs": {
+        "desktop": "generated/kit-hero-produit/secondary/angle-e/_all/02-kit-en-main-echelle.png",
+        "mobile": "generated/kit-hero-produit/secondary/angle-e/_all/02-kit-en-main-echelle.mobile.png",
+        "alt": "generated/kit-hero-produit/secondary/angle-e/_all/02-kit-en-main-echelle.alt.json"
+      },
+      "targets": {
+        "desktop": {
+          "ratio": "4:5",
+          "width": 1200,
+          "height": 1500
+        },
+        "mobile": {
+          "ratio": "3:4",
+          "width": 1125,
+          "height": 1500
+        }
+      },
+      "alt": {
+        "fr": "Le coffret FemiGlow tenu dans la main, à côté d’un verre de thé, pour juger sa taille",
+        "ar": "علبة FemiGlow في اليد بجانب كأس شاي لتقدير حجمها",
+        "en": "The FemiGlow box held in one hand next to a tea glass, to show its size"
+      },
+      "rationale": "Copie octet pour octet de HP-SEC-DEF-ALL-03 : une liste secondaire est publiée en entier (pas de mélange de listes, 05 §4.1), donc la variante doit contenir aussi les slides partagées. L'import dédoublonne par sha256 (05 §4.8).",
+      "generations": 0
+    },
+    {
+      "id": "HP-SEC-E-ALL-03",
+      "type": "copy",
+      "copyOf": "HP-SEC-DEF-ALL-02",
+      "component": "kit-hero-produit",
+      "slot": "secondary",
+      "variant": "angle-e",
+      "locale": "_all",
+      "crossLocale": true,
+      "position": "03",
+      "slug": "rituel-3-gestes-vertical",
+      "title": "Rituel en 3 gestes, de haut en bas : pâte → poudre → polissoir (copie)",
+      "priority": "P2",
+      "promptFile": "prompts/kit-hero-produit/secondary/default/_all/02-rituel-3-gestes-vertical.md",
+      "outputs": {
+        "desktop": "generated/kit-hero-produit/secondary/angle-e/_all/03-rituel-3-gestes-vertical.png",
+        "mobile": "generated/kit-hero-produit/secondary/angle-e/_all/03-rituel-3-gestes-vertical.mobile.png",
+        "alt": "generated/kit-hero-produit/secondary/angle-e/_all/03-rituel-3-gestes-vertical.alt.json"
+      },
+      "targets": {
+        "desktop": {
+          "ratio": "4:5",
+          "width": 1200,
+          "height": 1500
+        },
+        "mobile": {
+          "ratio": "3:4",
+          "width": 1125,
+          "height": 1500
+        }
+      },
+      "alt": {
+        "fr": "Les trois gestes de haut en bas : la pâte n° 1, la poudre n° 2, puis le polissoir",
+        "ar": "الخطوات الثلاث من الأعلى إلى الأسفل: المعجون رقم 1، ثم البودرة رقم 2، ثم أداة التلميع",
+        "en": "The three steps, top to bottom: paste no. 1, powder no. 2, then the buffer"
+      },
+      "rationale": "Copie octet pour octet de HP-SEC-DEF-ALL-02 : une liste secondaire est publiée en entier (pas de mélange de listes, 05 §4.1), donc la variante doit contenir aussi les slides partagées. L'import dédoublonne par sha256 (05 §4.8).",
+      "generations": 0
+    },
+    {
+      "id": "HP-SEC-E-ALL-04",
+      "type": "copy",
+      "copyOf": "HP-SEC-DEF-ALL-04",
+      "component": "kit-hero-produit",
+      "slot": "secondary",
+      "variant": "angle-e",
+      "locale": "_all",
+      "crossLocale": true,
+      "position": "04",
+      "slug": "contenu-du-kit-plongee",
+      "title": "Contenu du kit, vue plongeante (packshot en contexte) (copie)",
+      "priority": "P2",
+      "promptFile": "prompts/kit-hero-produit/secondary/default/_all/04-contenu-du-kit-plongee.md",
+      "outputs": {
+        "desktop": "generated/kit-hero-produit/secondary/angle-e/_all/04-contenu-du-kit-plongee.png",
+        "mobile": "generated/kit-hero-produit/secondary/angle-e/_all/04-contenu-du-kit-plongee.mobile.png",
+        "alt": "generated/kit-hero-produit/secondary/angle-e/_all/04-contenu-du-kit-plongee.alt.json"
+      },
+      "targets": {
+        "desktop": {
+          "ratio": "4:5",
+          "width": 1200,
+          "height": 1500
+        },
+        "mobile": {
+          "ratio": "3:4",
+          "width": 1125,
+          "height": 1500
+        }
+      },
+      "alt": {
+        "fr": "Contenu du kit : coffret, pot de pâte n° 1, pot de poudre n° 2 et polissoir",
+        "ar": "محتوى الكيت: العلبة، وعلبة المعجون رقم 1، وعلبة البودرة رقم 2، وأداة التلميع",
+        "en": "What’s in the kit: box, paste jar no. 1, powder jar no. 2 and buffer"
+      },
+      "rationale": "Copie octet pour octet de HP-SEC-DEF-ALL-04 : une liste secondaire est publiée en entier (pas de mélange de listes, 05 §4.1), donc la variante doit contenir aussi les slides partagées. L'import dédoublonne par sha256 (05 §4.8).",
+      "generations": 0
+    }
+  ]
+}

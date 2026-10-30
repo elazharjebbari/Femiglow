@@ -1,0 +1,7 @@
+# Images générées : copiées sur le serveur puis importées (05 §4.8), jamais commitées.
+*.png
+*.jpg
+*.webp
+_work/
+# Le journal et les alt.json restent versionnables.
+!_log.csv
