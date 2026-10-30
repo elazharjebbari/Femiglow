@@ -114,14 +114,14 @@ test.describe('CHA-231 — Wizard /kit (Mode A)', () => {
     await expect(section).toBeVisible();
   });
 
-  test('le CTA hero « Commander le rituel » scroll-cible le wizard', async ({
+  test('le CTA hero « Je commande — {prix} » scroll-cible le wizard', async ({
     page,
   }) => {
     await page.goto('/kit?cta=scroll');
     const hero = page.locator('header, section').filter({
       has: page.getByRole('heading', { level: 1 }),
     }).first();
-    const cta = hero.getByRole('button', { name: /commander le rituel/i }).first();
+    const cta = hero.getByRole('button', { name: /je commande/i }).first();
     await expect(cta).toBeVisible();
     await cta.click();
     const wizardShell = page.getByTestId('wizard-shell');

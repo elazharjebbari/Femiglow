@@ -37,7 +37,7 @@ describe('resolveKitPack — sans override', () => {
   it('retourne le feed mock par défaut + source=mock', () => {
     const r = resolveKitPack(product, mockKitPageContent);
     expect(r.meta.source).toBe('mock');
-    expect(r.feed.hero.ctaLabel).toBe('Commander le rituel');
+    expect(r.feed.hero.ctaLabel).toBe('Je commande — {price}');
   });
 });
 
@@ -46,7 +46,7 @@ describe('resolveKitPack — avec override draft (non publié)', () => {
     upsertKitPackOverride({ ctaLabel: 'Draft only' });
     const r = resolveKitPack(product, mockKitPageContent);
     expect(r.meta.source).toBe('mock');
-    expect(r.feed.hero.ctaLabel).toBe('Commander le rituel');
+    expect(r.feed.hero.ctaLabel).toBe('Je commande — {price}');
   });
 });
 
@@ -65,7 +65,7 @@ describe('resolveKitPack — avec override publié', () => {
     upsertKitPackOverride({ ctaLabel: null });
     publishKitPackOverride();
     const r = resolveKitPack(product, mockKitPageContent);
-    expect(r.feed.hero.ctaLabel).toBe('Commander le rituel');
+    expect(r.feed.hero.ctaLabel).toBe('Je commande — {price}');
   });
 
   it('countLabelGeo override appliqué sur socialProof, avec le vrai compteur', () => {

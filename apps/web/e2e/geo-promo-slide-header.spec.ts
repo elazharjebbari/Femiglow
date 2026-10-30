@@ -36,6 +36,9 @@ test.describe('Geo promo slide header', () => {
     });
   });
 
+  // NB : `/kit` n'affiche le bandeau que servi par l'arbre legacy
+  // `(marketing)/kit` (i18n désactivée). Avec I18N_ENABLED (+ réécriture
+  // KIT_ROOT_REWRITE), `/kit` est l'arbre localisé : pas de bandeau.
   test('appears on /kit with tags and scroll CTA', async ({ page }) => {
     await page.goto('/kit?cta=scroll');
 
@@ -50,6 +53,15 @@ test.describe('Geo promo slide header', () => {
 
     await banner.getByRole('link', { name: 'Commander' }).click();
     await expect(page.locator('#commander-femiglow')).toBeInViewport();
+  });
+
+  test('does not appear on the localized kit tree (/fr/kit)', async ({ page }) => {
+    // Kit CRO v2 — l'arbre localisé (y compris `/kit` réécrit vers `/fr/kit`)
+    // ne rend pas le bandeau : décision serveur `promoBannerEnabled=false`,
+    // comme en production avant la réécriture.
+    await page.goto('/fr/kit?cta=scroll');
+    await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
+    await expect(page.getByTestId('geo-promo-slide-header')).toHaveCount(0);
   });
 
   test('does not appear outside /kit', async ({ page }) => {

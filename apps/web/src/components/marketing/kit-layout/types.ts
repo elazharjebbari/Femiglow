@@ -9,6 +9,7 @@ import type { KitPageContent, Article, Product } from '@/lib/schemas';
 import type { ProductReviewStats } from '@/lib/products/reviews';
 import type { Locale } from '@/i18n.config';
 import type { AppliedCouponSeed } from '@/lib/checkout/state/use-applied-coupon';
+import type { KitAngle } from '@/lib/kit/angle';
 
 export interface KitPageLayoutProps {
   /** Contenu CMS structuré (composition, faq, comparatif, testimonials, etc.). */
@@ -38,4 +39,21 @@ export interface KitPageLayoutProps {
    * `undefined` pour toute visiteuse sans `?code=` : rendu inchangé.
    */
   initialCoupon?: AppliedCouponSeed;
+  /**
+   * Kit CRO v2 §3 — angle publicitaire résolu par la page (`?angle=` >
+   * `utm_content` > cookie `fg_angle`). Choisit le sur-titre et le titre du
+   * hero (`kit-hero-angles`) et part dans le tracking (`kit_angle`).
+   * `null`/absent : titre par défaut.
+   */
+  kitAngle?: KitAngle | null;
+  /**
+   * Bandeau promo géolocalisé (`GeoPromoSlideHeader`) autorisé sur cette page.
+   * Décidé côté serveur par la page qui sait dans quel arbre elle est :
+   *  - `(marketing)/kit` (legacy) : `true` ;
+   *  - `[locale]/kit` : `false`, y compris servi via la réécriture `/kit` →
+   *    `/fr/kit`. Avant la réécriture, le trafic publicitaire de `/kit` était
+   *    redirigé vers `/fr/kit` et ne voyait jamais le bandeau ; on conserve ce
+   *    comportement de production. Absent → `false`.
+   */
+  promoBannerEnabled?: boolean;
 }

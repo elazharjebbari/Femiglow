@@ -25,10 +25,10 @@ test.describe('/kit — section pack @pack-render', () => {
     // ValueBreakdownList visible
     await expect(page.locator('[data-testid="pack-value-breakdown"]')).toBeVisible();
 
-    // CTA labelé "Commander le rituel"
+    // CTA du bloc pack, ton direct + prix payé (Kit CRO v2 §4)
     await expect(
-      page.locator('[data-testid="kit-commander-anchor-button"]'),
-    ).toContainText('Commander le rituel');
+      page.locator('[data-testid="pack-price-block"] [data-testid="kit-commander-anchor-button"]'),
+    ).toContainText(/Je commande — \d+\s*DH/);
 
     // Social proof condensé sous le CTA
     const socialProof = page.locator('[data-testid="pack-social-proof"]');

@@ -67,8 +67,8 @@ describe('ProductFeedSection', () => {
     });
     // Titres présents.
     expect(within(list).getByText(/préparez vos ongles/i)).toBeInTheDocument();
-    expect(within(list).getByText(/appliquez la paste/i)).toBeInTheDocument();
-    expect(within(list).getByText(/appliquez la powder/i)).toBeInTheDocument();
+    expect(within(list).getByText(/appliquez la pâte/i)).toBeInTheDocument();
+    expect(within(list).getByText(/appliquez la poudre/i)).toBeInTheDocument();
     expect(within(list).getByText(/polish\s*&\s*shine/i)).toBeInTheDocument();
   });
 
@@ -109,8 +109,10 @@ describe('ProductFeedSection', () => {
     // CHA-246 — Le CTA n'est plus `AddToCartButton` (qui redirigeait
     // vers `/panier`) : c'est `CommanderAnchorButton` qui scroll-anchor
     // vers le wizard funnel embarqué (`#commander-femiglow`). Le
-    // libellé reste piloté par `feed.hero.ctaLabel`.
-    const button = screen.getByRole('button', { name: new RegExp(feed.hero.ctaLabel, 'i') });
+    // libellé reste piloté par `feed.hero.ctaLabel` — un gabarit dont le
+    // jeton `{price}` est rempli avec le prix payé (Kit CRO v2 §4).
+    expect(feed.hero.ctaLabel).toBe('Je commande — {price}');
+    const button = screen.getByRole('button', { name: /^je commande — 199\s*DH$/i });
     expect(button).toBeInTheDocument();
     expect(button).toHaveAttribute('data-testid', 'kit-commander-anchor-button');
   });

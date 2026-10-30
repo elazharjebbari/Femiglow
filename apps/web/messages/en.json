@@ -447,6 +447,11 @@
           "aria": "Code {code} applied, {amount} off. Go to the order form."
         }
       },
+      "cta": {
+        "primary": "Order now — {price}",
+        "sticky": "Order now",
+        "microcopy": "Pay on delivery"
+      },
       "pivot_final": {
         "kicker": "The gesture",
         "title": "Make the gesture.",
@@ -479,7 +484,7 @@
           "title": "The ritual settles in with four gestures, once a week.",
           "lead": "Three objects in the hand, four gestures in five minutes. Prepare the nail, the paste films, the powder polishes, the Step 4 buffer reveals — Japanese manicure, designed in Rabat.",
           "price_prefix": "All included:",
-          "cta_label": "Order the ritual",
+          "cta_label": "Order now — {price}",
           "cta_microcopy": "Paste · Powder · Step 4 buffer included · Delivery across Morocco · Cash on delivery · 30-day return."
         },
         "compare_at_aria": "Unbundled price {price}",

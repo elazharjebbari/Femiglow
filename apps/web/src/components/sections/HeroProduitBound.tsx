@@ -12,10 +12,16 @@ import {
 import { getKitReviewStats, type ProductReviewStats } from '@/lib/products/reviews';
 import type { ResolvedFields } from '@/lib/db/types';
 import { DEFAULT_LOCALE, type Locale } from '@/i18n.config';
+import type { KitAngle } from '@/lib/kit/angle';
+import { resolveKitCtaCopy } from '@/lib/kit/cta-copy.server';
+import {
+  KIT_HERO_ANGLES_COMPONENT_KEY,
+  resolveKitHeroAngleCopy,
+} from '@/lib/kit/hero-angle-copy';
 
 type HeroProduitBoundProps = Omit<
   ComponentProps<typeof HeroProduit>,
-  'galleryImages' | 'fields' | 'reviewStats'
+  'galleryImages' | 'fields' | 'reviewStats' | 'kitAngle' | 'priceLocale'
 > & {
   componentKey: string;
   /**
@@ -42,6 +48,11 @@ type HeroProduitBoundProps = Omit<
    * `/ar/kit` et `/en/kit`.
    */
   taglineFallback?: string;
+  /**
+   * Kit CRO v2 §3 — angle publicitaire résolu par la page (`?angle=` >
+   * `utm_content` > cookie `fg_angle`). `null` : titre par défaut.
+   */
+  kitAngle?: KitAngle | null;
 };
 
 /**
@@ -68,10 +79,18 @@ export async function HeroProduitBound({
   displayName,
   taglineFallback,
   initialCoupon,
+  kitAngle = null,
 }: HeroProduitBoundProps): Promise<JSX.Element> {
   const effectiveLocale = locale ?? DEFAULT_LOCALE;
   const productFallback = product.images[0];
-  const [resolvedFields, rawGalleryImages, statsOrNull, tHero] = await Promise.all([
+  const [
+    resolvedFields,
+    rawGalleryImages,
+    statsOrNull,
+    tHero,
+    angleFields,
+    ctaCopy,
+  ] = await Promise.all([
     resolveComponentFields(componentKey, effectiveLocale),
     getKitHeroGalleryImages({
       productId: product.id,
@@ -97,17 +116,38 @@ export async function HeroProduitBound({
       locale: effectiveLocale,
       namespace: 'marketing.kit.hero',
     }),
+    // Kit CRO v2 §3 — tous les angles en UN appel caché (pas de cache par
+    // angle) ; l'angle est choisi en mémoire. Lu seulement si un angle est
+    // présent. Base indisponible → titre par défaut.
+    kitAngle
+      ? resolveComponentFields(KIT_HERO_ANGLES_COMPONENT_KEY, effectiveLocale).catch(() => null)
+      : Promise.resolve(null),
+    // Kit CRO v2 §4 — libellés du bouton et micro-texte (`kit-cta` ▸ i18n).
+    resolveKitCtaCopy(effectiveLocale),
   ]);
 
   // Phase 7E — économie en MAD (entier) pour le libellé localisé `savings`.
   const savings = product.promoPriceCents
     ? Math.round((product.priceCents - product.promoPriceCents) / 100)
     : 0;
+  // Phase 7B — en AR/EN, les valeurs par défaut du registre (FR) sont ignorées.
+  const acceptDefault = effectiveLocale === DEFAULT_LOCALE;
+  const titleCopy = resolveKitHeroAngleCopy(
+    angleFields,
+    kitAngle,
+    {
+      kicker: tHero('kicker'),
+      titleCategory: tHero('title_category'),
+      titlePromise: tHero('title_promise'),
+    },
+    { acceptDefault },
+  );
   const heroStrings = {
-    kicker: tHero('kicker'),
-    titleCategory: tHero('title_category'),
-    titlePromise: tHero('title_promise'),
-    ctaLabel: tHero('cta_commander'),
+    kicker: titleCopy.kicker,
+    titleCategory: titleCopy.titleCategory,
+    titlePromise: titleCopy.titlePromise,
+    ctaLabel: ctaCopy.primary,
+    ctaMicrocopy: ctaCopy.microcopy,
     savingsLabel: savings > 0 ? tHero('savings', { savings }) : undefined,
     // Gabarits pour recalcul client quand un code promo change le montant
     // (jeton conservé : on passe un texte, next-intl le substitue tel quel).
@@ -120,7 +160,6 @@ export async function HeroProduitBound({
   // Phase 7B — En non-default locale, on ignore les valeurs `source === 'default'`
   // (= valeurs FR du registry) afin que `data.product` ou les helpers de page
   // localisés puissent fournir le bon contenu. Cf. PHASE-7-AUDIT.md §A6.
-  const acceptDefault = effectiveLocale === DEFAULT_LOCALE;
   const fields: HeroProduitFields = {
     tagline: pickString(
       resolvedFields.tagline,
@@ -209,6 +248,8 @@ export async function HeroProduitBound({
       // Code de campagne validé côté serveur : le hero porte le prix remisé
       // dès le premier paint, sans attendre l'hydratation.
       initialCoupon={initialCoupon}
+      kitAngle={kitAngle}
+      priceLocale={effectiveLocale}
     />
   );
 }

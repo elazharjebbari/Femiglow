@@ -15,7 +15,7 @@ exports[`productSchema (Schema.org Product) avec enrichissement > snapshot du JS
     "@type": "Brand",
     "name": "FemiGlow",
   },
-  "description": "Le pack FemiGlow réunit deux pots — une paste 15 g et une powder 8 g — et un polissoir Step 4 Polish & Shine. Une manucure japonaise, préparée dans notre atelier de Rabat. Sans vernis. Quatre gestes, cinq minutes, une fois par semaine.",
+  "description": "Le pack FemiGlow réunit deux pots — une pâte de 15 g et une poudre de 8 g — et un polissoir Step 4 Polish & Shine. Une manucure japonaise, préparée dans notre atelier de Rabat. Sans vernis. Quatre gestes, cinq minutes, une fois par semaine.",
   "image": [
     "https://femiglow-maroc.com/products/kit-principale.png",
     "https://femiglow-maroc.com/products/kit-detail-mains.png",

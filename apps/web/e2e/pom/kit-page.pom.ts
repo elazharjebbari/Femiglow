@@ -18,7 +18,7 @@ export class KitPagePOM {
   }
 
   ctaCommander(): Locator {
-    return this.page.getByRole('button', { name: /commander le rituel/i }).first();
+    return this.page.getByRole('button', { name: /je commande/i }).first();
   }
 
   reviewsRating(): Locator {

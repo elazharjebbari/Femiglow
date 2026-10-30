@@ -49,7 +49,7 @@ export function EditorialLetter({ firstName }: EditorialLetterProps) {
         <div className="mx-auto mt-10 max-w-[640px] space-y-5 text-justify font-display text-[15px] leading-[1.75] text-encre/85">
           <p className="first-letter:font-display first-letter:text-3xl first-letter:font-medium first-letter:text-encre">
             {opening} Chaque pack est préparé à la main, à Rabat, dans un
-            atelier où l&rsquo;on prend le temps. La paste prépare, la powder
+            atelier où l&rsquo;on prend le temps. La pâte prépare, la poudre
             révèle, le polissoir lustre. L&rsquo;éclat reviendra doucement.
           </p>
           <p>

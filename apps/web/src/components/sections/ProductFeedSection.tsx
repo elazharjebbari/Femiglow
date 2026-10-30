@@ -57,6 +57,8 @@ interface ProductFeedSectionProps {
   initialCoupon?: AppliedCouponSeed;
   /** Locale arabe → RTL pour l'offre de sauvetage (Phase 2). */
   isArabic?: boolean;
+  /** Kit CRO v2 §4 — gabarit du bouton pack publié (`kit-cta/ctaPack`). */
+  ctaTemplate?: string;
 }
 
 export function ProductFeedSection({
@@ -68,6 +70,7 @@ export function ProductFeedSection({
   welcomeCoupon,
   initialCoupon,
   isArabic = false,
+  ctaTemplate,
 }: ProductFeedSectionProps) {
   return (
     <section
@@ -97,7 +100,14 @@ export function ProductFeedSection({
                 CTA primaire + microcopy + social proof condensé.
                 IO émet pack_section_view + pack_economy_view +
                 pack_social_proof_view. */}
-            <PriceBlock feed={feed} product={product} hasVisual welcomeCoupon={welcomeCoupon} initialCoupon={initialCoupon} />
+            <PriceBlock
+              feed={feed}
+              product={product}
+              hasVisual
+              welcomeCoupon={welcomeCoupon}
+              initialCoupon={initialCoupon}
+              ctaTemplate={ctaTemplate}
+            />
             <RescueOffer isArabic={isArabic} />
           </div>
 
@@ -106,7 +116,7 @@ export function ProductFeedSection({
               admin désactivé (cf. registry.ts defaultSvgFallback). */}
           <div className="order-first md:order-last">
             <PackVisualBound
-              alt="Kit FemiGlow — paste, powder et polissoir Step 4, posés sur fond crème"
+              alt="Kit FemiGlow — pâte, poudre et polissoir Step 4, posés sur fond crème"
             />
           </div>
         </div>

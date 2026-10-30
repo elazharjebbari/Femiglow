@@ -27,17 +27,25 @@ vi.mock('@/components/commerce/CommanderAnchorButton', () => ({
     children,
     accent,
     source,
+    labelTemplate,
+    trackingLabel,
+    priceCents,
   }: {
-    children: React.ReactNode;
+    children?: React.ReactNode;
     accent?: string;
     source?: string;
+    labelTemplate?: string;
+    trackingLabel?: string;
+    priceCents?: number;
   }) => (
     <button
       data-testid="kit-commander-anchor-button"
       data-cta-accent={accent}
       data-cta-source={source}
+      data-tracking-label={trackingLabel}
+      data-price-cents={priceCents}
     >
-      {children}
+      {children ?? labelTemplate}
     </button>
   ),
 }));
@@ -161,11 +169,26 @@ describe('PriceBlock — rendu', () => {
     );
   });
 
-  it('CTA porte le label hero.ctaLabel', () => {
-    render(<PriceBlock feed={feedWith()} product={product} />);
-    expect(
-      screen.getByTestId('kit-commander-anchor-button').textContent,
-    ).toBe('Commander le rituel');
+  it('CTA porte le gabarit hero.ctaLabel (prix rempli par le bouton)', () => {
+    render(<PriceBlock feed={feedWith({ ctaLabel: 'Je commande — {price}' })} product={product} />);
+    const cta = screen.getByTestId('kit-commander-anchor-button');
+    expect(cta.textContent).toBe('Je commande — {price}');
+    // Analytique : le gabarit (stable d'un code promo à l'autre).
+    expect(cta.getAttribute('data-tracking-label')).toBe('Je commande — {price}');
+    expect(cta.getAttribute('data-price-cents')).toBe('3500');
+  });
+
+  it('Kit CRO v2 §4 — le gabarit publié (kit-cta/ctaPack) prime sur le feed', () => {
+    render(
+      <PriceBlock
+        feed={feedWith({ ctaLabel: 'Commander le rituel' })}
+        product={product}
+        ctaTemplate="Je le veux — {price}"
+      />,
+    );
+    expect(screen.getByTestId('kit-commander-anchor-button').textContent).toBe(
+      'Je le veux — {price}',
+    );
   });
 
   it('CTA propage accent=sauge-dark + source=pack_section', () => {

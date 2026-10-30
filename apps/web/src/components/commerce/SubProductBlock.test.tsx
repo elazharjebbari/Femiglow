@@ -28,7 +28,7 @@ describe('SubProductBlock — rendu', () => {
       />,
     );
     const heading = screen.getByRole('heading', { level: 3 });
-    expect(heading.textContent).toContain('1 Paste');
+    expect(heading.textContent).toContain('1 Pâte');
     expect(heading.textContent).toContain('15 g');
     expect(heading.textContent).toContain('une noisette filme dix doigts');
   });

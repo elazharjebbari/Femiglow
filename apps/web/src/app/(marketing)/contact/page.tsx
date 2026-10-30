@@ -39,7 +39,7 @@ const faqs: FAQAccordionItem[] = [
     id: 'duree-rituel',
     question: 'Combien de temps dure le rituel\u202F?',
     answer:
-      'Cinq minutes, mains pos\u00E9es, une fois par semaine. Quatre gestes\u202F: pr\u00E9parer l\u2019ongle, la paste, la powder, puis le polissoir Step 4 en finition. La brillance tient jusqu\u2019\u00E0 trois semaines.',
+      'Cinq minutes, mains pos\u00E9es, une fois par semaine. Quatre gestes\u202F: pr\u00E9parer l\u2019ongle, la p\u00E2te, la poudre, puis le polissoir Step 4 en finition. La brillance tient jusqu\u2019\u00E0 trois semaines.',
   },
   {
     id: 'ongles-fragiles',
@@ -63,7 +63,7 @@ const faqs: FAQAccordionItem[] = [
     id: 'echantillon-avant-achat',
     question: 'Puis-je recevoir un \u00E9chantillon avant achat\u202F?',
     answer:
-      'En cas d\u2019h\u00E9sitation pour cause d\u2019allergie, nous adressons un \u00E9chantillon de la paste avant l\u2019envoi du pack complet. \u00C9crivez-nous en pr\u00E9cisant l\u2019ingr\u00E9dient qui vous inqui\u00E8te.',
+      'En cas d\u2019h\u00E9sitation pour cause d\u2019allergie, nous adressons un \u00E9chantillon de la p\u00E2te avant l\u2019envoi du pack complet. \u00C9crivez-nous en pr\u00E9cisant l\u2019ingr\u00E9dient qui vous inqui\u00E8te.',
   },
 ];
 

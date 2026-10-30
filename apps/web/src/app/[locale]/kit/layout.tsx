@@ -17,6 +17,7 @@ import { PromoCodeAutoApply } from '@/components/commerce/PromoCodeAutoApply';
 import { ToastProvider } from '@/components/ui/Toast';
 import { DEFAULT_LOCALE, isLocale } from '@/i18n.config';
 import { buildKitPublicProduct } from '@/lib/products/public';
+import { resolveKitCtaCopy } from '@/lib/kit/cta-copy.server';
 
 const MiniCartSlideOver = dynamic(
   () =>
@@ -34,11 +35,11 @@ export default async function LocaleKitLayout({
   params: { locale: string };
 }) {
   const locale = isLocale(params.locale) ? params.locale : DEFAULT_LOCALE;
-  const [product, t, tKit] = await Promise.all([
+  const [product, ctaCopy, tKit] = await Promise.all([
     buildKitPublicProduct(),
-    // Phase 7 wiring — libellé localisé du CTA sticky (était « Commander »
-    // hardcodé qui fuitait en FR sur /ar/kit et /en/kit).
-    getTranslations({ locale, namespace: 'common' }),
+    // Kit CRO v2 §4 — libellé du CTA sticky : CMS `kit-cta/ctaSticky` ▸ i18n
+    // `marketing.kit.cta.sticky` (localisé FR/AR/EN).
+    resolveKitCtaCopy(locale),
     // Phase 9bis — nom produit + aria localisés du sticky CTA (le nom DB
     // « Pack FemiGlow » fuitait en latin/FR sur /ar/kit).
     getTranslations({ locale, namespace: 'marketing.kit' }),
@@ -79,7 +80,8 @@ export default async function LocaleKitLayout({
           deductCredit
           currency={product.currency}
           source="sticky"
-          label={t('commander')}
+          labelTemplate={ctaCopy.sticky}
+          priceLocale={locale}
         />
       </StickyCartCTA>
       <MiniCartSlideOver />

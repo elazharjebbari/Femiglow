@@ -13,33 +13,33 @@ export const mockKit: Product = {
   tagline:
     'Halal, formulée à Rabat. Quatre gestes, cinq minutes, une fois par semaine.',
   description:
-    'Le pack FemiGlow réunit deux pots — une paste 15 g et une powder 8 g — et un polissoir Step 4 Polish & Shine. Une manucure japonaise, préparée dans notre atelier de Rabat. Sans vernis. Quatre gestes, cinq minutes, une fois par semaine.',
+    'Le pack FemiGlow réunit deux pots — une pâte de 15 g et une poudre de 8 g — et un polissoir Step 4 Polish & Shine. Une manucure japonaise, préparée dans notre atelier de Rabat. Sans vernis. Quatre gestes, cinq minutes, une fois par semaine.',
   priceCents: 28900,
   promoPriceCents: 19900,
   currency: 'MAD',
   images: [
     {
       src: '/products/kit-principale.png',
-      alt: 'Pack FemiGlow ouvert sur fond pastel — pot paste vert sauge, pot powder à étiquette rose poudré, polissoir Step 4 bleu ciel, vague rose poudré, typographie FemiGlow',
+      alt: 'Pack FemiGlow ouvert sur fond pastel — pot de pâte vert sauge, pot de poudre à étiquette rose poudré, polissoir Step 4 bleu ciel, vague rose poudré, typographie FemiGlow',
       width: 1600,
       height: 2000,
     },
     {
       src: '/products/kit-detail-mains.png',
-      alt: 'Mains aux ongles nus, courts à moyens, naturellement brillants après le rituel paste-powder-polish',
+      alt: 'Mains aux ongles nus, courts à moyens, naturellement brillants après le rituel pâte, poudre, polissoir',
       width: 1600,
       height: 1067,
     },
   ],
   composition: [
     {
-      name: '1 Paste',
+      name: '1 Pâte',
       origin: 'Atlas marocain · Souss-Massa',
       description:
         'Pâte crème onctueuse. Cire d\u2019abeille, huile de jojoba, tocophérol. Filme la plaque sans l\u2019étouffer.',
     },
     {
-      name: '2 Powder',
+      name: '2 Poudre',
       origin: 'Maroc · Asie biologique',
       description:
         'Poudre fine blanche. Talc cosmétique, poudre de riz, silice. Absorbe l\u2019excès, lustre la surface.',

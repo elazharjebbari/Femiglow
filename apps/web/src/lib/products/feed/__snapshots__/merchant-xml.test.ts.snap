@@ -13,7 +13,7 @@ exports[`merchantFeedXml > snapshot XML complet pour le kit mock (golden) 1`] = 
     <item>
       <g:id>le-rituel</g:id>
       <g:title><![CDATA[Le kit FemiGlow]]></g:title>
-      <g:description><![CDATA[Le pack FemiGlow réunit deux pots — une paste 15 g et une powder 8 g — et un polissoir Step 4 Polish & Shine. Une manucure japonaise, préparée dans notre atelier de Rabat. Sans vernis. Quatre gestes, cinq minutes, une fois par semaine.]]></g:description>
+      <g:description><![CDATA[Le pack FemiGlow réunit deux pots — une pâte de 15 g et une poudre de 8 g — et un polissoir Step 4 Polish & Shine. Une manucure japonaise, préparée dans notre atelier de Rabat. Sans vernis. Quatre gestes, cinq minutes, une fois par semaine.]]></g:description>
       <g:link>https://femiglow-maroc.com/kit</g:link>
       <g:image_link>https://femiglow-maroc.com/products/kit-principale.png</g:image_link>
       <g:availability>in stock</g:availability>

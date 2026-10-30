@@ -57,6 +57,12 @@ export interface PriceBlockProps {
   welcomeCoupon?: { active: boolean; endsAt: string | null };
   /** Code validé côté serveur pour cette requête (voir KitPageLayoutProps). */
   initialCoupon?: AppliedCouponSeed;
+  /**
+   * Kit CRO v2 §4 — gabarit du bouton publié dans le CMS (`kit-cta/ctaPack`),
+   * jeton `{price}` remplacé par le prix payé. Absent → `feed.hero.ctaLabel`
+   * (même format de gabarit).
+   */
+  ctaTemplate?: string;
 }
 
 /**
@@ -102,6 +108,7 @@ export function PriceBlock({
   hasVisual = false,
   welcomeCoupon,
   initialCoupon,
+  ctaTemplate,
 }: PriceBlockProps): JSX.Element {
   const { hero, currency, socialProof } = feed;
   const { emit } = useTracking();
@@ -113,6 +120,9 @@ export function PriceBlock({
   const path = usePathname() ?? '/';
   const firstSeg = path.split('/').filter(Boolean)[0];
   const isArabic = !!firstSeg && isLocale(firstSeg) && firstSeg === 'ar';
+  // Unité du prix dans le bouton : « DH » (FR, défaut — aussi sous `/kit`
+  // réécrit), « MAD » (EN), « درهم » (AR).
+  const priceLocale = isArabic ? 'ar' : firstSeg === 'en' ? 'en' : 'fr';
   const currencyDisplay =
     isArabic && currency === 'MAD'
       ? 'درهم'
@@ -219,6 +229,8 @@ export function PriceBlock({
   // + micro-pulse. Le ctaAccent est préservé pour ne pas recoder cette
   // logique deux fois.
   const ctaAccent = hero.ctaAccent ?? 'champagne';
+  // Kit CRO v2 §4 — gabarit du bouton : CMS publié ▸ libellé du feed.
+  const packCtaTemplate = ctaTemplate ?? hero.ctaLabel;
 
   return (
     <div
@@ -369,10 +381,11 @@ export function PriceBlock({
         currency={product.currency}
         accent={ctaAccent === 'champagne' ? undefined : ctaAccent}
         source="pack_section"
-        trackingLabel={hero.ctaLabel}
-      >
-        {hero.ctaLabel}
-      </CommanderAnchorButton>
+        // Gabarit (sans prix) côté analytique : libellé stable d'un code à l'autre.
+        trackingLabel={packCtaTemplate}
+        labelTemplate={packCtaTemplate}
+        priceLocale={priceLocale}
+      />
 
       {/* 7 — Social proof condensé sous le CTA (Kolenda §4.6 — proof
           de proximité). Labels géo prioritaire si défini, sinon fallback

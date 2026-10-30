@@ -23,7 +23,8 @@ test.describe('/kit hero — desktop', () => {
     // H1
     const h1 = page.getByRole('heading', { level: 1 }).first();
     await expect(h1).toBeVisible();
-    await expect(h1).toContainText(/pack femiglow/i);
+    // Titre-promesse par défaut (sans angle publicitaire).
+    await expect(h1).toContainText(/manucure japonaise/i);
 
     // Social proof badge
     await expect(page.getByText(/4,8\/5/).first()).toBeVisible();
@@ -47,9 +48,10 @@ test.describe('/kit hero — desktop', () => {
     await expect(page.getByText(/livraison offerte/i).first()).toBeVisible();
     await expect(page.getByText(/retour 30 jours/i).first()).toBeVisible();
 
-    // CTA principal
-    const cta = page.getByRole('button', { name: /commander le rituel/i }).first();
+    // CTA principal — ton direct, prix payé (Kit CRO v2 §4) + micro-texte
+    const cta = page.getByRole('button', { name: /^je commande — \d+\s*DH$/i }).first();
     await expect(cta).toBeVisible();
+    await expect(page.getByTestId('hero-cta-microcopy')).toHaveText('Je paie à la livraison');
   });
 
   test('galerie thumbnails visible et cliquable', async ({ page }) => {
@@ -112,7 +114,7 @@ test.describe('/kit hero — mobile', () => {
     await page.goto('/kit');
     await page.waitForLoadState('domcontentloaded');
 
-    const cta = page.getByRole('button', { name: /commander le rituel/i }).first();
+    const cta = page.getByRole('button', { name: /^je commande — \d+\s*DH$/i }).first();
     await expect(cta).toBeVisible();
 
     const box = await cta.boundingBox();

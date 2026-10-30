@@ -5,6 +5,7 @@ import { StickyCartCTA } from '@/components/commerce/StickyCartCTA';
 import { PromoCodeAutoApply } from '@/components/commerce/PromoCodeAutoApply';
 import { CommanderAnchorButton } from '@/components/commerce/CommanderAnchorButton';
 import { buildKitPublicProduct } from '@/lib/products/public';
+import { resolveKitCtaCopy } from '@/lib/kit/cta-copy.server';
 
 const MiniCartSlideOver = dynamic(
   () =>
@@ -24,7 +25,11 @@ export default async function KitLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const product = await buildKitPublicProduct();
+  const [product, ctaCopy] = await Promise.all([
+    buildKitPublicProduct(),
+    // Kit CRO v2 §4 — libellé du CTA sticky : CMS `kit-cta/ctaSticky` ▸ i18n FR.
+    resolveKitCtaCopy('fr'),
+  ]);
   const effectivePriceCents =
     product.promoPriceCents ?? product.priceCents;
 
@@ -51,9 +56,9 @@ export default async function KitLayout({
           deductCredit
           currency={product.currency}
           source="sticky"
-        >
-          Commander
-        </CommanderAnchorButton>
+          labelTemplate={ctaCopy.sticky}
+          priceLocale="fr"
+        />
       </StickyCartCTA>
       <MiniCartSlideOver />
     </ToastProvider>

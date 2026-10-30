@@ -26,8 +26,8 @@ describe('buildKitProductFeed', () => {
     expect(feed.steps).toHaveLength(4);
     expect(feed.steps.map((s) => s.step)).toEqual([1, 2, 3, 4]);
     expect(feed.steps[0]!.title).toMatch(/pr\u00E9parez/i);
-    expect(feed.steps[1]!.title).toMatch(/paste/i);
-    expect(feed.steps[2]!.title).toMatch(/powder/i);
+    expect(feed.steps[1]!.title).toMatch(/p\u00E2te/i);
+    expect(feed.steps[2]!.title).toMatch(/poudre/i);
     expect(feed.steps[3]!.title).toMatch(/polish|shine/i);
   });
 
@@ -183,8 +183,8 @@ describe('buildKitProductFeed', () => {
   it('aligne contenances et nombre de soins sur la fiche produit', () => {
     const feed = buildKitProductFeed(product, mockKitPageContent);
     const labels = feed.hero.valueBreakdown?.map((v) => v.label).join(' | ') ?? '';
-    expect(labels).toMatch(/Paste · 15\u00A0g/);
-    expect(labels).toMatch(/Powder · 8\u00A0g/);
+    expect(labels).toMatch(/P\u00E2te · 15\u00A0g/);
+    expect(labels).toMatch(/Poudre · 8\u00A0g/);
     expect(feed.hero.perUsageHint).toMatch(/sur 25 soins$/);
     expect(feed.stepsHeader?.lead).toBe('Quatre gestes lents, une fois par semaine.');
   });

@@ -6,6 +6,8 @@ import { cms } from '@/lib/cms';
 import { computePromo } from '@/lib/utils/promo';
 import { deriveEventId } from '@/lib/tracking/event-id';
 import { serverFire } from '@/lib/tracking/server/server-fire';
+import { KitAngleCookie } from '@/components/kit/KitAngleCookie';
+import { KIT_ANGLE_COOKIE, kitAngleTrackingValue, resolveKitAngle } from '@/lib/kit/angle';
 import { productSchema } from '@/lib/seo/json-ld';
 import { resolveOgImage } from '@/lib/components/og-image';
 import { resolveSeoMetadata } from '@/lib/seo/resolve';
@@ -27,11 +29,11 @@ const FALLBACK_OG = {
   url: '/og/kit.svg',
   width: 1200,
   height: 630,
-  alt: 'Le pack FemiGlow — paste, powder, polissoir Step 4',
+  alt: 'Le pack FemiGlow — pâte, poudre, polissoir Step 4',
 };
 
 const FALLBACK_TITLE = 'Le pack FemiGlow — manucure japonaise';
-const FALLBACK_DESCRIPTION = `Pack FemiGlow — manucure japonaise en ${KIT_COPY.fr.gesturesLower}, ${KIT_COPY.fr.duration} ${KIT_COPY.fr.frequency}. Paste ${KIT_FACTS.paste.grams} g, powder ${KIT_FACTS.powder.grams} g et polissoir Step 4 Polish & Shine. Pensé à Rabat. Sans vernis, sans abrasion. Livraison partout au Maroc, paiement à la livraison.`;
+const FALLBACK_DESCRIPTION = `Pack FemiGlow — manucure japonaise en ${KIT_COPY.fr.gesturesLower}, ${KIT_COPY.fr.duration} ${KIT_COPY.fr.frequency}. Pâte ${KIT_FACTS.paste.grams} g, poudre ${KIT_FACTS.powder.grams} g et polissoir Step 4 Polish & Shine. Pensé à Rabat. Sans vernis, sans abrasion. Livraison partout au Maroc, paiement à la livraison.`;
 
 export async function generateMetadata(): Promise<Metadata> {
   const og = (await resolveOgImage('kit-og')) ?? FALLBACK_OG;
@@ -108,6 +110,10 @@ interface KitPageProps {
     code?: string;
     promo?: string;
     coupon?: string;
+    /** Kit CRO v2 §3 — forçage de l'angle pour la recette (`?angle=e`). */
+    angle?: string | string[];
+    /** Angle publicitaire porté par les publicités Meta (`A-darija`, `E-fr`…). */
+    utm_content?: string | string[];
   };
 }
 
@@ -138,6 +144,12 @@ export default async function KitPage({ searchParams }: KitPageProps) {
   // cf. docs/meta-quality-audit-2026-05/02-plan-dev-action.md step 2.6
   const reqHeaders = headers();
   const reqCookies = cookies();
+  // Kit CRO v2 §3 — angle publicitaire : `?angle=` > `utm_content` > cookie.
+  const kitAngle = resolveKitAngle({
+    angleParam: searchParams?.angle,
+    utmContent: searchParams?.utm_content,
+    cookie: reqCookies.get(KIT_ANGLE_COOKIE)?.value,
+  });
   const sessionId =
     reqCookies.get('fg_session_id')?.value ?? reqCookies.get('_fbp')?.value ?? null;
   const eventIdSeed = sessionId
@@ -154,6 +166,7 @@ export default async function KitPage({ searchParams }: KitPageProps) {
     pageRoute: '/kit',
     pageUrl: `https://femiglow-maroc.com/kit`,
     params: {
+      kit_angle: kitAngleTrackingValue(kitAngle.angle),
       currency: dbProduct.currency,
       value: kitPromo.effectivePriceCents / 100,
       items: [
@@ -227,10 +240,22 @@ export default async function KitPage({ searchParams }: KitPageProps) {
     dbProduct,
     productJsonLd,
     reviewStats,
+    kitAngle: kitAngle.angle,
+    // Arbre legacy (`/kit` servi sans i18n) : le bandeau promo géolocalisé
+    // reste actif, comme avant.
+    promoBannerEnabled: true,
   };
-  return effectiveLayout === 'v2' ? (
-    <KitPageLayoutV2 {...layoutProps} />
-  ) : (
-    <KitPageLayoutV1 {...layoutProps} />
+  return (
+    <>
+      <KitAngleCookie
+        angle={kitAngle.angle}
+        fromUrl={kitAngle.source === 'query' || kitAngle.source === 'utm'}
+      />
+      {effectiveLayout === 'v2' ? (
+        <KitPageLayoutV2 {...layoutProps} />
+      ) : (
+        <KitPageLayoutV1 {...layoutProps} />
+      )}
+    </>
   );
 }

@@ -118,3 +118,115 @@ describe('CommanderAnchorButton — source tracking', () => {
     expect(packCall?.[1]).toMatchObject({ cta_accent: 'default' });
   });
 });
+
+describe('CommanderAnchorButton — Kit CRO v2 §4 : gabarit du libellé', () => {
+  it('remplit {price} avec le prix net passé (FR : DH)', () => {
+    render(
+      <CommanderAnchorButton
+        priceCents={9900}
+        currency="MAD"
+        labelTemplate="Je commande — {price}"
+      />,
+    );
+    expect(screen.getByTestId('kit-commander-anchor-button').textContent).toBe(
+      'Je commande — 99 DH',
+    );
+  });
+
+  it('EN : MAD ; AR : درهم', () => {
+    const { unmount } = render(
+      <CommanderAnchorButton
+        priceCents={19900}
+        currency="MAD"
+        priceLocale="en"
+        labelTemplate="Order now — {price}"
+      />,
+    );
+    expect(screen.getByTestId('kit-commander-anchor-button').textContent).toBe(
+      'Order now — 199 MAD',
+    );
+    unmount();
+    render(
+      <CommanderAnchorButton
+        priceCents={9900}
+        currency="MAD"
+        priceLocale="ar"
+        labelTemplate="اطلبي الآن — {price}"
+      />,
+    );
+    expect(screen.getByTestId('kit-commander-anchor-button').textContent).toBe(
+      'اطلبي الآن — 99 درهم',
+    );
+  });
+
+  it('sans prix : le segment « — {price} » disparaît proprement', () => {
+    render(<CommanderAnchorButton labelTemplate="Je commande — {price}" />);
+    expect(screen.getByTestId('kit-commander-anchor-button').textContent).toBe('Je commande');
+  });
+
+  it('le gabarit prime sur children et label', () => {
+    render(
+      <CommanderAnchorButton labelTemplate="Je commande" label="Commander">
+        Ancien libellé
+      </CommanderAnchorButton>,
+    );
+    expect(screen.getByTestId('kit-commander-anchor-button').textContent).toBe('Je commande');
+  });
+
+  it('pack_cta_click : cta_label = gabarit quand trackingLabel est absent', () => {
+    render(
+      <CommanderAnchorButton
+        productId="p1"
+        productName="Kit"
+        priceCents={9900}
+        currency="MAD"
+        source="pack_section"
+        labelTemplate="Je commande — {price}"
+      />,
+    );
+    fireEvent.click(screen.getByTestId('kit-commander-anchor-button'));
+    const pack = emitMock.mock.calls.find((c) => c[0] === 'pack_cta_click');
+    expect(pack?.[1]).toMatchObject({ cta_label: 'Je commande — {price}' });
+  });
+});
+
+describe('CommanderAnchorButton — Kit CRO v2 §3 : kit_angle', () => {
+  function clickWithAngle(angle: string | null): unknown[][] {
+    if (angle !== null) {
+      const hero = document.createElement('section');
+      hero.setAttribute('data-kit-angle', angle);
+      document.body.appendChild(hero);
+    }
+    render(
+      <CommanderAnchorButton
+        productId="p1"
+        productName="Kit"
+        priceCents={9900}
+        currency="MAD"
+        source="pack_section"
+      >
+        Je commande
+      </CommanderAnchorButton>,
+    );
+    fireEvent.click(screen.getByTestId('kit-commander-anchor-button'));
+    return emitMock.mock.calls;
+  }
+
+  it('ajoute kit_angle à add_to_cart et pack_cta_click (angle posé par le hero)', () => {
+    const calls = clickWithAngle('e');
+    const addToCart = calls.find((c) => c[0] === 'add_to_cart');
+    const pack = calls.find((c) => c[0] === 'pack_cta_click');
+    expect(addToCart?.[1]).toMatchObject({ kit_angle: 'e' });
+    expect(pack?.[1]).toMatchObject({ kit_angle: 'e' });
+  });
+
+  it('kit_angle=none sur /kit sans angle', () => {
+    const calls = clickWithAngle('none');
+    expect(calls.find((c) => c[0] === 'add_to_cart')?.[1]).toMatchObject({ kit_angle: 'none' });
+  });
+
+  it('hors /kit (aucun attribut) : pas de kit_angle', () => {
+    const calls = clickWithAngle(null);
+    expect(calls.find((c) => c[0] === 'add_to_cart')?.[1]).not.toHaveProperty('kit_angle');
+  });
+});

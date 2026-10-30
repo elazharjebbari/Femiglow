@@ -18,6 +18,7 @@ import {
   type ProductFeedTranslate,
 } from '@/lib/products/feed/localize';
 import { DEFAULT_LOCALE, type Locale } from '@/i18n.config';
+import { resolveKitCtaCopy } from '@/lib/kit/cta-copy.server';
 import type { ProductReviewStats } from '@/lib/products/reviews';
 import type { KitPageContent, Product } from '@/lib/schemas';
 
@@ -55,7 +56,12 @@ export async function ProductFeedSectionBound({
   // (holdout=0, éligibilité tout-trafic) la résolution est indépendante du
   // visiteur. La note s'affiche pour un `welcome_auto` actif.
   const { resolveCoupon } = await import('@/lib/coupons/engine');
-  const activeCoupon = await resolveCoupon({});
+  const [activeCoupon, ctaCopy] = await Promise.all([
+    resolveCoupon({}),
+    // Kit CRO v2 §4 — bouton du bloc pack : texte publié (`kit-cta/ctaPack`)
+    // s'il existe, sinon le libellé du feed (FR canonique / overlay AR-EN).
+    resolveKitCtaCopy(effectiveLocale),
+  ]);
   const welcomeCoupon =
     activeCoupon && activeCoupon.type === 'welcome_auto'
       ? { active: true, endsAt: activeCoupon.endsAt ? activeCoupon.endsAt.toISOString() : null }
@@ -72,6 +78,7 @@ export async function ProductFeedSectionBound({
         welcomeCoupon={welcomeCoupon}
         initialCoupon={initialCoupon}
         isArabic={false}
+        ctaTemplate={ctaCopy.pack}
       />
     );
   }
@@ -95,6 +102,7 @@ export async function ProductFeedSectionBound({
       welcomeCoupon={welcomeCoupon}
         initialCoupon={initialCoupon}
       isArabic={effectiveLocale === 'ar'}
+      ctaTemplate={ctaCopy.pack}
       resultLabel={t('steps.result_label')}
       reviewsCountLabel={
         localizedFeed.socialProof
