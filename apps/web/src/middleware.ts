@@ -5,7 +5,8 @@ import { buildChatCspExtensions } from '@/lib/chat/csp';
 import { buildTrackingCspExtensions } from '@/lib/tracking/providers/csp';
 import { legacyRedirectIfNeeded } from '@/lib/tracking/plan/legacy-redirect';
 import { isI18nEnabled } from '@/lib/i18n/feature-flag';
-import { resolveLegacyLocaleRedirect } from '@/lib/i18n/legacy-locale-redirect';
+import { resolveLegacyLocaleRouting } from '@/lib/i18n/legacy-locale-redirect';
+import { isKitRootRewriteEnabled } from '@/lib/feature-flags/kit-root-rewrite';
 
 export const config = {
   matcher: [
@@ -112,13 +113,25 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   // Seules les racines disposant d'un miroir `[locale]/` sont redirigées ;
   // les routes legacy sans équivalent restent servies telles quelles.
   // La query (UTM inclus) est préservée par le clone de `nextUrl` (INV-4).
+  //
+  // Kit CRO v2 §1 — exception : `/kit` exact (locale par défaut) est servi par
+  // rewrite interne (URL inchangée, zéro aller-retour avant le HTML) quand
+  // `KIT_ROOT_REWRITE` est actif. On ne retourne PAS tout de suite : CSP,
+  // en-têtes de requête (`x-locale`…), sécurité et capture click-id/UTM
+  // doivent s'appliquer à la réponse réécrite comme à un `next()`.
+  let rewriteUrl: URL | null = null;
+  let rewriteLocale: string | null = null;
   if (isI18nEnabled()) {
     const cookieLocale = request.cookies.get(LOCALE_COOKIE_NAME)?.value;
-    const target = resolveLegacyLocaleRedirect(pathname, cookieLocale);
-    if (target) {
+    const routing = resolveLegacyLocaleRouting(pathname, cookieLocale, {
+      kitRootRewrite: isKitRootRewriteEnabled(),
+    });
+    if (routing) {
       const url = request.nextUrl.clone();
-      url.pathname = target;
-      return NextResponse.redirect(url);
+      url.pathname = routing.pathname;
+      if (routing.kind === 'redirect') return NextResponse.redirect(url);
+      rewriteUrl = url;
+      rewriteLocale = routing.locale;
     }
   }
 
@@ -164,13 +177,16 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   // pour qu'il rende `<html lang/dir>` côté serveur. Source unique partagée
   // serveur+client ⇒ zéro mismatch d'hydratation, zéro flash LTR avant paint.
   // Routes legacy sans préfixe ⇒ DEFAULT_LOCALE (cohérent avec l'ancien "fr").
+  // Rewrite `/kit` ⇒ locale de la cible (le segment d'URL n'en porte pas).
   const firstSegment = pathname.split('/')[1];
   requestHeaders.set(
     'x-locale',
-    isLocale(firstSegment) ? firstSegment : DEFAULT_LOCALE,
+    rewriteLocale ?? (isLocale(firstSegment) ? firstSegment : DEFAULT_LOCALE),
   );
 
-  const res = NextResponse.next({ request: { headers: requestHeaders } });
+  const res = rewriteUrl
+    ? NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } })
+    : NextResponse.next({ request: { headers: requestHeaders } });
   res.headers.set('content-security-policy', csp);
   // HSTS uniquement en prod : sur localhost HTTP en dev, le pin HSTS empêche
   // ensuite tout accès non-TLS pendant la durée du max-age (2 ans).

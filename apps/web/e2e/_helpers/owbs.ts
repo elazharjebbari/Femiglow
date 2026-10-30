@@ -7,7 +7,7 @@ import { expect, type Page } from '@playwright/test';
 
 /** Ouvre le wizard sur /<locale>/kit et avance jusqu'à l'étape lead. */
 export async function openLeadStep(page: Page, locale = 'fr'): Promise<void> {
-  await page.goto(`/${locale}/kit`);
+  await page.goto(`/${locale}/kit?cta=scroll`);
   const shell = page.locator('[data-testid="wizard-shell"]').first();
   await shell.scrollIntoViewIfNeeded();
   const cart = page.locator('[data-testid="wizard-step-cart"]');

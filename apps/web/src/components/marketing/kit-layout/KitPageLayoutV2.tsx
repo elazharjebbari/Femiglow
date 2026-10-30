@@ -66,6 +66,8 @@ export async function KitPageLayoutV2({
   reviewStats,
   locale,
   initialCoupon,
+  kitAngle = null,
+  promoBannerEnabled = false,
 }: KitPageLayoutProps) {
   const effectiveLocale = locale ?? DEFAULT_LOCALE;
   // Phase 7E — strings de niveau layout (kicker/title JournalGrid) localisées.
@@ -115,13 +117,14 @@ export async function KitPageLayoutV2({
     (locale ?? DEFAULT_LOCALE) === DEFAULT_LOCALE ? undefined : content.videoSrc;
   return (
     <div id="contenu-kit" className="pb-24 lg:pb-0" data-kit-layout="v2">
-      <GeoPromoSlideHeaderSlot />
+      <GeoPromoSlideHeaderSlot enabled={promoBannerEnabled} />
       <JsonLd data={productJsonLd} />
       <JsonLd data={faqPageSchema(content.faq)} />
 
       {/* — 1. HERO — première zone de conversion (CTA → scroll wizard) */}
       <HeroProduitBound
         initialCoupon={initialCoupon}
+        kitAngle={kitAngle}
         product={dbProduct}
         reassurances={content.reassurances}
         componentKey="kit-hero-produit"

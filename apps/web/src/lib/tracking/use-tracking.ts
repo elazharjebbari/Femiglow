@@ -15,8 +15,16 @@ export type EmitFn = (
 /**
  * Hook tracking. Si aucun TrackingProvider n'est monté (tests / SSR),
  * retourne un emit noop pour ne jamais casser le rendu.
+ *
+ * `isReady` : le provider a chargé le consentement stocké. Un événement émis
+ * au montage AVANT cela partirait avec le consentement initial (refusé quand
+ * le bandeau est actif) et serait écarté de `/api/track`.
  */
-export function useTracking(): { emit: EmitFn; consent: TrackingConsentState } {
+export function useTracking(): {
+  emit: EmitFn;
+  consent: TrackingConsentState;
+  isReady: boolean;
+} {
   const ctx = useContext(TrackingContext);
   const emit = useCallback<EmitFn>(
     (event, params = {}, options = {}) => {
@@ -25,5 +33,5 @@ export function useTracking(): { emit: EmitFn; consent: TrackingConsentState } {
     },
     [ctx],
   );
-  return { emit, consent: ctx?.consent ?? DENIED_CONSENT };
+  return { emit, consent: ctx?.consent ?? DENIED_CONSENT, isReady: ctx?.isReady ?? false };
 }

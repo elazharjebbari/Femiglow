@@ -18,6 +18,8 @@ import { ViewItemTracker } from '@/components/tracking/ViewItemTracker';
 import { HeroGallery } from './hero/HeroGallery';
 import { useAppliedCoupon, type AppliedCouponSeed } from '@/lib/checkout/state/use-applied-coupon';
 import { cn } from '@/lib/utils/cn';
+import { KIT_ANGLE_DATA_ATTRIBUTE, kitAngleTrackingValue, type KitAngle } from '@/lib/kit/angle';
+import { DEFAULT_KIT_CTA_COPY, formatCtaLabel, formatCtaPrice } from '@/lib/kit/cta-copy';
 import { computePromo } from '@/lib/utils/promo';
 import type { Product, Reassurance as ReassuranceData } from '@/lib/schemas';
 import type { HeroGalleryImage } from '@/lib/products/hero-gallery-types';
@@ -70,7 +72,13 @@ export interface HeroProduitProps {
    */
   strings?: {
     kicker: string;
+    /**
+     * Kit CRO v2 §4 — gabarit du bouton (`kit-cta/ctaPrimary`, repli i18n),
+     * jeton `{price}` remplacé côté client par le prix payé.
+     */
     ctaLabel: string;
+    /** Micro-texte sous le bouton (`kit-cta/ctaMicrocopy`). Absent → masqué. */
+    ctaMicrocopy?: string;
     /**
      * Titre-promesse en deux lignes : catégorie (ce que c'est, mots-clés en
      * tête) puis bénéfice (ce qu'on y gagne). Absent → nom du produit.
@@ -118,6 +126,15 @@ export interface HeroProduitProps {
   storiesSlot?: ReactNode;
   /** Code validé côté serveur pour cette requête (voir KitPageLayoutProps). */
   initialCoupon?: AppliedCouponSeed;
+  /**
+   * Kit CRO v2 §3 — angle publicitaire résolu côté serveur (`null` : aucun).
+   * Posé en `data-kit-angle` sur la section (lu au clic par les boutons
+   * « Commander ») et envoyé avec `view_item` (`kit_angle`). `undefined`
+   * (rendu hors page /kit) : ni attribut ni paramètre.
+   */
+  kitAngle?: KitAngle | null;
+  /** Locale du prix affiché dans le bouton (« DH », « MAD », « درهم »). */
+  priceLocale?: string;
 }
 
 const SAGE_LIGHT = '#A8B89E';
@@ -136,6 +153,8 @@ export function HeroProduit({
   displayName,
   storiesSlot,
   initialCoupon,
+  kitAngle,
+  priceLocale = 'fr',
 }: HeroProduitProps): JSX.Element {
   const promo = computePromo(product.priceCents, product.promoPriceCents);
 
@@ -156,7 +175,16 @@ export function HeroProduit({
   // Phase 7E — chaque string retombe sur le défaut FR si non fourni.
   const heroName = displayName ?? product.name;
   const heroKicker = strings?.kicker ?? 'Le rituel';
-  const heroCtaLabel = strings?.ctaLabel ?? 'Commander le rituel';
+  const heroCtaTemplate = strings?.ctaLabel ?? DEFAULT_KIT_CTA_COPY.primary;
+  // Libellé rendu (mode panier) ; en mode ancre, `CommanderAnchorButton`
+  // formate le même gabarit avec le même prix net.
+  const heroCtaLabel = formatCtaLabel(
+    heroCtaTemplate,
+    formatCtaPrice(effectivePriceCents, product.currency, priceLocale),
+  );
+  const heroCtaMicrocopy = strings?.ctaMicrocopy?.trim() || null;
+  const angleAttribute =
+    kitAngle !== undefined ? { [KIT_ANGLE_DATA_ATTRIBUTE]: kitAngleTrackingValue(kitAngle) } : {};
   // Sans crédit : libellé serveur (déjà formaté). Avec crédit : gabarit
   // localisé recalculé, sinon défaut FR.
   const heroSavingsLabel =
@@ -180,6 +208,7 @@ export function HeroProduit({
     <section
       aria-labelledby="hero-kit-title"
       className="relative bg-creme-warm py-8 sm:py-12 lg:py-20"
+      {...angleAttribute}
     >
       <ViewItemTracker
         itemId={product.id}
@@ -187,6 +216,7 @@ export function HeroProduit({
         priceCents={promo.effectivePriceCents}
         currency={product.currency}
         eventIdSeed={eventIdSeed}
+        kitAngle={kitAngle !== undefined ? kitAngleTrackingValue(kitAngle) : undefined}
       />
       <Container width="page">
         {/* `grid-cols-1` (= minmax(0,1fr)) est CRITIQUE : sans lui, la colonne
@@ -346,15 +376,25 @@ export function HeroProduit({
                     productName={product.name}
                     priceCents={effectivePriceCents}
                     currency={product.currency}
-                  >
-                    {heroCtaLabel}
-                  </CommanderAnchorButton>
+                    labelTemplate={heroCtaTemplate}
+                    priceLocale={priceLocale}
+                  />
                 ) : (
                   <AddToCartButton product={product} size="lg" fullWidth redirectTo="/panier">
                     {heroCtaLabel}
                   </AddToCartButton>
                 )}
               </div>
+              {/* Micro-texte sous le bouton (hors du wrapper animé : il ne
+                pulse pas avec le bouton). Centré : lisible en LTR comme en RTL. */}
+              {heroCtaMicrocopy ? (
+                <p
+                  data-testid="hero-cta-microcopy"
+                  className="!mt-2 text-center text-sm text-encre/70"
+                >
+                  {heroCtaMicrocopy}
+                </p>
+              ) : null}
 
               {/* Description longue — sous le CTA, lecture optionnelle */}
               {fields.description ? (

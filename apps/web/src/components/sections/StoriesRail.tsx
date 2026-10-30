@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Image } from '@/components/ui/Image';
+import { useIdleAfterLoad } from '@/lib/media/hooks/useIdleAfterLoad';
 import { useMediaInView } from '@/lib/media/hooks/useMediaInView';
+import { allowsUnrequestedMedia, useNetworkInfo } from '@/lib/media/hooks/useNetworkInfo';
 import { useReducedMotion } from '@/lib/media/hooks/useReducedMotion';
 import { cn } from '@/lib/utils/cn';
 import type { Story, StoriesStrings } from '@/lib/stories/types';
@@ -16,40 +18,72 @@ interface StoriesRailProps {
 }
 
 /**
- * Une bulle = poster + mini-couverture vidéo (muette, en boucle) qui se lance
- * quand la bulle entre dans le viewport → on COMPREND que ce sont des vidéos.
- * Hors-vue / reduced-motion : poster + pastille « play ». La vidéo n'est montée
- * que côté client au scroll (SSR = posters only, payload léger).
+ * Index de la bulle autorisée à jouer un aperçu animé : la PREMIÈRE bulle
+ * visible et non vue qui a une vidéo. `-1` si aucune. Une seule à la fois,
+ * pour ne jamais télécharger plusieurs vidéos en parallèle.
+ */
+export function pickPreviewIndex(
+  stories: readonly Story[],
+  visible: ReadonlySet<number>,
+  seenIds: ReadonlySet<string>,
+): number {
+  return stories.findIndex(
+    (story, index) =>
+      visible.has(index) &&
+      !seenIds.has(story.id) &&
+      (story.segments[0]?.sources.length ?? 0) > 0,
+  );
+}
+
+/**
+ * Une bulle = poster + pastille « play » (on COMPREND que ce sont des vidéos).
+ *
+ * Kit CRO v2 §1 (vitesse) : AUCUNE vidéo au montage. Le rail décide quelle
+ * bulle peut jouer un aperçu (`previewing`) ; seule celle-ci monte un
+ * `<video preload="none">` dont les sources ne sont posées qu'à ce moment-là.
+ * Le poster reste affiché tant que la vidéo n'a pas réellement démarré.
  */
 function StoryBubble({
   story,
   index,
   seen,
+  previewing,
   strings,
   onOpen,
+  onVisibilityChange,
 }: {
   story: Story;
   index: number;
   seen: boolean;
+  previewing: boolean;
   strings: StoriesStrings;
   onOpen: (index: number) => void;
+  onVisibilityChange: (index: number, inView: boolean) => void;
 }) {
-  const reduced = useReducedMotion();
   const { ref, inView } = useMediaInView<HTMLSpanElement>({
-    rootMargin: '150px',
-    threshold: 0.25,
+    rootMargin: '0px',
+    threshold: 0.6,
     once: false,
   });
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [playing, setPlaying] = useState(false);
   const cover = story.segments[0];
-  const showCover = inView && !reduced && Boolean(cover);
 
   useEffect(() => {
+    onVisibilityChange(index, inView);
+  }, [index, inView, onVisibilityChange]);
+
+  useEffect(() => {
+    if (!previewing) {
+      setPlaying(false);
+      return;
+    }
     const v = videoRef.current;
     if (!v) return;
-    if (showCover) void v.play().catch(() => {});
-    else v.pause();
-  }, [showCover]);
+    // `play()` déclenche le téléchargement (preload="none" jusque-là).
+    void v.play().catch(() => setPlaying(false));
+    return () => v.pause();
+  }, [previewing]);
 
   return (
     <li className="shrink-0 snap-start">
@@ -81,32 +115,38 @@ function StoryBubble({
                 sizes="84px"
                 loading={index < 4 ? 'eager' : 'lazy'}
               />
-              {showCover ? (
+              {previewing && cover ? (
                 <video
                   ref={videoRef}
                   muted
                   loop
                   playsInline
-                  autoPlay
-                  preload="metadata"
+                  preload="none"
                   aria-hidden="true"
-                  className="absolute inset-0 h-full w-full object-cover"
+                  data-testid={`story-bubble-preview-${story.slug}`}
+                  onPlaying={() => setPlaying(true)}
+                  className={cn(
+                    'absolute inset-0 h-full w-full object-cover transition-opacity duration-300',
+                    playing ? 'opacity-100' : 'opacity-0',
+                  )}
                 >
-                  {cover!.sources.map((s) => (
+                  {cover.sources.map((s) => (
                     <source key={s.url} src={s.url} type={s.mime} />
                   ))}
                 </video>
-              ) : (
-                // pastille « play » quand la couverture ne tourne pas → signale la vidéo.
+              ) : null}
+              {!playing ? (
+                // pastille « play » tant qu'aucun aperçu ne tourne → signale la vidéo.
                 <span
                   aria-hidden="true"
+                  data-testid={`story-bubble-play-${story.slug}`}
                   className="absolute inset-0 flex items-center justify-center"
                 >
                   <span className="flex h-6 w-6 items-center justify-center rounded-full bg-black/35 pl-0.5 text-[10px] text-white backdrop-blur-[1px]">
                     ▶
                   </span>
                 </span>
-              )}
+              ) : null}
               {seen ? (
                 <span aria-hidden="true" className="absolute inset-0 bg-encre/30" />
               ) : null}
@@ -145,6 +185,24 @@ export function StoriesRail({ stories, strings, seenIds, onOpen }: StoriesRailPr
   const scrollRef = useRef<HTMLUListElement | null>(null);
   const [atStart, setAtStart] = useState(true);
   const [atEnd, setAtEnd] = useState(false);
+
+  // Aperçu animé différé : jamais avant `window.load` + idle, jamais en
+  // reduced-motion, jamais en économie de données / réseau ≤ 3G.
+  const idleReady = useIdleAfterLoad();
+  const reduced = useReducedMotion();
+  const network = useNetworkInfo();
+  const previewAllowed = idleReady && !reduced && allowsUnrequestedMedia(network);
+  const [visible, setVisible] = useState<ReadonlySet<number>>(() => new Set());
+  const handleVisibility = useCallback((index: number, inView: boolean) => {
+    setVisible((prev) => {
+      if (prev.has(index) === inView) return prev;
+      const next = new Set(prev);
+      if (inView) next.add(index);
+      else next.delete(index);
+      return next;
+    });
+  }, []);
+  const previewIndex = previewAllowed ? pickPreviewIndex(stories, visible, seenIds) : -1;
 
   const updateEdges = useCallback(() => {
     const el = scrollRef.current;
@@ -194,8 +252,10 @@ export function StoriesRail({ stories, strings, seenIds, onOpen }: StoriesRailPr
             story={story}
             index={index}
             seen={seenIds.has(story.id)}
+            previewing={index === previewIndex}
             strings={strings}
             onOpen={onOpen}
+            onVisibilityChange={handleVisibility}
           />
         ))}
       </ul>

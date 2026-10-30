@@ -2,7 +2,11 @@
 
 import { useEffect, useMemo, useState, type MouseEvent } from 'react';
 import { usePathname } from 'next/navigation';
-import { arriveAtCommander } from '@/lib/checkout/wizard-arrival';
+import {
+  COMMANDER_ANCHOR_ID,
+  getEffectiveCommanderMode,
+  openCommander,
+} from '@/lib/checkout/commander-launcher';
 import { useTracking } from '@/lib/tracking/use-tracking';
 import type {
   GeoPromoLocationPayload,
@@ -107,19 +111,26 @@ export function GeoPromoSlideHeader() {
   };
 
   const clickCta = (event: MouseEvent<HTMLAnchorElement>) => {
+    const hash = payload.ctaHref?.split('#')[1];
     emit('geo_promo_header_click', {
       campaign_key: payload.campaignKey,
       route: '/kit',
       discount_pct: payload.discountPct ?? undefined,
+      ...(hash === COMMANDER_ANCHOR_ID ? { kit_cta_mode: getEffectiveCommanderMode() } : {}),
     });
-    // Ancre du formulaire déjà sur la page (/kit) : même arrivée que la sticky
-    // (step centré + accueil doux) au lieu du saut natif sur le titre.
+    // Ancre du formulaire déjà sur la page (/kit) : même ouverture que la
+    // sticky (`openCommander` : step centré + accueil doux, ou panneau) au
+    // lieu du saut natif sur le titre.
     // Ailleurs (autre page, clic molette/Cmd), navigation normale.
-    const hash = payload.ctaHref?.split('#')[1];
     if (!hash || event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
-    if (!document.getElementById(hash)?.querySelector('[data-testid="wizard-shell"]')) return;
+    const target = document.getElementById(hash);
+    if (!target) return;
+    // Mode panneau : la section suffit (le wizard s'ouvre dans le panneau).
+    // Mode défilement : il faut le wizard hydraté pour centrer le step.
+    const sheet = hash === COMMANDER_ANCHOR_ID && getEffectiveCommanderMode() === 'sheet';
+    if (!sheet && !target.querySelector('[data-testid="wizard-shell"]')) return;
     event.preventDefault();
-    arriveAtCommander(hash);
+    openCommander({ source: 'geo_promo_header', anchorId: hash });
   };
 
   const density =

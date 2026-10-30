@@ -46,7 +46,7 @@ test('TST-E-01 — lead_capture avance vers address sans attendre le réseau', a
     });
   });
 
-  await page.goto('/fr/kit');
+  await page.goto('/fr/kit?cta=scroll');
   await openLeadStep(page);
   await fillLead(page);
 
@@ -68,7 +68,7 @@ test('TST-E-03 — fermeture/masquage onglet → lead flushé via beacon (/sync)
   // Le fetch de fond échoue → l'envelope reste en file (zéro perte à couvrir).
   await page.route('**/api/checkout/lead', (route) => route.abort());
 
-  await page.goto('/fr/kit');
+  await page.goto('/fr/kit?cta=scroll');
   await openLeadStep(page);
   await fillLead(page);
   await page.locator('[data-testid="wizard-lead-submit"]').click();

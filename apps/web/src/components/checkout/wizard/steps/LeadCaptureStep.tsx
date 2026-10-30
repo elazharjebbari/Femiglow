@@ -161,10 +161,14 @@ export function LeadCaptureStep({ cta, title }: LeadCaptureStepProps) {
   // mais le client de tracking dedupe désormais sur une fenêtre courte
   // (cf. DEFAULT_REDUNDANCY['form_start']) pour neutraliser les doubles
   // mounts Mode A + Mode B. `checkout_intent` couvre l'intent fort.
+  // Kit CRO v2 — le step est remonté quand le wizard passe de la page au
+  // panneau de commande (et inversement) : `form_start` reste unique par
+  // formulaire et par chargement de page.
   const { handleFieldFocus } = useFormTracking({
     formId: formContext?.formId ?? 'wizard',
     formMode: formContext?.formMode,
     trackAbandon: false,
+    startOncePerPageLoad: true,
   });
 
   // Persiste le draft à chaque change (resume après refresh).
@@ -251,6 +255,9 @@ export function LeadCaptureStep({ cta, title }: LeadCaptureStepProps) {
   //  - Une valeur a été saisie auparavant (≥ 2 chars dans firstName du draft)
   //  - L'utilisateur n'a pas encore tapé dans le champ live (sinon redondant)
   //  - Pas explicitement dismiss
+  //  - Au plus une fois par chargement de page : `ResumeBanner` ne se
+  //    réaffiche pas (ni ne ré-émet `wizard_resume_shown`) si elle a déjà été
+  //    montrée (`resumeBannerShown`), ex. au remontage du step dans le panneau.
   const shouldShowResumeBanner =
     DEFAULT_WIZARD_FEATURES.resumeBanner &&
     !resumeBannerDismissed &&

@@ -7,7 +7,9 @@
  *     plus perd des commandes en COD). On valide le code via
  *     /api/coupons/redeem puis on l'applique au wizard-store → tous les prix
  *     de la page (XXL, hero, récap, sticky CTA, total attendu) passent à 99.
- *  2. Reprise : le code ET son montant sont persistés, mais on RE-VALIDE
+ *  2. Reprise : le code ET son montant sont persistés — un code `promo`
+ *     seulement 48 h après le dernier lien qui le portait (promo-memory) —
+ *     mais on RE-VALIDE
  *     systématiquement au montage — un code expiré ou arrivé à son plafond
  *     doit disparaître de l'affichage, sinon la commande partirait avec un
  *     total attendu que le serveur refuse (422 price_mismatch).
@@ -23,6 +25,7 @@ import { useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 import { useWizardStore, type CouponKind } from '@/lib/checkout/state/wizard-store';
+import { decideRememberedPromo } from '@/lib/coupons/promo-memory';
 
 /** Paramètres d'URL acceptés (le premier renseigné gagne). */
 const URL_PARAMS = ['code', 'promo', 'coupon'] as const;
@@ -69,8 +72,11 @@ export function PromoCodeAutoApply(): null {
   const searchParams = useSearchParams();
   const hydrated = useWizardStore((s) => s.hydrated);
   const couponCode = useWizardStore((s) => s.couponCode);
+  const couponKind = useWizardStore((s) => s.couponKind);
+  const couponUrlSeenAt = useWizardStore((s) => s.couponUrlSeenAt);
   const setCoupon = useWizardStore((s) => s.setCoupon);
   const clearCoupon = useWizardStore((s) => s.clearCoupon);
+  const markCouponUrlSeen = useWizardStore((s) => s.markCouponUrlSeen);
   // Une seule validation par code et par montage (pas de rafale d'appels).
   const attempted = useRef<string | null>(null);
 
@@ -78,8 +84,30 @@ export function PromoCodeAutoApply(): null {
   // Code candidat : celui de l'URL de campagne, sinon celui mémorisé.
   const target = urlCode ?? couponCode;
 
+  // Code promo mémorisé, page ouverte SANS code dans l'URL : il n'est gardé
+  // que 48 h après le dernier lien de campagne (cf. promo-memory).
+  useEffect(() => {
+    if (!hydrated || urlCode) return;
+    const decision = decideRememberedPromo({
+      couponCode,
+      couponKind,
+      couponUrlSeenAt,
+      now: Date.now(),
+    });
+    if (decision === 'expire') clearCoupon();
+    else if (decision === 'start-window') markCouponUrlSeen(Date.now());
+  }, [hydrated, urlCode, couponCode, couponKind, couponUrlSeenAt, clearCoupon, markCouponUrlSeen]);
+
   useEffect(() => {
     if (!hydrated || !target) return;
+    // Code mémorisé expiré : l'effet ci-dessus le retire, on ne le re-valide pas.
+    if (
+      !urlCode &&
+      decideRememberedPromo({ couponCode, couponKind, couponUrlSeenAt, now: Date.now() }) ===
+        'expire'
+    ) {
+      return;
+    }
     // `creditCents` n'entre PAS dans la garde : un code déjà porteur d'un
     // montant est re-validé quand même, car il a pu expirer entre deux visites.
     if (attempted.current === target) return;
@@ -97,6 +125,8 @@ export function PromoCodeAutoApply(): null {
       }
       if (json.valid && typeof json.valueCents === 'number' && json.valueCents > 0) {
         setCoupon(target, json.valueCents, json.kind === 'promo' ? 'promo' : 'credit');
+        // Arrivée par un lien de campagne : la fenêtre de 48 h (re)part d'ici.
+        if (urlCode === target) markCouponUrlSeen(Date.now());
         return;
       }
       // On ne retire la remise QUE sur un verdict explicite `valid:false`.
@@ -112,7 +142,17 @@ export function PromoCodeAutoApply(): null {
       // déjà tenté, abandonnait, et la remise n'était JAMAIS appliquée.
       if (!settled) attempted.current = null;
     };
-  }, [hydrated, target, couponCode, setCoupon, clearCoupon]);
+  }, [
+    hydrated,
+    target,
+    urlCode,
+    couponCode,
+    couponKind,
+    couponUrlSeenAt,
+    setCoupon,
+    clearCoupon,
+    markCouponUrlSeen,
+  ]);
 
   return null;
 }

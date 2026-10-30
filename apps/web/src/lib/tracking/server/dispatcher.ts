@@ -7,6 +7,7 @@ import { resolveEventMapping } from '@/lib/tracking/mappings/resolver';
 import { PROVIDER_KINDS_FOR_MAPPING } from '@/lib/tracking/mappings/types';
 import { shouldDispatchByAttribution } from '@/lib/tracking/attribution/dispatch-gate';
 import { decideMetaForEvent } from './lead-as-purchase';
+import { isFirstPartyOnlyEvent } from '@/lib/tracking/first-party-events';
 
 export interface DispatchOutcome {
   dispatched: string[];
@@ -36,6 +37,11 @@ function consentAllowsProvider(
 }
 
 export async function dispatchToProviders(ctx: DispatchContext): Promise<DispatchOutcome> {
+  // Événements first-party (ex. `web_vitals`) : stockés, jamais relayés aux
+  // providers — exclusion explicite, indépendante des mappings et des
+  // adapters « catch-all » (gtm, custom) qui acceptent tout nom d'événement.
+  if (isFirstPartyOnlyEvent(ctx.eventName)) return { dispatched: [], results: {} };
+
   const providers = await listEnabledTrackingProviders();
 
   // Phase 4 — Pré-résoudre les mappings depuis event_mapping_versions (version active DB).

@@ -10,6 +10,11 @@
 
 import { useCallback } from 'react';
 
+import {
+  COMMANDER_ANCHOR_ID,
+  getEffectiveCommanderMode,
+  openCommander,
+} from '@/lib/checkout/commander-launcher';
 import { useTracking } from '@/lib/tracking/use-tracking';
 
 export interface StepsPostCtaLinkProps {
@@ -27,15 +32,20 @@ export function StepsPostCtaLink({
 
   const handleClick = useCallback(
     (event: React.MouseEvent<HTMLAnchorElement>) => {
-      emit('pack_steps_cta_click', { cta_target: `#${anchorId}` });
+      const toCommander = anchorId === COMMANDER_ANCHOR_ID;
+      emit('pack_steps_cta_click', {
+        cta_target: `#${anchorId}`,
+        ...(toCommander ? { kit_cta_mode: getEffectiveCommanderMode() } : {}),
+      });
       const target =
         typeof document !== 'undefined'
           ? document.getElementById(anchorId)
           : null;
-      if (target) {
-        event.preventDefault();
-        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
+      if (!target) return;
+      event.preventDefault();
+      // Ancre du formulaire : `openCommander` (défilement centré ou panneau).
+      if (toCommander) openCommander({ source: 'steps_post_cta' });
+      else target.scrollIntoView({ behavior: 'smooth', block: 'start' });
     },
     [emit, anchorId],
   );

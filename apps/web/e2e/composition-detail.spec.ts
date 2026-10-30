@@ -12,7 +12,7 @@ import AxeBuilder from '@axe-core/playwright';
 
 test.describe('/kit composition — rendu @composition-render', () => {
   test('section ingredients-details visible avec heading', async ({ page }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     const heading = page.getByRole('heading', {
       name: /la composition lue ligne par ligne/i,
       level: 2,
@@ -21,7 +21,7 @@ test.describe('/kit composition — rendu @composition-render', () => {
   });
 
   test('3 sous-produits rendus avec leur id', async ({ page }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     await expect(page.getByTestId('sub-product-block-1-paste')).toBeVisible();
     await expect(page.getByTestId('sub-product-block-2-powder')).toBeVisible();
     await expect(
@@ -32,14 +32,14 @@ test.describe('/kit composition — rendu @composition-render', () => {
   test('narrative italique présent dans le 1er sous-produit', async ({
     page,
   }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     const narrative = page.getByTestId('composition-narrative-1-paste');
     await expect(narrative).toBeVisible();
     await expect(narrative).toContainText(/cire/i);
   });
 
   test('PostCtaLink présent pour chaque sous-produit (3 liens)', async ({ page }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     await expect(
       page.getByTestId('composition-post-cta-1-paste'),
     ).toBeVisible();
@@ -52,7 +52,7 @@ test.describe('/kit composition — rendu @composition-render', () => {
   });
 
   test('certifications visibles avec label + body', async ({ page }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     const certs = page.getByTestId('certifications-1-paste');
     await expect(certs).toBeVisible();
     await expect(certs).toContainText(/Cosmos Organic.*Ecocert/);
@@ -63,7 +63,7 @@ test.describe('/kit composition — interactions @composition-interaction', () =
   test.use({ viewport: { width: 375, height: 812 } });
 
   test('click summary toggle l\'accordion mobile', async ({ page }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     const block = page.getByTestId('sub-product-block-2-powder');
     const details = block.locator('details');
     // 2-powder est fermé par défaut sur mobile (index 1 ≠ 0)
@@ -74,7 +74,7 @@ test.describe('/kit composition — interactions @composition-interaction', () =
   });
 
   test('click ⓘ ouvre tooltip avec définition INCI', async ({ page }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     // 1-paste est ouvert par défaut. Click sur le 1er bouton tooltip.
     const trigger = page
       .locator('[data-testid^="inci-tooltip-trigger-1-paste-"]')
@@ -89,7 +89,7 @@ test.describe('/kit composition — interactions @composition-interaction', () =
   });
 
   test('Esc ferme le tooltip', async ({ page }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     const trigger = page
       .locator('[data-testid^="inci-tooltip-trigger-1-paste-"]')
       .first();
@@ -103,7 +103,7 @@ test.describe('/kit composition — interactions @composition-interaction', () =
   });
 
   test('click PostCtaLink scrolle vers #commander-femiglow', async ({ page }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     const cta = page.getByTestId('composition-post-cta-1-paste');
     await cta.scrollIntoViewIfNeeded();
     await cta.click();
@@ -116,7 +116,7 @@ test.describe('/kit composition — interactions @composition-interaction', () =
 test.describe('/kit composition — responsive @composition-responsive', () => {
   test('mobile : pas de scroll horizontal dans la section', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     const block = page.getByTestId('sub-product-block-1-paste');
     await block.scrollIntoViewIfNeeded();
     // Liste mobile (cards) visible, tableau desktop caché par sm:hidden
@@ -126,7 +126,7 @@ test.describe('/kit composition — responsive @composition-responsive', () => {
 
   test('desktop : tableau 5 colonnes visible', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     const table = page.getByTestId('ingredients-table-1-paste');
     await expect(table).toBeVisible();
     const headers = table.locator('thead th');
@@ -136,7 +136,7 @@ test.describe('/kit composition — responsive @composition-responsive', () => {
 
 test.describe('/kit composition — a11y @composition-a11y', () => {
   test('0 violation axe sérieuse/critique sur la section', async ({ page }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     await page.waitForLoadState('domcontentloaded');
     const results = await new AxeBuilder({ page })
       .include('section#ingredients-details')

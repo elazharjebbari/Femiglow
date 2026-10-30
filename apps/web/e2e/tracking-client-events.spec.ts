@@ -42,7 +42,7 @@ function trackingCollector(page: import('@playwright/test').Page) {
 test.describe('Tracking client public — form_start / begin_checkout', () => {
   test('form_start ne fire PAS au mount de /kit (sans focus)', async ({ page }) => {
     const events = trackingCollector(page);
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     // Laisser le temps au TrackingClient de flush.
     await page.waitForTimeout(2000);
     const formStart = events.filter((e) => e.event === 'form_start');
@@ -51,7 +51,7 @@ test.describe('Tracking client public — form_start / begin_checkout', () => {
 
   test('form_start fire au premier focus + porte first_field + form_mode', async ({ page }) => {
     const events = trackingCollector(page);
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     await page.waitForSelector('[data-testid="wizard-step-lead"]', { timeout: 15_000 });
 
     const firstName = page.getByLabel(/Votre prénom/i);
@@ -68,7 +68,7 @@ test.describe('Tracking client public — form_start / begin_checkout', () => {
 
   test('form_start émis UNE SEULE FOIS, même si plusieurs focus', async ({ page }) => {
     const events = trackingCollector(page);
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     await page.waitForSelector('[data-testid="wizard-step-lead"]', { timeout: 15_000 });
 
     const firstName = page.getByLabel(/Votre prénom/i);
@@ -135,7 +135,7 @@ test.describe('Tracking client public — gclid capture (T14)', () => {
 test.describe('Tracking client public — event_id (D-008)', () => {
   test("chaque event /api/track porte un event_id UUID v4/v7", async ({ page }) => {
     const events = trackingCollector(page);
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     await page.waitForSelector('[data-testid="wizard-step-lead"]', { timeout: 15_000 });
     await page.getByLabel(/Votre prénom/i).focus();
     await page.waitForTimeout(2200);

@@ -51,6 +51,7 @@ describe('PostCtaLink — interaction', () => {
     expect(emitMock).toHaveBeenCalledWith('composition_post_cta_click', {
       sub_product_id: '1-paste',
       cta_target: '#commander-femiglow',
+      kit_cta_mode: 'scroll',
     });
   });
 

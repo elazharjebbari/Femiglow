@@ -3,6 +3,7 @@
 import type { TrackingConsentState } from '@/lib/db/types';
 import { getDataLayer, type DataLayerEntry } from '@/lib/tracking/datalayer';
 import { uuidv7 } from '@/lib/tracking/uuid';
+import { isFirstPartyOnlyEvent } from '@/lib/tracking/first-party-events';
 import { readAttributionCookie } from '@/lib/tracking/attribution/cookie';
 import { applyStrategy } from '@/lib/tracking/attribution/strategy';
 import {
@@ -186,7 +187,10 @@ export class TrackingClient {
       if (first) this.dedupCache.delete(first);
     }
 
-    getDataLayer().push(entry);
+    // Événements first-party (`web_vitals`, `kit_checkout_exposure`…) : hors
+    // `dataLayer`, donc invisibles pour GTM et les pixels client (Meta, TikTok,
+    // Google…). Ils partent uniquement vers `/api/track` (tracking_events_log).
+    if (!isFirstPartyOnlyEvent(eventName)) getDataLayer().push(entry);
 
     if (consent.analytics_storage === 'denied' && consent.ad_storage === 'denied') {
       return;

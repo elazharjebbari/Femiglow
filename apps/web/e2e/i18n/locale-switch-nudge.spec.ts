@@ -166,7 +166,7 @@ test.describe('@locale-switch-nudge Moteur de suggestion', () => {
     await page.goto('/fr/kit');
     // Entrée dans le wizard (CTA d'achat) — la surface wizard interdit le nudge.
     const cta = page
-      .getByRole('button', { name: /commander|acheter|kit/i })
+      .getByRole('button', { name: /je commande|commander|acheter|kit/i })
       .first();
     if (await cta.isVisible().catch(() => false)) {
       await cta.click();

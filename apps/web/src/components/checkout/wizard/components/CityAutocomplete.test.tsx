@@ -42,6 +42,7 @@ vi.mock('@/lib/checkout/delivery/use-delivery-cities', () => ({
 
 // Import APRÈS le mock.
 import { CityAutocomplete } from './CityAutocomplete';
+import { BottomSheet } from '@/components/ui/BottomSheet';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Fixtures
@@ -315,5 +316,31 @@ describe('CityAutocomplete — saisie libre', () => {
     render(<Host onCitySelected={onSelected} />);
     await user.type(screen.getByTestId('ac'), 'Petit Village');
     expect(onSelected).not.toHaveBeenCalled();
+  });
+});
+
+describe('CityAutocomplete — dans le panneau de commande (BottomSheet)', () => {
+  it('Escape ferme la liste des villes SANS fermer le panneau ; un 2e Escape ferme le panneau', async () => {
+    mockedCities = [CASA, RABAT];
+    const backSpy = vi.spyOn(window.history, 'back').mockImplementation(() => undefined);
+    const onOpenChange = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <BottomSheet open onOpenChange={onOpenChange} title="Commander" closeLabel="Fermer">
+        <Host />
+      </BottomSheet>,
+    );
+    const input = await screen.findByTestId('ac');
+    await user.click(input);
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('listbox')).toBeNull();
+    expect(onOpenChange).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+    await user.keyboard('{Escape}');
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+    backSpy.mockRestore();
   });
 });

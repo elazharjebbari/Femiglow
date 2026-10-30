@@ -14,6 +14,11 @@
 
 import { useCallback } from 'react';
 
+import {
+  COMMANDER_ANCHOR_ID,
+  getEffectiveCommanderMode,
+  openCommander,
+} from '@/lib/checkout/commander-launcher';
 import { useTracking } from '@/lib/tracking/use-tracking';
 
 export interface VideoPostCtaProps {
@@ -34,13 +39,21 @@ export function VideoPostCta({
 
   const handleClick = useCallback(
     (event: React.MouseEvent<HTMLAnchorElement>) => {
+      const toCommander = href === `#${COMMANDER_ANCHOR_ID}`;
       emit('video_cta_click', {
         video_id: videoId,
         cta_label: label,
         cta_target: href,
+        ...(toCommander ? { kit_cta_mode: getEffectiveCommanderMode() } : {}),
       });
-      // Scroll smooth si on cible une ancre interne. On laisse le browser
-      // gérer le défilement natif si possible, sinon fallback JS.
+      // Ancre du formulaire : `openCommander` (défilement centré ou panneau).
+      if (toCommander && document.getElementById(COMMANDER_ANCHOR_ID)) {
+        event.preventDefault();
+        openCommander({ source: `video_post_cta:${videoId}` });
+        return;
+      }
+      // Scroll smooth si on cible une autre ancre interne. On laisse le
+      // browser gérer le défilement natif si possible, sinon fallback JS.
       if (href.startsWith('#')) {
         const target = document.getElementById(href.slice(1));
         if (target) {

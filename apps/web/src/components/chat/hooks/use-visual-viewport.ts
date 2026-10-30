@@ -46,3 +46,42 @@ export function useVisualViewportHeight(): number | null {
 
   return h;
 }
+
+/**
+ * Kit CRO v2 §2 — Hauteur masquée en bas par le clavier virtuel (px), ou `0`.
+ *
+ * Même calcul que `ChatPanel` (`innerHeight − visualViewport.height −
+ * offsetTop`) : sur iOS, le clavier ne réduit pas `innerHeight`, un panneau
+ * `position: fixed` ancré en bas passerait dessous. Le consommateur applique
+ * la valeur en `padding-bottom` pour garder le champ actif visible.
+ *
+ * `enabled = false` → aucun écouteur (panneau fermé).
+ */
+export function useVisualViewportKeyboardInset(enabled = true): number {
+  const [inset, setInset] = useState(0);
+
+  useEffect(() => {
+    if (!enabled || typeof window === 'undefined') return;
+    const vv = window.visualViewport;
+    if (!vv) return;
+    let rafId = 0;
+    const read = (): void => {
+      setInset(Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)));
+    };
+    const onChange = (): void => {
+      window.cancelAnimationFrame(rafId);
+      rafId = window.requestAnimationFrame(read);
+    };
+    read();
+    vv.addEventListener('resize', onChange);
+    vv.addEventListener('scroll', onChange);
+    return () => {
+      window.cancelAnimationFrame(rafId);
+      vv.removeEventListener('resize', onChange);
+      vv.removeEventListener('scroll', onChange);
+      setInset(0);
+    };
+  }, [enabled]);
+
+  return inset;
+}

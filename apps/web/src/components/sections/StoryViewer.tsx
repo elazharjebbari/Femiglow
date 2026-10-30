@@ -3,6 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
+import {
+  COMMANDER_ANCHOR_ID,
+  getEffectiveCommanderMode,
+  openCommander,
+} from '@/lib/checkout/commander-launcher';
 import { useReducedMotion } from '@/lib/media/hooks/useReducedMotion';
 import { useTracking } from '@/lib/tracking/use-tracking';
 import { cn } from '@/lib/utils/cn';
@@ -298,13 +303,18 @@ export function StoryViewer({
 
   const onCtaClick = useCallback(() => {
     if (!story || !segment) return;
+    const toCommander = activeCta.target === `#${COMMANDER_ANCHOR_ID}`;
     emit('story_cta_click', {
       story_id: story.id,
       segment_id: segment.id,
       cta_target: activeCta.target,
+      ...(toCommander ? { kit_cta_mode: getEffectiveCommanderMode() } : {}),
     });
     onClose();
-    if (activeCta.target.startsWith('#')) {
+    if (toCommander) {
+      // Défilement centré ou panneau de commande, selon le mode.
+      openCommander({ source: `story:${story.id}` });
+    } else if (activeCta.target.startsWith('#')) {
       const el = document.getElementById(activeCta.target.slice(1));
       const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
       el?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });

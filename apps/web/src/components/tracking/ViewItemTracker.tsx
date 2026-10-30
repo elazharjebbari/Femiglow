@@ -25,6 +25,12 @@ interface ViewItemTrackerProps {
    * cf. docs/meta-quality-audit-2026-05/01-design-conception.md §3.1
    */
   eventIdSeed?: string;
+  /**
+   * Kit CRO v2 §3 — angle publicitaire de la page /kit (`a`…`e`, `temoin`,
+   * ou `none`). Envoyé en `kit_angle` pour lire la conversion par angle.
+   * Absent hors /kit : le paramètre n'est pas émis.
+   */
+  kitAngle?: string;
 }
 
 /**
@@ -41,6 +47,7 @@ export function ViewItemTracker({
   currency = 'MAD',
   category,
   eventIdSeed,
+  kitAngle,
 }: ViewItemTrackerProps) {
   const { emit } = useTracking();
   const lastFiredItemRef = useRef<string | null>(null);
@@ -59,10 +66,10 @@ export function ViewItemTracker({
     ];
     emit(
       'view_item',
-      { currency, value: priceCents / 100, items },
+      { currency, value: priceCents / 100, items, ...(kitAngle ? { kit_angle: kitAngle } : {}) },
       eventIdSeed ? { eventIdOverride: eventIdSeed } : undefined,
     );
-  }, [emit, itemId, itemName, priceCents, currency, category, eventIdSeed]);
+  }, [emit, itemId, itemName, priceCents, currency, category, eventIdSeed, kitAngle]);
 
   return null;
 }

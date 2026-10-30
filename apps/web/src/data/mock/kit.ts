@@ -17,7 +17,7 @@ export const mockKitPageContent: KitPageContent = {
   composition: [
     {
       id: '1-paste',
-      name: '1 Paste',
+      name: '1 Pâte',
       sensation: 'Tiède au contact.',
       accentColor: 'sauge',
       shortDescription:
@@ -65,15 +65,15 @@ export const mockKitPageContent: KitPageContent = {
     },
     {
       id: '2-powder',
-      name: '2 Powder',
+      name: '2 Poudre',
       sensation: 'Glisse, ne grise pas.',
       accentColor: 'petale',
       shortDescription:
-        'Poudre fine blanche, déposée sur la paste. Absorbe l\u2019excès, lustre la surface.',
+        'Poudre fine blanche, déposée sur la pâte. Absorbe l\u2019excès, lustre la surface.',
       volume: '8 g',
       usageHint: 'une pincée lustre toute la main',
       narrative:
-        'Poudre minérale fine, déposée juste après la paste. Le talc absorbe le surplus, la silice lustre la surface. Pas de blanc, pas de gris.',
+        'Poudre minérale fine, déposée juste après la pâte. Le talc absorbe le surplus, la silice lustre la surface. Pas de blanc, pas de gris.',
       image: {
         src: '/products/kit-fortifiant.svg',
         alt: 'Pot carré transparent à bords facettés, étiquette circulaire rose poudré "2 powder", poudre fine blanche',
@@ -97,7 +97,7 @@ export const mockKitPageContent: KitPageContent = {
           origin: 'Asie biologique',
           concentrationPct: 30,
           inciDefinition:
-            'Amidon de riz finement broy\u00e9. Absorbe le surplus de paste sans dess\u00e9cher.',
+            'Amidon de riz finement broy\u00e9. Absorbe le surplus de pâte sans dess\u00e9cher.',
         },
         {
           name: 'Silice',

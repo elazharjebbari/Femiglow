@@ -119,7 +119,8 @@ export function localizeKitProductFeed(
       title: t('hero.title'),
       lead: t('hero.lead'),
       pricePrefix: t('hero.price_prefix'),
-      ctaLabel: t('hero.cta_label'),
+      // Gabarit brut : `{price}` est rempli côté client (prix net du code).
+      ctaLabel: t('hero.cta_label', { price: '{price}' }),
       ctaMicrocopy: t('hero.cta_microcopy'),
       // Phase 7 wiring — gabarit ICU localisé du bandeau économie. La clé porte
       // des placeholders ICU `{amount}`/`{currency}`/`{pct}` ; on les ré-émet

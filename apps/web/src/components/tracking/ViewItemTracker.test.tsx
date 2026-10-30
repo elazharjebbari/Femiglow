@@ -31,6 +31,17 @@ describe('ViewItemTracker', () => {
     );
   });
 
+  it('Kit CRO v2 §3 — ajoute kit_angle quand la page /kit le fournit', () => {
+    render(
+      <ViewItemTracker itemId="kit" itemName="Le pack FemiGlow" priceCents={19900} kitAngle="e" />,
+    );
+    expect(emitSpy).toHaveBeenCalledWith(
+      'view_item',
+      expect.objectContaining({ kit_angle: 'e', value: 199 }),
+      undefined,
+    );
+  });
+
   it('passes eventIdOverride when eventIdSeed prop is provided', () => {
     const seed = 'a'.repeat(32);
     render(

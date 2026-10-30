@@ -53,7 +53,7 @@ test.describe('CHA-231 — Wizard /kit (Mode A)', () => {
     test.setTimeout(120_000);
 
     // 1) Charger /kit
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     const wizardSection = page.getByTestId('kit-commander-section');
     await expect(wizardSection).toBeVisible();
 
@@ -109,19 +109,19 @@ test.describe('CHA-231 — Wizard /kit (Mode A)', () => {
   });
 
   test('le bloc commander a une ancre #commander-femiglow', async ({ page }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     const section = page.locator('#commander-femiglow');
     await expect(section).toBeVisible();
   });
 
-  test('le CTA hero « Commander le rituel » scroll-cible le wizard', async ({
+  test('le CTA hero « Je commande — {prix} » scroll-cible le wizard', async ({
     page,
   }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     const hero = page.locator('header, section').filter({
       has: page.getByRole('heading', { level: 1 }),
     }).first();
-    const cta = hero.getByRole('button', { name: /commander le rituel/i }).first();
+    const cta = hero.getByRole('button', { name: /je commande/i }).first();
     await expect(cta).toBeVisible();
     await cta.click();
     const wizardShell = page.getByTestId('wizard-shell');
@@ -134,7 +134,7 @@ test.describe('CHA-231 — i18n bilingue côté address', () => {
   test('le hint sous le champ ville mentionne FR + AR par défaut', async ({
     page,
   }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     await fillLeadStep(page, 'Test');
     const addressStep = page.getByTestId('wizard-step-address');
     await expect(addressStep).toBeVisible();
@@ -145,7 +145,7 @@ test.describe('CHA-231 — i18n bilingue côté address', () => {
   });
 
   test('matching ville accepte les alias FR (« Casa »)', async ({ page }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     await fillLeadStep(page, 'Test');
     const addressStep = page.getByTestId('wizard-step-address');
     await addressStep.getByTestId('wizard-address-city').fill('Casa');

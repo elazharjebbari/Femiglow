@@ -45,7 +45,56 @@ export function resolveLegacyLocaleRedirect(
 ): string | null {
   if (startsWithLocale(pathname)) return null;
   if (!hasLocalizedEquivalent(pathname)) return null;
-  const locale: Locale = isLocale(cookieLocale) ? cookieLocale : DEFAULT_LOCALE;
+  const locale = resolveTargetLocale(cookieLocale);
   const suffix = pathname === '/' ? '' : pathname;
   return `/${locale}${suffix}`;
+}
+
+function resolveTargetLocale(cookieLocale?: string | null): Locale {
+  return isLocale(cookieLocale) ? cookieLocale : DEFAULT_LOCALE;
+}
+
+/** Seule racine éligible au rewrite interne (landing des publicités). */
+export const KIT_ROOT_PATH = '/kit';
+
+/**
+ * Décision de routage i18n pour une route legacy :
+ *  - `redirect` : 307 historique vers l'arbre localisé (URL changée) ;
+ *  - `rewrite`  : service interne de l'arbre localisé, URL `/kit` conservée.
+ */
+export type LegacyLocaleRouting =
+  | { kind: 'redirect'; pathname: string; locale: Locale }
+  | { kind: 'rewrite'; pathname: string; locale: Locale };
+
+export interface LegacyLocaleRoutingOptions {
+  /** Flag `KIT_ROOT_REWRITE` (cf. `lib/feature-flags/kit-root-rewrite`). */
+  kitRootRewrite: boolean;
+}
+
+/**
+ * Kit CRO v2 §1 — comme `resolveLegacyLocaleRedirect`, mais indique en plus
+ * si la cible doit être servie par **rewrite** interne plutôt que par 307.
+ *
+ * Le rewrite ne concerne QUE `/kit` exact (ni `/`, ni `/kit/…`, ni les autres
+ * racines) ET la locale par défaut. Pourquoi pas `/kit` + cookie `ar`/`en` :
+ * plusieurs composants clients dérivent la locale du 1er segment de
+ * `usePathname()` (PriceBlock, SkipLink, ChatLauncher, LocaleSwitcher…). Avec
+ * l'URL `/kit`, ils retomberaient sur `fr` alors que la page est servie en
+ * AR → textes/prix dans la mauvaise langue et hydratation divergente. Ces
+ * visiteurs de retour (minoritaires) gardent donc le 307 vers `/{locale}/kit`.
+ *
+ * @param pathname     chemin brut avec slash initial, sans query string
+ * @param cookieLocale valeur du cookie `NEXT_LOCALE` (optionnelle)
+ */
+export function resolveLegacyLocaleRouting(
+  pathname: string,
+  cookieLocale: string | null | undefined,
+  options: LegacyLocaleRoutingOptions,
+): LegacyLocaleRouting | null {
+  const target = resolveLegacyLocaleRedirect(pathname, cookieLocale);
+  if (!target) return null;
+  const locale = resolveTargetLocale(cookieLocale);
+  const rewrite =
+    options.kitRootRewrite && pathname === KIT_ROOT_PATH && locale === DEFAULT_LOCALE;
+  return { kind: rewrite ? 'rewrite' : 'redirect', pathname: target, locale };
 }

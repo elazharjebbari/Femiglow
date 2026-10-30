@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, act, cleanup } from '@testing-library/react';
 import { StickyCartCTA } from './StickyCartCTA';
+import { useCommanderLauncherStore } from '@/lib/checkout/commander-launcher';
 
 type ObserverCb = (entries: IntersectionObserverEntry[]) => void;
 
@@ -35,6 +36,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   document.body.innerHTML = '';
+  useCommanderLauncherStore.setState({ mode: 'scroll', isSheetOpen: false, sheetHosts: 0 });
 });
 
 function renderCTA() {
@@ -106,6 +108,37 @@ describe('StickyCartCTA', () => {
       const region = screen.getByRole('region', { name: /achat rapide/i });
       expect(region.getAttribute('data-chat-open')).toBe('false');
       expect(region.getAttribute('aria-hidden')).toBe('false');
+    });
+  });
+
+  // Kit CRO v2 §2 — même retrait pendant que le panneau de commande est ouvert.
+  describe('masquage quand le panneau de commande est ouvert', () => {
+    it('panneau ouvert : data-commander-sheet-open=true + aria-hidden + data-visible forcé à false', () => {
+      useCommanderLauncherStore.setState({ mode: 'sheet', isSheetOpen: true, sheetHosts: 1 });
+      const { container } = renderCTA();
+      act(() => {
+        lastCb!([{ isIntersecting: false } as IntersectionObserverEntry]);
+      });
+      const region = container.querySelector('[aria-label="Achat rapide"]')!;
+      expect(region.getAttribute('data-commander-sheet-open')).toBe('true');
+      expect(region.getAttribute('aria-hidden')).toBe('true');
+      expect(region.getAttribute('data-visible')).toBe('false');
+      expect(region.className).toContain('data-[commander-sheet-open=true]:opacity-0');
+      expect(region.className).toContain('data-[commander-sheet-open=true]:pointer-events-none');
+    });
+
+    it('fermeture du panneau : la barre réapparaît', () => {
+      useCommanderLauncherStore.setState({ mode: 'sheet', isSheetOpen: true, sheetHosts: 1 });
+      renderCTA();
+      act(() => {
+        lastCb!([{ isIntersecting: false } as IntersectionObserverEntry]);
+      });
+      act(() => {
+        useCommanderLauncherStore.getState().closeCommander();
+      });
+      const region = screen.getByRole('region', { name: /achat rapide/i });
+      expect(region.getAttribute('data-commander-sheet-open')).toBe('false');
+      expect(region).toHaveAttribute('data-visible', 'true');
     });
   });
 });

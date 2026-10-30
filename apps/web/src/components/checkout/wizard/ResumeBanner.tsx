@@ -4,8 +4,10 @@
  * (Kolenda §5 W4 P6, Trust #5 — memory & personalization).
  *
  * Comportement :
- *  - Émet `wizard_resume_shown` au mount (1 fois par session via
- *    guard `resumeBannerShown` Set côté store).
+ *  - Au plus UNE fois par chargement de page : si `resumeBannerShown` (store,
+ *    non persisté) est déjà vrai au montage — remontage du step, ex. wizard
+ *    /kit déplacé dans le panneau de commande —, rien n'est rendu ni émis.
+ *  - Sinon émet `wizard_resume_shown` au mount et pose `resumeBannerShown`.
  *  - Auto-hide après `autoHideMs` (default 5000 ms).
  *  - Click ✕ → émet `wizard_resume_dismissed` + flag persistant
  *    `resumeBannerDismissed=true` (ne s'affichera plus dans les sessions
@@ -40,12 +42,16 @@ export function ResumeBanner({
   const resolvedTemplate = template ?? t.resumeBanner.template;
   const [visible, setVisible] = useState(true);
   const fired = useRef(false);
+  // Figé au montage : la bannière qui pose le drapeau reste visible, les
+  // montages suivants (même chargement de page) ne s'affichent pas.
+  const shownEarlier = useWizardStore((s) => s.resumeBannerShown);
+  const [alreadyShown] = useState(() => shownEarlier === true);
   const currentStep = useWizardStore((s) => s.currentStep);
   const markShown = useWizardStore((s) => s.markResumeBannerShown);
   const dismissPersist = useWizardStore((s) => s.dismissResumeBanner);
 
   useEffect(() => {
-    if (fired.current) return;
+    if (alreadyShown || fired.current) return;
     fired.current = true;
     emit('wizard_resume_shown', {
       step_name: currentStep === 'address' ? 'address' : 'lead',
@@ -57,7 +63,7 @@ export function ResumeBanner({
       return () => clearTimeout(t);
     }
     return undefined;
-  }, [emit, currentStep, markShown, autoHideMs]);
+  }, [alreadyShown, emit, currentStep, markShown, autoHideMs]);
 
   const handleDismiss = useCallback(() => {
     emit('wizard_resume_dismissed', {
@@ -67,7 +73,7 @@ export function ResumeBanner({
     setVisible(false);
   }, [emit, currentStep, dismissPersist]);
 
-  if (!visible) return null;
+  if (alreadyShown || !visible) return null;
 
   return (
     <div

@@ -120,3 +120,43 @@ describe('TrackingClient.emit — legacy contract (regression)', () => {
     expect(getDataLayer().entries).toHaveLength(1);
   });
 });
+
+describe('TrackingClient.emit — événements first-party (kit_checkout_exposure, web_vitals)', () => {
+  it('jamais poussés dans le dataLayer (GTM, pixels), mais envoyés à /api/track', async () => {
+    const fetchSpy = vi.fn(async () => new Response('{}', { status: 200 }));
+    const originalFetch = globalThis.fetch;
+    const originalBeacon = navigator.sendBeacon;
+    globalThis.fetch = fetchSpy as unknown as typeof fetch;
+    Object.defineProperty(navigator, 'sendBeacon', { value: undefined, configurable: true });
+    const pushed = vi.fn();
+    window.addEventListener('fg:datalayer-push', pushed);
+    try {
+      const client = buildClient();
+      client.emit('kit_checkout_exposure', {
+        assigned_mode: 'sheet',
+        mode_source: 'ab',
+        cms_mode: 'ab',
+        share_pct: 50,
+      });
+      expect(getDataLayer().entries).toHaveLength(0);
+      expect((window as unknown as { dataLayer: unknown[] }).dataLayer).toHaveLength(0);
+      expect(pushed).not.toHaveBeenCalled();
+
+      await client.flush();
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      const [endpoint, init] = fetchSpy.mock.calls[0] as unknown as [string, RequestInit];
+      expect(endpoint).toBe('/api/track');
+      const body = JSON.parse(String(init.body)) as { events: Array<{ event: string; params: unknown }> };
+      expect(body.events.map((e) => e.event)).toEqual(['kit_checkout_exposure']);
+      expect(body.events[0]!.params).toMatchObject({ assigned_mode: 'sheet', mode_source: 'ab' });
+
+      // Témoin : un événement ordinaire passe bien par le dataLayer.
+      client.emit('view_item', { value: 320, currency: 'MAD' });
+      expect(getDataLayer().entries.map((e) => e.event)).toEqual(['view_item']);
+    } finally {
+      window.removeEventListener('fg:datalayer-push', pushed);
+      globalThis.fetch = originalFetch;
+      Object.defineProperty(navigator, 'sendBeacon', { value: originalBeacon, configurable: true });
+    }
+  });
+});

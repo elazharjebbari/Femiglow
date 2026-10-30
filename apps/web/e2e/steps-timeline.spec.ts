@@ -10,7 +10,7 @@ test.describe('/kit — steps timeline @steps-render', () => {
   test('rend la timeline avec header EN TOUT + 4 cartes + PostCta', async ({
     page,
   }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
 
     const timeline = page.locator('[data-testid="steps-timeline"]');
     await timeline.scrollIntoViewIfNeeded();
@@ -34,7 +34,7 @@ test.describe('/kit — steps timeline @steps-render', () => {
   });
 
   test('step 4 marqué isResult avec data-is-result=true', async ({ page }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     const step4 = page.locator('[data-testid="step-card-4"]');
     await step4.scrollIntoViewIfNeeded();
     await expect(step4).toHaveAttribute('data-is-result', 'true');
@@ -44,7 +44,7 @@ test.describe('/kit — steps timeline @steps-render', () => {
   });
 
   test('chaque step affiche son badge durée', async ({ page }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     await page
       .locator('[data-testid="steps-timeline"]')
       .scrollIntoViewIfNeeded();
@@ -58,7 +58,7 @@ test.describe('/kit — steps timeline @steps-render', () => {
 
 test.describe('/kit — interaction @steps-interaction', () => {
   test('click PostCta → scroll vers #commander-femiglow', async ({ page }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     const cta = page.locator('[data-testid="steps-post-cta"]');
     await cta.scrollIntoViewIfNeeded();
     await cta.click();
@@ -70,7 +70,7 @@ test.describe('/kit — interaction @steps-interaction', () => {
   test('click PostCta émet pack_steps_cta_click via /api/track', async ({
     page,
   }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     const requestPromise = page.waitForRequest((req) =>
       req.url().includes('/api/track') && req.method() === 'POST',
     );
@@ -95,7 +95,7 @@ test.describe('/kit — responsive @steps-responsive', () => {
     page,
   }) => {
     await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     await page
       .locator('[data-testid="steps-timeline"]')
       .scrollIntoViewIfNeeded();
@@ -114,7 +114,7 @@ test.describe('/kit — responsive @steps-responsive', () => {
     page,
   }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     await page
       .locator('[data-testid="steps-timeline"]')
       .scrollIntoViewIfNeeded();
@@ -132,7 +132,7 @@ test.describe('/kit — responsive @steps-responsive', () => {
 
 test.describe('/kit — a11y @steps-a11y', () => {
   test('0 violation axe sérieuse/critique sur la timeline', async ({ page }) => {
-    await page.goto('/kit');
+    await page.goto('/kit?cta=scroll');
     await page
       .locator('[data-testid="steps-timeline"]')
       .scrollIntoViewIfNeeded();

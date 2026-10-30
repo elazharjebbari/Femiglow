@@ -17,7 +17,7 @@ export const menuEntries: MenuEntry[] = [
   {
     label: 'Le pack',
     href: routes.kit,
-    description: 'Paste, powder, polissoir Step 4. Cinq minutes, une fois par semaine.',
+    description: 'Pâte, poudre, polissoir Step 4. Cinq minutes, une fois par semaine.',
     vignette: { src: '/maison/cross-kit.png', alt: '' },
   },
   {

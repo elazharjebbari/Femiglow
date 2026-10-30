@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
-import { useNetworkInfo } from './useNetworkInfo';
+import { allowsUnrequestedMedia, useNetworkInfo } from './useNetworkInfo';
 
 const original = (navigator as unknown as { connection?: unknown }).connection;
 
@@ -31,5 +31,20 @@ describe('useNetworkInfo', () => {
     expect(result.current.effectiveType).toBe('4g');
     expect(result.current.saveData).toBe(true);
     expect(result.current.downlink).toBe(5);
+  });
+});
+
+describe('allowsUnrequestedMedia', () => {
+  it('autorise 4g et réseau inconnu', () => {
+    expect(allowsUnrequestedMedia({ effectiveType: '4g', saveData: false })).toBe(true);
+    expect(allowsUnrequestedMedia({ effectiveType: 'unknown', saveData: false })).toBe(true);
+  });
+
+  it('refuse saveData, même en 4g', () => {
+    expect(allowsUnrequestedMedia({ effectiveType: '4g', saveData: true })).toBe(false);
+  });
+
+  it.each(['slow-2g', '2g', '3g'] as const)('refuse un réseau %s', (effectiveType) => {
+    expect(allowsUnrequestedMedia({ effectiveType, saveData: false })).toBe(false);
   });
 });

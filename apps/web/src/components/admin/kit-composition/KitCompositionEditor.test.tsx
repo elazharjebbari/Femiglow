@@ -88,7 +88,7 @@ describe('KitCompositionEditor — rendu', () => {
         source="mock"
       />,
     );
-    expect(screen.getByText(/1 Paste/)).toBeDefined();
+    expect(screen.getByText(/1 Pâte/)).toBeDefined();
   });
 });
 

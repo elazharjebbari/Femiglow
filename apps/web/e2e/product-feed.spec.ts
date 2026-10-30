@@ -32,8 +32,8 @@ test.describe('Feed produit — public', () => {
 
     // 4 gestes du rituel (titres officiels).
     await expect(section.getByText(/Préparez vos ongles/i)).toBeVisible();
-    await expect(section.getByText(/Appliquez Paste/i)).toBeVisible();
-    await expect(section.getByText(/Appliquez Powder/i)).toBeVisible();
+    await expect(section.getByText(/Appliquez la pâte/i)).toBeVisible();
+    await expect(section.getByText(/Appliquez la poudre/i)).toBeVisible();
     await expect(section.getByText(/Brillance naturelle/i)).toBeVisible();
 
     // Pastilles 1..4 visibles.

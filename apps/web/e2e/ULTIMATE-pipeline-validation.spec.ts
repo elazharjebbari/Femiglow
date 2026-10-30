@@ -23,7 +23,8 @@
 
 import { test, expect, type Request } from '@playwright/test';
 
-const KIT_PATH = '/kit';
+// Kit CRO v2 — parcours historique par défilement (cf. kit-commander-sheet.spec).
+const KIT_PATH = '/kit?cta=scroll';
 
 test.describe('ULTIMATE pipeline tracking', () => {
   let trackRequests: Array<{ events: Array<Record<string, unknown>> }> = [];

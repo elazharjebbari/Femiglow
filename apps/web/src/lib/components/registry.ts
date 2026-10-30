@@ -21,6 +21,7 @@ import type {
   MediaLoadingStrategy,
   SlotDefinition,
 } from '@/lib/db/types';
+import type { KitAngle } from '@/lib/kit/angle';
 
 /**
  * Politique de génération des variants pour un composant.
@@ -157,6 +158,108 @@ const SLOT_VIDEO_SOURCE: SlotDefinition = {
   aspectRatioHint: '16/9',
   recommendedWidth: 1920,
 };
+
+/**
+ * Kit CRO v2 §3 — textes du hero /kit par angle publicitaire. Valeurs par
+ * défaut en FR, ton direct des publicités. Chaque champ vide reprend le titre
+ * habituel (`marketing.kit.hero.*`). Garde-fou : `kit-facts.guard.test.ts`.
+ */
+const KIT_HERO_ANGLE_COPY: ReadonlyArray<{
+  angle: KitAngle;
+  name: string;
+  brief: string;
+  kicker: string;
+  titleCategory: string;
+  titlePromise: string;
+}> = [
+  {
+    angle: 'a',
+    name: 'Angle A',
+    brief: '« ça brille, pas du vernis » — l’éclat vient de l’ongle lui-même, pas d’une couche de vernis.',
+    kicker: 'Manucure japonaise · sans vernis',
+    titleCategory: 'Kit de manucure japonaise,',
+    titlePromise: 'ça brille, et ce n’est pas du vernis',
+  },
+  {
+    angle: 'b',
+    name: 'Angle B',
+    brief: '« zéro vernis et ça brille » — aucun produit à poser, et l’ongle brille quand même.',
+    kicker: 'Zéro vernis · zéro lampe UV',
+    titleCategory: 'Kit de manucure japonaise,',
+    titlePromise: 'zéro vernis, et vos ongles brillent',
+  },
+  {
+    angle: 'c',
+    name: 'Angle C',
+    brief: '« fini le semi-permanent » — une pause pour les ongles abîmés par le semi-permanent.',
+    kicker: 'Une pause avec le semi-permanent',
+    titleCategory: 'Kit de manucure japonaise,',
+    titlePromise: 'des ongles nus qui brillent',
+  },
+  {
+    angle: 'd',
+    name: 'Angle D',
+    brief: '« rien à retirer avant le woudou » — aucune couche sur l’ongle : l’eau des ablutions passe.',
+    kicker: 'Compatible woudou',
+    titleCategory: 'Kit de manucure japonaise,',
+    titlePromise: 'des ongles soignés, rien à retirer avant le woudou',
+  },
+  {
+    angle: 'e',
+    name: 'Angle E',
+    brief: '« salon ou 99 DH » — le rendu du salon à la maison, sans rendez-vous. Pas de prix dans le titre : il dépend du code promo (199 DH sans code).',
+    kicker: 'Sans rendez-vous · sans vernis',
+    titleCategory: 'Kit de manucure japonaise,',
+    // Sans prix : un visiteur sans code promo voit 199 DH, pas 99 DH.
+    titlePromise: 'le soin du salon, chez vous, sans rendez-vous',
+  },
+  {
+    angle: 'temoin',
+    name: 'Témoin',
+    brief: '« manucure japonaise à la maison » — publicités témoin (temoin-…), message générique.',
+    kicker: 'La manucure japonaise à la maison',
+    titleCategory: 'Kit de manucure japonaise,',
+    titlePromise: 'des ongles qui brillent en cinq minutes',
+  },
+];
+
+const KIT_HERO_ANGLE_FIELD_DEFS: ComponentFieldDefinition[] = KIT_HERO_ANGLE_COPY.flatMap(
+  (copy, index): ComponentFieldDefinition[] => [
+    {
+      key: `${copy.angle}_kicker`,
+      label: `${copy.name} — sur-titre`,
+      type: 'text',
+      required: false,
+      defaultValue: copy.kicker,
+      description: `${copy.brief} Petite ligne au-dessus du titre.`,
+      group: copy.name,
+      order: index * 3 + 1,
+      config: { maxLength: 60 },
+    },
+    {
+      key: `${copy.angle}_titleCategory`,
+      label: `${copy.name} — titre, ligne 1 (ce que c’est)`,
+      type: 'text',
+      required: false,
+      defaultValue: copy.titleCategory,
+      description: `${copy.brief} Première ligne du titre : le produit, avec les mots que l’on cherche (« manucure japonaise »). Courte, pour tenir sur une ligne en mobile.`,
+      group: copy.name,
+      order: index * 3 + 2,
+      config: { maxLength: 80 },
+    },
+    {
+      key: `${copy.angle}_titlePromise`,
+      label: `${copy.name} — titre, ligne 2 (la promesse)`,
+      type: 'text',
+      required: false,
+      defaultValue: copy.titlePromise,
+      description: `${copy.brief} Deuxième ligne du titre : ce que la cliente y gagne, dans les mots de la publicité.`,
+      group: copy.name,
+      order: index * 3 + 3,
+      config: { maxLength: 90 },
+    },
+  ],
+);
 
 export const SITE_COMPONENT_REGISTRY: SiteComponentSeed[] = [
   /* ───── Home ───── */
@@ -701,7 +804,7 @@ export const SITE_COMPONENT_REGISTRY: SiteComponentSeed[] = [
         acceptKinds: ['image'],
         aspectRatioHint: '4/5',
         recommendedWidth: 1200,
-        description: 'Main qui applique la paste, orientation droite (cible droitière).',
+        description: 'Main qui applique la pâte, orientation droite (cible droitière).',
         cropToAspect: false,
         objectFitDefault: 'cover',
       },
@@ -742,7 +845,7 @@ export const SITE_COMPONENT_REGISTRY: SiteComponentSeed[] = [
         type: 'multiline',
         required: false,
         defaultValue:
-          "Le pack FemiGlow associe deux soins et un polissoir, pensés pour la manucure japonaise. Une paste qui lisse, une powder qui lustre, un polissoir Step 4 Polish & Shine. Sans vernis, sans lampe UV, sans acétone. Quatre gestes, une fois par semaine. L'ongle nu retrouve sa lumière. Le woudou reste intact.",
+          "Le pack FemiGlow associe deux soins et un polissoir, pensés pour la manucure japonaise. Une pâte qui lisse, une poudre qui lustre, un polissoir Step 4 Polish & Shine. Sans vernis, sans lampe UV, sans acétone. Quatre gestes, une fois par semaine. L'ongle nu retrouve sa lumière. Le woudou reste intact.",
         description:
           "Texte descriptif. Affiché sous les chips attribut, au-dessus du prix.",
         group: 'Contenu',
@@ -874,7 +977,7 @@ export const SITE_COMPONENT_REGISTRY: SiteComponentSeed[] = [
     key: 'kit-pack-visual',
     name: 'Pack /kit — packshot section Kolenda §4.6',
     description:
-      'Packshot du Pack FemiGlow (paste + powder + polissoir Step 4 Polish & Shine) affiché dans le bloc prix de la section « Le Pack ». Aspect ratio 4/5.',
+      'Packshot du Pack FemiGlow (pâte + poudre + polissoir Step 4 Polish & Shine) affiché dans le bloc prix de la section « Le Pack ». Aspect ratio 4/5.',
     category: 'section',
     pageGroup: 'kit',
     filePath: 'src/components/sections/PackVisual.tsx',
@@ -931,6 +1034,144 @@ export const SITE_COMPONENT_REGISTRY: SiteComponentSeed[] = [
     defaultLoadingStrategy: 'eager',
     defaultFetchPriority: 'auto',
     supportsAnimation: false,
+  },
+  {
+    // Kit CRO v2 §2 — réglage commercial du formulaire de commande /kit :
+    // les boutons « Commander » font défiler jusqu'au formulaire (`scroll`),
+    // l'ouvrent dans un panneau en bas d'écran (`sheet`), ou répartissent les
+    // visiteurs entre les deux (`ab`, attribution stable par visiteur).
+    // Réglage global : lu sur la locale `fr` (cf. `kit-checkout-config.server`).
+    key: 'kit-checkout',
+    name: 'Formulaire de commande /kit',
+    description:
+      "Mode d'ouverture du formulaire au clic sur « Commander » : défilement, panneau en bas d'écran, ou test A/B entre les deux.",
+    category: 'form',
+    pageGroup: 'kit',
+    filePath: 'src/components/sections/KitCommanderSection.tsx',
+    slots: [],
+    defaultSvgFallback: null,
+    defaultLoadingStrategy: 'eager',
+    defaultFetchPriority: 'auto',
+    supportsAnimation: false,
+    metadata: { routeScope: '/kit', adminFirst: true },
+    fields: [
+      {
+        key: 'ctaMode',
+        label: 'Ouverture du formulaire',
+        type: 'enum',
+        required: true,
+        defaultValue: 'scroll',
+        description:
+          "« Défilement » : comportement historique. « Panneau » : le formulaire s'ouvre par-dessus la page. « Test A/B » : chaque visiteur voit toujours la même version, selon la part ci-dessous. Recette : ajouter ?cta=sheet ou ?cta=scroll à l'URL.",
+        group: 'Comportement',
+        order: 1,
+        config: {
+          options: [
+            { value: 'scroll', label: 'Défilement jusqu’au formulaire' },
+            { value: 'sheet', label: 'Panneau en bas d’écran' },
+            { value: 'ab', label: 'Test A/B (défilement / panneau)' },
+          ],
+        },
+      },
+      {
+        key: 'sheetSharePct',
+        label: 'Part des visiteurs en panneau (%)',
+        type: 'number',
+        required: true,
+        defaultValue: 50,
+        description:
+          "Utilisé uniquement en « Test A/B ». 0 = tout le monde en défilement, 100 = tout le monde en panneau. Modifier la part en cours de test réattribue une partie des visiteurs.",
+        group: 'Comportement',
+        order: 2,
+        config: { min: 0, max: 100, step: 1 },
+      },
+    ],
+  },
+  {
+    // Kit CRO v2 §3 — titre du hero selon l'angle de la publicité
+    // (`utm_content`). Champs texte simples uniquement (cf. DESIGN §6 :
+    // l'encodage des listes en admin n'est pas fiable). Valeurs par défaut
+    // en FR ; AR/EN passent par des textes publiés (non-FR ignore le registre).
+    key: 'kit-hero-angles',
+    name: 'Hero Kit — titres par angle publicitaire',
+    description:
+      "Sur-titre et titre du hero /kit selon l'angle de la publicité (paramètre utm_content : A-…, B-…, C-…, D-…, E-…, temoin-…). Un champ vide reprend le titre habituel. Recette : ajouter ?angle=a (… e, temoin) à l'URL.",
+    category: 'hero',
+    pageGroup: 'kit',
+    filePath: 'src/components/sections/HeroProduitBound.tsx',
+    slots: [],
+    defaultSvgFallback: null,
+    defaultLoadingStrategy: 'eager',
+    defaultFetchPriority: 'high',
+    supportsAnimation: false,
+    metadata: { routeScope: '/kit', adminFirst: true },
+    fields: KIT_HERO_ANGLE_FIELD_DEFS,
+  },
+  {
+    // Kit CRO v2 §4 — libellés des boutons de commande, ton direct.
+    // `{price}` est remplacé côté client par le prix réellement facturé
+    // (99 DH avec GLOW99, sinon le prix catalogue).
+    key: 'kit-cta',
+    name: 'Boutons de commande /kit',
+    description:
+      'Libellés des boutons « Commander » de /kit : bouton du hero, barre en bas d’écran, bouton du bloc pack et micro-texte sous le bouton du hero.',
+    category: 'cta',
+    pageGroup: 'kit',
+    filePath: 'src/lib/kit/cta-copy.server.ts',
+    slots: [],
+    defaultSvgFallback: null,
+    defaultLoadingStrategy: 'eager',
+    defaultFetchPriority: 'auto',
+    supportsAnimation: false,
+    metadata: { routeScope: '/kit', adminFirst: true },
+    fields: [
+      {
+        key: 'ctaPrimary',
+        label: 'Bouton du hero',
+        type: 'text',
+        required: false,
+        defaultValue: 'Je commande — {price}',
+        description:
+          'Bouton principal sous le prix. {price} affiche le prix payé (ex. « 99 DH » avec le code GLOW99). Sans {price}, le texte est affiché tel quel.',
+        group: 'Boutons',
+        order: 1,
+        config: { maxLength: 40 },
+      },
+      {
+        key: 'ctaSticky',
+        label: 'Bouton de la barre en bas d’écran',
+        type: 'text',
+        required: false,
+        defaultValue: 'Je commande',
+        description:
+          'Bouton compact de la barre qui apparaît en bas d’écran après le hero. Court : le prix est déjà affiché à côté. {price} est accepté.',
+        group: 'Boutons',
+        order: 2,
+        config: { maxLength: 24 },
+      },
+      {
+        key: 'ctaPack',
+        label: 'Bouton du bloc pack',
+        type: 'text',
+        required: false,
+        defaultValue: 'Je commande — {price}',
+        description: 'Bouton du bloc « Le pack » (prix détaillé). {price} affiche le prix payé.',
+        group: 'Boutons',
+        order: 3,
+        config: { maxLength: 40 },
+      },
+      {
+        key: 'ctaMicrocopy',
+        label: 'Micro-texte sous le bouton du hero',
+        type: 'text',
+        required: false,
+        defaultValue: 'Je paie à la livraison',
+        description: 'Une ligne courte sous le bouton du hero, qui lève le dernier doute avant le clic.',
+        group: 'Réassurance',
+        order: 4,
+        config: { maxLength: 60 },
+      },
+    ],
   },
 
   /* ───── Maison ───── */

@@ -1,3 +1,4 @@
+import type { ComponentProps } from 'react';
 import { afterEach, describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { HeroProduit, type HeroProduitFields } from './HeroProduit';
@@ -53,10 +54,10 @@ describe('HeroProduit', () => {
     expect(h1).toHaveAttribute('id', 'hero-kit-title');
   });
 
-  it('rend le CTA principal « Commander le rituel » (charte VII.5)', () => {
+  it('rend le CTA principal en ton direct, prix inclus (Kit CRO v2 §4)', () => {
     renderHero();
     expect(
-      screen.getByRole('button', { name: /commander le rituel/i }),
+      screen.getByRole('button', { name: /^je commande — 199\s*DH$/i }),
     ).toBeInTheDocument();
   });
 
@@ -125,6 +126,93 @@ describe('HeroProduit', () => {
       renderHero();
       expect(screen.getByText(/^179\s*MAD/)).toBeInTheDocument();
       expect(screen.queryByTestId('hero-promo-applied')).toBeNull();
+    });
+
+    it('Kit CRO v2 §4 — le bouton suit le prix réellement payé (GLOW99 → 99 DH)', () => {
+      useWizardStore.getState().setCoupon('GLOW99', 10000, 'promo');
+      renderHero();
+      expect(
+        screen.getByRole('button', { name: /^je commande — 99\s*DH$/i }),
+      ).toBeInTheDocument();
+    });
+  });
+
+  describe('Kit CRO v2 — gabarit du bouton, micro-texte, angle', () => {
+    function renderWith(props: Partial<ComponentProps<typeof HeroProduit>> = {}) {
+      return render(
+        <ToastProvider>
+          <HeroProduit
+            product={product}
+            reassurances={reassurances}
+            galleryImages={galleryImages}
+            fields={fields}
+            reviewStats={REVIEW_STATS}
+            {...props}
+          />
+        </ToastProvider>,
+      );
+    }
+
+    it('gabarit CMS + micro-texte sous le bouton', () => {
+      renderWith({
+        strings: {
+          kicker: 'Compatible woudou',
+          ctaLabel: 'Je réserve le mien — {price}',
+          ctaMicrocopy: 'Je paie à la livraison',
+        },
+      });
+      expect(
+        screen.getByRole('button', { name: /^je réserve le mien — 199\s*DH$/i }),
+      ).toBeInTheDocument();
+      expect(screen.getByTestId('hero-cta-microcopy')).toHaveTextContent('Je paie à la livraison');
+    });
+
+    it('gabarit sans {price} : affiché tel quel ; pas de micro-texte sans texte', () => {
+      renderWith({ strings: { kicker: 'K', ctaLabel: 'Commander' } });
+      expect(screen.getByRole('button', { name: /^commander$/i })).toBeInTheDocument();
+      expect(screen.queryByTestId('hero-cta-microcopy')).toBeNull();
+    });
+
+    it('AR : prix en درهم dans le bouton', () => {
+      renderWith({
+        strings: { kicker: 'K', ctaLabel: 'اطلبي الآن — {price}', ctaMicrocopy: 'الدفع عند الاستلام' },
+        priceLocale: 'ar',
+      });
+      // Espace insécable entre montant et unité.
+      expect(screen.getByTestId('kit-commander-anchor-button').textContent).toBe(
+        'اطلبي الآن — 199\u00A0درهم',
+      );
+      expect(screen.getByTestId('hero-cta-microcopy')).toHaveTextContent('الدفع عند الاستلام');
+    });
+
+    it('titre par angle : kicker + deux lignes fournis par le serveur', () => {
+      renderWith({
+        strings: {
+          kicker: 'Sans rendez-vous · sans vernis',
+          ctaLabel: 'Je commande — {price}',
+          titleCategory: 'Kit de manucure japonaise,',
+          titlePromise: 'le soin du salon, chez vous, sans rendez-vous',
+        },
+        kitAngle: 'e',
+      });
+      const h1 = screen.getByRole('heading', { level: 1 });
+      expect(h1).toHaveTextContent('Kit de manucure japonaise, le soin du salon, chez vous, sans rendez-vous');
+      expect(screen.getByText('Sans rendez-vous · sans vernis')).toBeInTheDocument();
+    });
+
+    it('pose data-kit-angle sur la section (lu au clic par les boutons)', () => {
+      const { container } = renderWith({ kitAngle: 'e' });
+      expect(container.querySelector('section')?.getAttribute('data-kit-angle')).toBe('e');
+    });
+
+    it('sans angle sur /kit : data-kit-angle="none"', () => {
+      const { container } = renderWith({ kitAngle: null });
+      expect(container.querySelector('section')?.getAttribute('data-kit-angle')).toBe('none');
+    });
+
+    it('hors /kit (prop absente) : aucun attribut', () => {
+      const { container } = renderWith();
+      expect(container.querySelector('section')?.hasAttribute('data-kit-angle')).toBe(false);
     });
   });
 

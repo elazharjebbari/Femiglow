@@ -56,6 +56,26 @@
     letter-spacing: 0;
   }
 
+  /*
+    Kit CRO v2 §1 — Cairo n'a pas de style italique : le navigateur synthétise
+    alors un faux italique (glyphes penchés, illisible en arabe). En AR on
+    neutralise donc l'italique des utilitaires (`.italic`), des balises
+    sémantiques et des titres. La spécificité `html[lang='ar'] …` l'emporte sur
+    l'utilitaire Tailwind `.italic`. Rendu FR/EN inchangé.
+  */
+  html[lang='ar'] .italic,
+  html[lang='ar'] em,
+  html[lang='ar'] i,
+  html[lang='ar'] cite,
+  html[lang='ar'] h1,
+  html[lang='ar'] h2,
+  html[lang='ar'] h3,
+  html[lang='ar'] h4,
+  html[lang='ar'] h5,
+  html[lang='ar'] h6 {
+    font-style: normal;
+  }
+
   body {
     margin: 0;
     font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;

@@ -23,6 +23,16 @@ const REQUIRED_KEYS = [
   'marketing.kit.metadata.title_fallback',
   'marketing.kit.metadata.description_fallback',
   'marketing.kit.metadata.og_alt',
+  // Kit CRO v2 §4 — repli i18n des libellés de commande (`kit-cta`) et
+  // gabarit du bouton du bloc pack (overlay AR/EN).
+  'marketing.kit.cta.primary',
+  'marketing.kit.cta.sticky',
+  'marketing.kit.cta.microcopy',
+  'marketing.kit.product_feed.hero.cta_label',
+  // Kit CRO v2 §3 — titre par défaut (repli des angles `kit-hero-angles`).
+  'marketing.kit.hero.kicker',
+  'marketing.kit.hero.title_category',
+  'marketing.kit.hero.title_promise',
 ] as const;
 
 describe('Contract: /[locale]/kit — keys exist in FR/AR/EN', () => {

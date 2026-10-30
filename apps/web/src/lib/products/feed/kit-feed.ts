@@ -128,9 +128,9 @@ function buildSteps(): ProductFeedStep[] {
     {
       step: 2,
       kicker: 'Geste 1',
-      title: 'Appliquez la paste',
+      title: 'Appliquez la p\u00E2te',
       description:
-        'Une noisette de paste, le polissoir glisse, la cire d\u2019abeille nourrit la k\u00E9ratine.',
+        'Une noisette de p\u00E2te, le polissoir glisse, la cire d\u2019abeille nourrit la k\u00E9ratine.',
       accent: 'sauge',
       duration: '1\u00A0min',
       icon: 'drop',
@@ -138,9 +138,9 @@ function buildSteps(): ProductFeedStep[] {
     {
       step: 3,
       kicker: 'Geste 2',
-      title: 'Appliquez la powder',
+      title: 'Appliquez la poudre',
       description:
-        'On d\u00E9pose un voile de powder blanche, on lustre lentement, la lumi\u00E8re revient \u00E0 la surface.',
+        'On d\u00E9pose un voile de poudre blanche, on lustre lentement, la lumi\u00E8re revient \u00E0 la surface.',
       accent: 'petale',
       duration: '2\u00A0min',
       icon: 'sparkle',
@@ -300,8 +300,8 @@ function buildHero(product: Product): ProductFeedHero {
   const polissoirVal = compareMajor - pasteVal - powderVal;
 
   const valueBreakdown: ProductFeedValueItem[] = [
-    { label: `Paste · ${KIT_FACTS.paste.grams}\u00A0g`, valueLabel: `${pasteVal} ${currencyUnit}` },
-    { label: `Powder · ${KIT_FACTS.powder.grams}\u00A0g`, valueLabel: `${powderVal} ${currencyUnit}` },
+    { label: `P\u00E2te · ${KIT_FACTS.paste.grams}\u00A0g`, valueLabel: `${pasteVal} ${currencyUnit}` },
+    { label: `Poudre · ${KIT_FACTS.powder.grams}\u00A0g`, valueLabel: `${powderVal} ${currencyUnit}` },
     {
       label: `Polissoir Step\u00A04 · ${KIT_FACTS.polissoir.faces} faces`,
       valueLabel: `${polissoirVal} ${currencyUnit}`,
@@ -319,12 +319,14 @@ function buildHero(product: Product): ProductFeedHero {
     // Présent + verbes d'action (Copy #1).
     title: `Le rituel s’installe en ${KIT_COPY.fr.gesturesLower}, ${KIT_COPY.fr.frequency}.`,
     lead:
-      'Trois objets dans la main, cinq minutes devant soi. La paste nourrit, la powder lustre, le polissoir Step 4 révèle — manucure japonaise, pensée à Rabat.',
+      'Trois objets dans la main, cinq minutes devant soi. La pâte nourrit, la poudre lustre, le polissoir Step 4 révèle — manucure japonaise, pensée à Rabat.',
     pricePrefix: 'Tout compris :',
-    ctaLabel: 'Commander le rituel',
+    // Kit CRO v2 §4 — ton direct ; `{price}` est rempli côté client (prix net
+    // du code appliqué). Surchargé par `kit-cta/ctaPack` s'il est publié.
+    ctaLabel: 'Je commande — {price}',
     // Microcopy serrée (Pricing #11) — chiffres précis (Pricing #14).
     ctaMicrocopy:
-      'Paste · Powder · Polissoir Step 4 inclus · Livraison partout au Maroc · Paiement à la livraison · Retour 30 j.',
+      'Pâte · Poudre · Polissoir Step 4 inclus · Livraison partout au Maroc · Paiement à la livraison · Retour 30 j.',
     priceCompareAt: compareLabel,
     priceCompareAtAriaLabel: `Prix non packagé ${compareLabel}`,
     valueBreakdown,
