@@ -13,8 +13,8 @@ Base : `feat/kit-coherence` (9634f247), le build en prod.
 | 4 | Titre par angle : composant CMS `kit-hero-angles`, résolution dans la page | Claude | Tests de résolution verts, `?utm_content=E-darija` affiche l'angle E | Fait |
 | 5 | Ton direct : composant CMS `kit-cta`, « pâte / poudre » | Claude | Garde-fou `kit-facts` et parité i18n verts | Fait |
 | 6 | Vérification complète : typecheck, lint, tests, build | Claude | Tout vert | Fait |
-| 7 | Revue de code de la branche | Claude | Aucun problème bloquant ouvert | En cours |
-| 8 | PR vers la branche de prod | Claude | PR ouverte, description avec plan de recette | À faire |
+| 7 | Revue de code de la branche | Claude | Aucun problème bloquant ouvert | Fait (10 retours corrigés) |
+| 8 | PR vers la branche de prod | Claude | PR ouverte, description avec plan de recette | Fait : PR #12 |
 | 9 | Synchronisation du registre en prod (`sync:components`) puis publication des textes dans l'admin | Utilisateur ou Claude sur accord | Champs visibles dans `/admin/components` | Accord requis |
 | 10 | Déploiement en prod (script de bascule sans coupure) | Claude sur accord explicite | Page `/fr/kit` et `/ar/kit` OK, commande test OK | Accord requis |
 | 11 | Activation : `kit-checkout.ctaMode = ab`, `sheetSharePct = 50` | Utilisateur dans l'admin | Variante B visible pour la moitié des visiteurs | Accord requis |
