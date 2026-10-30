@@ -45,6 +45,9 @@ import type {
   ComponentAnimationBinding,
   ComponentFieldBinding,
   ComponentFieldHistoryEntry,
+  ComponentMediaSet,
+  ComponentMediaSetItem,
+  ComponentMediaSetHistoryEntry,
   WebhookDelivery,
   WebhookEndpoint,
   OutboundWebhookLogRow,
@@ -95,6 +98,10 @@ interface Store {
   componentAnimationBindings: Map<string, ComponentAnimationBinding>;
   componentFieldBindings: Map<string, ComponentFieldBinding>;
   componentFieldHistory: Map<string, ComponentFieldHistoryEntry>;
+  // Médias par audience (cf. docs/hero-media-par-angle/05-architecture-technique.md)
+  componentMediaSets: Map<string, ComponentMediaSet>;
+  componentMediaSetItems: Map<string, ComponentMediaSetItem>;
+  componentMediaSetHistory: Map<string, ComponentMediaSetHistoryEntry>;
   insightsEventDaily: Map<string, InsightsEventDailyRow>;
   insightsPageDaily: Map<string, InsightsPageDailyRow>;
   insightsComponentDaily: Map<string, InsightsComponentDailyRow>;
@@ -149,6 +156,9 @@ function makeStore(): Store {
     componentAnimationBindings: new Map(),
     componentFieldBindings: new Map(),
     componentFieldHistory: new Map(),
+    componentMediaSets: new Map(),
+    componentMediaSetItems: new Map(),
+    componentMediaSetHistory: new Map(),
     insightsEventDaily: new Map(),
     insightsPageDaily: new Map(),
     insightsComponentDaily: new Map(),

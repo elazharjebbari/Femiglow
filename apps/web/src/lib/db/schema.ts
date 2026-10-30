@@ -388,6 +388,12 @@ export const media = pgTable(
     loadingStrategy: mediaLoadingStrategy('loading_strategy').notNull().default('viewport'),
     isHero: boolean('is_hero').notNull().default(false),
     overrides: jsonb('overrides').notNull().default({}),
+    /**
+     * Placeholder `data:image/...;base64` (~1 Ko) calculé par le pipeline
+     * d'optimisation. NULL tant que le backfill n'est pas passé.
+     * cf. docs/hero-media-par-angle/05-architecture-technique.md §4.5
+     */
+    blurDataUrl: text('blur_data_url'),
     createdBy: text('created_by').references(() => adminUsers.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -1262,6 +1268,130 @@ export const componentFieldHistory = pgTable(
     bindingIdx: index('cfh_binding_idx').on(t.bindingId, t.createdAt),
     triplet: index('cfh_triplet').on(t.componentId, t.fieldKey, t.locale, t.createdAt),
     createdAtIdx: index('cfh_created_at_idx').on(t.createdAt),
+  }),
+);
+
+/* ─────────────────────────────────────────────────────────────────────
+ * COMPONENT MEDIA VARIANTS — médias par audience (angle, A/B) et langue
+ * Un « ensemble » (set) = la liste complète d'images d'un slot pour un
+ * tuple (composant, slot, dimension, clé, langue). Cycle de vie calqué sur
+ * `component_field_bindings` (draft / published / scheduled / archived).
+ * La sentinelle `'*'` remplace NULL (« toutes langues », « toutes clés »)
+ * pour garder des index uniques simples.
+ * cf. docs/hero-media-par-angle/05-architecture-technique.md §4.1
+ * ───────────────────────────────────────────────────────────────────── */
+
+export const componentMediaSets = pgTable(
+  'component_media_sets',
+  {
+    id: text('id').primaryKey(),
+    componentId: text('component_id')
+      .notNull()
+      .references(() => siteComponents.id, { onDelete: 'cascade' }),
+    /** Slot de la politique `mediaVariants` (`primary`, `secondary`…). */
+    slot: text('slot').notNull(),
+    /** `default` | `angle` | `ab:<expKey>`. */
+    variantDim: text('variant_dim').notNull().default('default'),
+    /** `e` | `temoin` | `*` (sentinelle pour la dimension `default`). */
+    variantKey: text('variant_key').notNull().default('*'),
+    /** `fr` | `ar` | `en` | `*`. */
+    locale: text('locale').notNull().default('*'),
+    /** Images sans texte → réutilisables hors de leur langue (repli niveaux 3 et 6). */
+    crossLocale: boolean('cross_locale').notNull().default(false),
+    status: fieldBindingStatusEnum('status').notNull().default('draft'),
+    version: integer('version').notNull().default(1),
+    publishedAt: timestamp('published_at', { withTimezone: true }),
+    scheduledAt: timestamp('scheduled_at', { withTimezone: true }),
+    /** `admin` | `import`. */
+    source: text('source').notNull().default('admin'),
+    notes: text('notes'),
+    authorId: text('author_id').references(() => adminUsers.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    publishedUnique: uniqueIndex('cms_set_publish_uniq')
+      .on(t.componentId, t.slot, t.variantDim, t.variantKey, t.locale)
+      .where(sql`${t.status} = 'published'`),
+    draftUnique: uniqueIndex('cms_set_draft_uniq')
+      .on(t.componentId, t.slot, t.variantDim, t.variantKey, t.locale)
+      .where(sql`${t.status} = 'draft'`),
+    // Au plus UNE programmation en attente par tuple (cf. `scheduleSet`).
+    scheduledUnique: uniqueIndex('cms_set_scheduled_uniq')
+      .on(t.componentId, t.slot, t.variantDim, t.variantKey, t.locale)
+      .where(sql`${t.status} = 'scheduled'`),
+    lookupIdx: index('cms_set_lookup').on(t.componentId, t.status),
+    scheduledIdx: index('cms_set_scheduled')
+      .on(t.status, t.scheduledAt)
+      .where(sql`${t.status} = 'scheduled'`),
+  }),
+);
+
+export const componentMediaSetItems = pgTable(
+  'component_media_set_items',
+  {
+    id: text('id').primaryKey(),
+    setId: text('set_id')
+      .notNull()
+      .references(() => componentMediaSets.id, { onDelete: 'cascade' }),
+    /** Ordre d'affichage (0 = première image). */
+    position: integer('position').notNull(),
+    /** RESTRICT : impossible de supprimer définitivement un média référencé. */
+    mediaId: text('media_id')
+      .notNull()
+      .references(() => media.id, { onDelete: 'restrict' }),
+    /** Art direction mobile (3:4). NULL = même média que desktop. */
+    mobileMediaId: text('mobile_media_id').references(() => media.id, {
+      onDelete: 'restrict',
+    }),
+    /** Alt par langue : `{ fr?, ar?, en? }`. */
+    alt: jsonb('alt').notNull().default({}),
+    objectPosition: mediaObjectPositionEnum('object_position'),
+    focalX: integer('focal_x'),
+    focalY: integer('focal_y'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    setPosUnique: uniqueIndex('cms_item_set_pos_uniq').on(t.setId, t.position),
+    mediaIdx: index('cms_item_media_idx').on(t.mediaId),
+  }),
+);
+
+export const componentMediaSetHistory = pgTable(
+  'component_media_set_history',
+  {
+    id: text('id').primaryKey(),
+    /**
+     * Ensemble concerné. Volontairement SANS clé étrangère : le journal doit
+     * survivre à la suppression d'un brouillon (`discardDraft`) — la
+     * restauration repose sur le tuple et l'instantané `items`, pas sur l'id.
+     */
+    setId: text('set_id').notNull(),
+    componentId: text('component_id').notNull(),
+    slot: text('slot').notNull(),
+    variantDim: text('variant_dim').notNull(),
+    variantKey: text('variant_key').notNull(),
+    locale: text('locale').notNull(),
+    version: integer('version').notNull(),
+    /** Instantané de la liste d'items au moment de l'action. */
+    items: jsonb('items').notNull(),
+    crossLocale: boolean('cross_locale').notNull(),
+    status: fieldBindingStatusEnum('status').notNull(),
+    action: fieldHistoryActionEnum('action').notNull(),
+    actorId: text('actor_id').references(() => adminUsers.id, { onDelete: 'set null' }),
+    notes: text('notes'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    setIdx: index('cmsh_set_idx').on(t.setId, t.createdAt),
+    tupleIdx: index('cmsh_tuple').on(
+      t.componentId,
+      t.slot,
+      t.variantDim,
+      t.variantKey,
+      t.locale,
+      t.createdAt,
+    ),
   }),
 );
 

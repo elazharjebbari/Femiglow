@@ -300,6 +300,11 @@ export interface Media {
   loadingStrategy: MediaLoadingStrategy;
   isHero: boolean;
   overrides: MediaOverrides;
+  /**
+   * Placeholder `data:` calculé par le pipeline (colonne `blur_data_url`).
+   * Optionnel côté TS : les fixtures antérieures à la colonne restent valides.
+   */
+  blurDataUrl?: string | null;
   createdBy: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -872,6 +877,102 @@ export interface ComponentFieldHistoryEntry {
   action: FieldHistoryAction;
   notes: string | null;
   createdAt: Date;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * Component media variants — médias par audience (angle, A/B) et langue
+ * cf. docs/hero-media-par-angle/05-architecture-technique.md §4.1
+ * ───────────────────────────────────────────────────────────────── */
+
+/** Sentinelle « toutes valeurs » (langue ou clé de variante). */
+export type MediaSetWildcard = '*';
+
+export type MediaSetSource = 'admin' | 'import';
+
+export type MediaSetStatus = FieldBindingStatus;
+
+export type MediaSetHistoryAction = FieldHistoryAction;
+
+/** Alt par langue d'un item (`{ fr?, ar?, en? }`). */
+export type MediaSetItemAlt = Partial<Record<'fr' | 'ar' | 'en', string>>;
+
+export interface ComponentMediaSet {
+  id: string;
+  componentId: string;
+  slot: string;
+  /** `default` | `angle` | `ab:<expKey>` (validé par la politique du registre). */
+  variantDim: string;
+  variantKey: string;
+  locale: string;
+  crossLocale: boolean;
+  status: MediaSetStatus;
+  version: number;
+  publishedAt: Date | null;
+  scheduledAt: Date | null;
+  source: MediaSetSource;
+  notes: string | null;
+  authorId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ComponentMediaSetItem {
+  id: string;
+  setId: string;
+  position: number;
+  mediaId: string;
+  mobileMediaId: string | null;
+  alt: MediaSetItemAlt;
+  objectPosition: MediaObjectPosition | null;
+  focalX: number | null;
+  focalY: number | null;
+  createdAt: Date;
+}
+
+/** Instantané d'un item stocké dans l'historique (sans id ni setId). */
+export interface ComponentMediaSetItemSnapshot {
+  position: number;
+  mediaId: string;
+  mobileMediaId: string | null;
+  alt: MediaSetItemAlt;
+  objectPosition: MediaObjectPosition | null;
+  focalX: number | null;
+  focalY: number | null;
+}
+
+export interface ComponentMediaSetHistoryEntry {
+  id: string;
+  setId: string;
+  componentId: string;
+  slot: string;
+  variantDim: string;
+  variantKey: string;
+  locale: string;
+  version: number;
+  items: ComponentMediaSetItemSnapshot[];
+  crossLocale: boolean;
+  status: MediaSetStatus;
+  action: MediaSetHistoryAction;
+  actorId: string | null;
+  notes: string | null;
+  createdAt: Date;
+}
+
+export interface ComponentMediaSetWithItems extends ComponentMediaSet {
+  items: ComponentMediaSetItem[];
+}
+
+/** Média joint (non supprimé, statut exploitable) avec ses variants. */
+export type MediaSetMedia = Media & { variants: MediaVariant[] };
+
+export interface ComponentMediaSetItemWithMedia extends ComponentMediaSetItem {
+  /** `null` si le média est supprimé (soft delete) ou pas encore prêt. */
+  media: MediaSetMedia | null;
+  mobileMedia: MediaSetMedia | null;
+}
+
+export interface ComponentMediaSetWithMedia extends ComponentMediaSet {
+  items: ComponentMediaSetItemWithMedia[];
 }
 
 export interface ResolvedFieldMeta {

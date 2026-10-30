@@ -68,6 +68,7 @@ export const componentMediaSets = pgTable('component_media_sets', {
 }, (t) => ({
   publishedUnique: uniqueIndex('cms_set_publish_uniq').on(t.componentId, t.slot, t.variantDim, t.variantKey, t.locale).where(sql`${t.status} = 'published'`),
   draftUnique: uniqueIndex('cms_set_draft_uniq').on(t.componentId, t.slot, t.variantDim, t.variantKey, t.locale).where(sql`${t.status} = 'draft'`),
+  scheduledUnique: uniqueIndex('cms_set_scheduled_uniq').on(t.componentId, t.slot, t.variantDim, t.variantKey, t.locale).where(sql`${t.status} = 'scheduled'`),
   lookupIdx: index('cms_set_lookup').on(t.componentId, t.status),
   scheduledIdx: index('cms_set_scheduled').on(t.status, t.scheduledAt).where(sql`${t.status} = 'scheduled'`),
 }));
@@ -90,7 +91,7 @@ export const componentMediaSetItems = pgTable('component_media_set_items', {
 
 export const componentMediaSetHistory = pgTable('component_media_set_history', {
   id: text('id').primaryKey(),
-  setId: text('set_id').notNull().references(() => componentMediaSets.id, { onDelete: 'cascade' }),
+  setId: text('set_id').notNull(),                                // SANS FK : le journal survit à `discardDraft`
   componentId: text('component_id').notNull(),
   slot: text('slot').notNull(),
   variantDim: text('variant_dim').notNull(),
@@ -112,8 +113,14 @@ export const componentMediaSetHistory = pgTable('component_media_set_history', {
 - La sentinelle `'*'` remplace `NULL`, ce qui garde les index uniques simples.
 - `ON DELETE RESTRICT` sur `media` empêche de supprimer définitivement une image publiée.
 - On publie **un ensemble entier** : on ne mélange jamais deux listes.
+- Au plus **un** ensemble `draft`, `published` et `scheduled` par tuple (index partiels). Programmer alors qu'une autre programmation attend est refusé (`schedule.scheduled_exists`) ; publier manuellement archive la programmation en attente (historique `archive`, note `superseded_by_publish:<id>`).
+- `discardDraft` supprime un brouillon et ses items ; l'historique est gardé (`archive`, statut `draft`, note `discard_draft` — l'enum `field_history_action` n'a pas de valeur `discard`), d'où l'absence de FK sur `component_media_set_history.set_id`.
+- Les mutations exigent une transaction interactive (postgres-js en prod, PGlite en test) ; avec neon-http elles échouent (`MediaSetTransactionUnavailableError`) au lieu d'écrire en séquence.
+- La lecture publique met en cache un **DTO compact** (`media-variants/dto.ts` : URL déjà choisie, dimensions, flou, alt, cadrage ; dates ISO), jamais les lignes `media` + variants (limite 2 Mo de `unstable_cache`, ≈ 215 Ko pour 56 ensembles contre ≈ 1,8 Mo en lignes complètes).
 
-Migration `drizzle/migrations/00xx_component_media_sets.sql`, via `_migrate-safe` : 3 `CREATE TABLE`, les index, et `ALTER TABLE media ADD COLUMN blur_data_url text`. Aucune table existante n'est modifiée destructivement.
+Migration `drizzle/migrations/0087_component_media_sets.sql`, via `_migrate-safe` : `SET LOCAL lock_timeout = '3s'` en tête (échec rapide plutôt que d'attendre derrière un verrou sur `media`), 3 `CREATE TABLE`, les index, et `ALTER TABLE media ADD COLUMN blur_data_url text`. Aucune table existante n'est modifiée destructivement.
+
+> **Ordre de déploiement impératif :** toutes les requêtes média (`select()` sur `media`) lisent désormais `blur_data_url`. Un code déployé **avant** la migration casse toutes les images du site. La migration se lance donc **avant** le déploiement du code (cf. §6, §7 et `06-deploiement-pr1-pr2.md`).
 
 ### 4.2 Déclaration générique dans le registre
 
@@ -275,6 +282,8 @@ Les images générées ne sont pas commitées : elles sont copiées sur le serve
 
 ## 6. Plan de livraison (PR successives)
 
+**Règle de déploiement (toutes PR avec migration, à commencer par la PR 1) :** la migration est appliquée **avant** le code — `_migrate-safe --plan`, puis `_migrate-safe`, puis seulement `bin/deploy-prod.sh` (qui ne lance **aucune** migration). La PR 1 l'exige : le schéma Drizzle sélectionne `media.blur_data_url` dans toutes les requêtes média, donc un code sans la colonne en base renvoie une erreur SQL sur chaque image. Les migrations sont additives : l'ancien code tourne sans souci sur le nouveau schéma. Procédure exacte : `06-deploiement-pr1-pr2.md`.
+
 | PR | Contenu | Fichiers principaux |
 |---|---|---|
 | 1 | Données et requêtes | `lib/db/schema.ts`, migration, `lib/db/types.ts`, `lib/db/client.ts` (memoryStore), `lib/db/queries/component-media-sets.ts` (+ tests) |
@@ -288,7 +297,7 @@ Les images générées ne sont pas commitées : elles sont copiées sur le serve
 
 ## 7. Runbook de mise en production
 
-1. Déployer les PR 1 à 5 avec `HERO_MEDIA_VARIANTS=off`, puis `_migrate-safe --plan` et `_migrate-safe` (tables additives).
+1. **D'abord la base, ensuite le code** : `_migrate-safe --plan` (doit lister `0087_component_media_sets` et rien d'inattendu), puis `_migrate-safe` (tables additives, ancien code compatible), **puis** déployer les PR 1 à 5 avec `HERO_MEDIA_VARIANTS=off` via `bin/deploy-prod.sh` (qui ne migre pas). Jamais l'inverse : un code déployé sans la colonne `media.blur_data_url` casse toutes les images. Détail : `06-deploiement-pr1-pr2.md`.
 2. Synchroniser le registre (`syncComponentRegistry`), puis lancer `scripts/backfill-media-blur.ts`.
 3. Copier `generated/` sur le serveur et lancer `import:component-media --dry-run`. Relire le rapport, puis relancer sans `--dry-run` : les ensembles sont créés **en brouillon**.
 4. Dans l'admin : relire la matrice et les alt FR/AR/EN, vérifier l'aperçu par angle et langue, puis publier.

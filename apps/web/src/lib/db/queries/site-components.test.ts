@@ -166,3 +166,63 @@ describe('updateSiteComponent', () => {
     expect(await updateSiteComponent('cmp_xxx', { description: 'nope' })).toBeNull();
   });
 });
+
+describe('upsertSiteComponentFromSeed — metadata.mediaVariants (registre)', () => {
+  const POLICY: NonNullable<SiteComponentSeed['mediaVariants']> = {
+    slots: [{ key: 'primary', kind: 'single', aspect: { all: '4/5' }, legacySlots: ['primary'] }],
+    dimensions: ['angle'],
+  };
+
+  beforeEach(() => {
+    resetMemoryStore();
+  });
+
+  it('écrit la politique à la création sans perdre la metadata du seed', async () => {
+    const c = await upsertSiteComponentFromSeed({ ...SEED_HOME, mediaVariants: POLICY });
+    expect(c.metadata).toEqual({ variant: 'editorial', mediaVariants: POLICY });
+  });
+
+  it('au re-sync : la politique du registre écrase la base, les clés admin sont préservées', async () => {
+    const c = await upsertSiteComponentFromSeed({ ...SEED_HOME, mediaVariants: POLICY });
+    await updateSiteComponent(c.id, {
+      metadata: { custom: true, mediaVariants: { slots: [], dimensions: [] } },
+    });
+    const next = { ...POLICY, dimensions: ['ab:hero-media-2026-11', 'angle'] };
+    const synced = await upsertSiteComponentFromSeed({ ...SEED_HOME, mediaVariants: next });
+    expect(synced.metadata).toEqual({ variant: 'editorial', custom: true, mediaVariants: next });
+    expect((await getSiteComponentByKey(SEED_HOME.key))?.metadata.mediaVariants).toEqual(next);
+  });
+
+  it('retire la politique si le registre ne la déclare plus', async () => {
+    await upsertSiteComponentFromSeed({ ...SEED_HOME, mediaVariants: POLICY });
+    const synced = await upsertSiteComponentFromSeed(SEED_HOME);
+    expect(synced.metadata).toEqual({ variant: 'editorial' });
+  });
+});
+
+describe('updateSiteComponent — metadata.mediaVariants protégée (registre)', () => {
+  const POLICY: NonNullable<SiteComponentSeed['mediaVariants']> = {
+    slots: [{ key: 'primary', kind: 'single', aspect: { all: '4/5' }, legacySlots: ['primary'] }],
+    dimensions: ['angle'],
+  };
+
+  beforeEach(() => {
+    resetMemoryStore();
+  });
+
+  it.each([
+    ['remplacement', { slots: [], dimensions: [] }],
+    ['suppression (null)', null],
+  ])('un PATCH admin ne peut pas modifier la politique : %s', async (_label, value) => {
+    const c = await upsertSiteComponentFromSeed({ ...SEED_HOME, mediaVariants: POLICY });
+    const updated = await updateSiteComponent(c.id, { metadata: { custom: 1, mediaVariants: value } });
+    expect(updated?.metadata).toEqual({ variant: 'editorial', custom: 1, mediaVariants: POLICY });
+    expect((await getSiteComponentByKey(SEED_HOME.key))?.metadata.mediaVariants).toEqual(POLICY);
+  });
+
+  it('ne l’ajoute pas à un composant qui n’en a pas', async () => {
+    const c = await upsertSiteComponentFromSeed(SEED_HOME);
+    const updated = await updateSiteComponent(c.id, { metadata: { mediaVariants: POLICY } });
+    expect(updated?.metadata).toEqual({ variant: 'editorial' });
+  });
+});

@@ -38,6 +38,39 @@ import type { KitAngle } from '@/lib/kit/angle';
  */
 export type ComponentVariantPolicy = 'default' | 'with-thumbnail' | 'thumb-only';
 
+/**
+ * Médias par audience — déclaration d'un slot d'ensemble.
+ * cf. docs/hero-media-par-angle/05-architecture-technique.md §4.2
+ */
+export interface MediaVariantSlotPolicy {
+  /** Clé du slot d'ensemble (`primary`, `secondary`…). Indépendante des slots legacy. */
+  key: string;
+  /** `single` = exactement une image ; `list` = 1 à `maxItems` images ordonnées. */
+  kind: 'single' | 'list';
+  /** Plafond d'une liste (ignoré pour `single`). */
+  maxItems?: number;
+  /** Ratio d'affichage : art direction mobile/desktop, ou ratio unique. */
+  aspect: { mobile: string; desktop: string } | { all: string };
+  /**
+   * Slots `component_media_bindings` utilisés en repli (niveau 7), dans
+   * l'ordre. Doivent exister dans `slots` du composant.
+   */
+  legacySlots?: string[];
+}
+
+/**
+ * Politique « médias par audience » d'un composant. Synchronisée dans
+ * `site_components.metadata.mediaVariants` par `upsertSiteComponentFromSeed`.
+ */
+export interface MediaVariantPolicy {
+  slots: MediaVariantSlotPolicy[];
+  /**
+   * Dimensions d'audience par ordre de priorité décroissante
+   * (ex. `['ab:hero-media-2026-11', 'angle']`). `default` est implicite.
+   */
+  dimensions: string[];
+}
+
 export interface SiteComponentSeed {
   key: string;
   name: string;
@@ -62,7 +95,37 @@ export interface SiteComponentSeed {
    * cf. docs/components-cms/architecture/02-data-model.md
    */
   fields?: ComponentFieldDefinition[];
+  /**
+   * Médias par audience (angle, A/B, langue). Absent = composant non concerné.
+   * Source de vérité = ce registre (écrase `metadata.mediaVariants` au sync).
+   */
+  mediaVariants?: MediaVariantPolicy;
 }
+
+/**
+ * Politique médias par audience du hero kit : un packshot principal et une
+ * liste secondaire (6 au maximum), art direction 3:4 mobile / 4:5 desktop,
+ * variantes par angle publicitaire. Repli : slots legacy `primary`,
+ * puis `context_1` et `context_2`.
+ */
+export const KIT_HERO_MEDIA_VARIANTS: MediaVariantPolicy = {
+  slots: [
+    {
+      key: 'primary',
+      kind: 'single',
+      aspect: { mobile: '3/4', desktop: '4/5' },
+      legacySlots: ['primary'],
+    },
+    {
+      key: 'secondary',
+      kind: 'list',
+      maxItems: 6,
+      aspect: { mobile: '3/4', desktop: '4/5' },
+      legacySlots: ['context_1', 'context_2'],
+    },
+  ],
+  dimensions: ['angle'],
+};
 
 const SLOT_HERO_PRIMARY: SlotDefinition = {
   key: 'primary',
@@ -825,6 +888,7 @@ export const SITE_COMPONENT_REGISTRY: SiteComponentSeed[] = [
     defaultFetchPriority: 'high',
     supportsAnimation: true,
     metadata: { animationProfile: 'scale-hover' },
+    mediaVariants: KIT_HERO_MEDIA_VARIANTS,
     fields: [
       {
         key: 'tagline',
@@ -935,6 +999,20 @@ export const SITE_COMPONENT_REGISTRY: SiteComponentSeed[] = [
         group: 'Galerie',
         order: 8,
         config: { min: 1, max: 12, step: 1 },
+      },
+      {
+        key: 'mediaVariantsEnabled',
+        label: 'Images par audience (angle × langue)',
+        type: 'boolean',
+        required: false,
+        // Coupe-circuit sans déploiement : `false` = galerie historique.
+        // Combiné à la variable d'env `HERO_MEDIA_VARIANTS` et à `?hmv=off`
+        // (cf. lib/feature-flags/hero-media-variants.ts).
+        defaultValue: false,
+        description:
+          "Sans effet pour l'instant : sera lu par la PR d'affichage (pas encore livrée), et seulement si la variable d'environnement HERO_MEDIA_VARIANTS=on est posée sur le serveur. Une fois actif : affiche les images publiées dans l'onglet « Médias par audience » selon l'angle publicitaire et la langue. Désactivé = galerie actuelle.",
+        group: 'Galerie',
+        order: 9,
       },
     ],
   },
