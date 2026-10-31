@@ -135,7 +135,7 @@ export function ConsentBanner({
     <div
       role="dialog"
       aria-labelledby="consent-title"
-      className="fixed inset-x-4 bottom-4 z-50 mx-auto max-w-2xl rounded-2xl border border-stone-200 bg-white/95 p-5 shadow-lg backdrop-blur"
+      className="fixed inset-x-4 bottom-4 z-[calc(var(--z-sticky)+3)] mx-auto max-w-2xl rounded-2xl border border-stone-200 bg-white/95 p-5 shadow-lg backdrop-blur"
     >
       <h2 id="consent-title" className="text-base font-medium text-stone-900">
         {labels.title}
