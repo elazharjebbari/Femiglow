@@ -37,6 +37,7 @@ import { TextField } from '@/components/forms/Field';
 import { PhoneMaskInput } from '@/components/checkout/wizard/PhoneMaskInput';
 import { WizardCheckmark } from '@/components/checkout/wizard/WizardCheckmark';
 import { ResumeBanner } from '@/components/checkout/wizard/ResumeBanner';
+import { toLocalMoroccanDigits } from '@/lib/checkout/helpers/phone-mask';
 import { phoneMaroc9DigitsSchema } from '@/lib/checkout/schemas/common';
 import {
   DEFAULT_CONSENT_VERSION,
@@ -60,8 +61,8 @@ const leadCaptureFormSchema = z.object({
     .min(2, 'Votre prénom (au moins 2 caractères).')
     .max(60, 'Prénom trop long.'),
   /**
-   * Phone — on accepte tous les formats raw côté UI (avec espaces, tiret,
-   * préfixe +212 ou 0). Le `.transform` normalise en 9 chiffres avant
+   * Phone — on accepte tous les formats raw côté UI, autofill compris (cf.
+   * `toLocalMoroccanDigits`). Le `.transform` normalise en 9 chiffres avant
    * envoi serveur (validation finale par phoneMaroc9DigitsSchema).
    */
   phone: z
@@ -69,11 +70,8 @@ const leadCaptureFormSchema = z.object({
     .trim()
     .min(9, 'Numéro de téléphone requis.')
     .transform((raw) => {
-      const cleaned = raw.replace(/[\s\-().]/gu, '');
-      if (/^\+212[5-7]\d{8}$/u.test(cleaned)) return cleaned.slice(4);
-      if (/^00212[5-7]\d{8}$/u.test(cleaned)) return cleaned.slice(5);
-      if (/^0[5-7]\d{8}$/u.test(cleaned)) return cleaned.slice(1);
-      return cleaned;
+      const local = toLocalMoroccanDigits(raw);
+      return /^0[5-7]\d{8}$/u.test(local) ? local.slice(1) : local;
     })
     .pipe(phoneMaroc9DigitsSchema),
   consent: z.literal(true, {
@@ -364,6 +362,9 @@ export function LeadCaptureStep({ cta, title }: LeadCaptureStepProps) {
                       hint={t.leadStep.phoneHint}
                       error={errors.phone?.message}
                       {...phoneProps}
+                      // Champ contrôlé : `register` ne transmet pas la valeur,
+                      // un numéro repris du brouillon s'effacerait au rendu.
+                      value={typeof watchedPhone === 'string' ? watchedPhone : ''}
                       onFocus={handleFieldFocus('phone')}
                       onChange={(e) => {
                         void phoneProps.onChange(e);
