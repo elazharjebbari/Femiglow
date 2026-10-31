@@ -28,6 +28,7 @@ import { useEffect, useState } from 'react';
 import { create, type StateCreator } from 'zustand';
 import { createJSONStorage, persist, type PersistOptions } from 'zustand/middleware';
 
+import type { Step2Variant } from '@/lib/tracking/address-step-events';
 import type { FormMode, VariantKey } from '@/lib/tracking/checkout-events';
 import type { DictionaryLanguage } from '@/lib/checkout/i18n/dictionary';
 import type {
@@ -56,6 +57,8 @@ export interface WizardFormContext {
    * qu'au rendu ; à la persistance, `en` est ramené à `fr` (cf. use-wizard-mutations).
    */
   language?: DictionaryLanguage;
+  /** Variante de l'étape 2 (A/B distinct de `variantKey`). Absente → `control`. */
+  step2Variant?: Step2Variant;
 }
 
 export interface LeadDraft {

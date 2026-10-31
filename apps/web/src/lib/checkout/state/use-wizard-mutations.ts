@@ -467,6 +467,7 @@ export function useAddressMutation(): {
             city_code: input.city.toLowerCase().trim().replace(/\s+/g, '-'),
             currency: cartSnapshot.currency,
             value: cartSnapshot.totalCents / 100,
+            step2_variant: formContext.step2Variant,
           }),
           { userData: userDataAddress },
         );
@@ -507,6 +508,7 @@ export function useAddressMutation(): {
             payment_type: DEFAULT_PAYMENT_METHOD,
             currency: cartSnapshot.currency,
             value: cartSnapshot.totalCents / 100,
+            step2_variant: formContext.step2Variant,
           }),
           { userData: userDataPayment },
         );
@@ -593,6 +595,7 @@ export function useAddressMutation(): {
             })),
             payment_type: DEFAULT_PAYMENT_METHOD,
             meta_purchase_eid: purchaseJpid ?? undefined,
+            step2_variant: formContext.step2Variant,
           }),
           { userData: userDataPurchase },
         );

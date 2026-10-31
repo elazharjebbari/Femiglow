@@ -106,6 +106,8 @@ export interface CityAutocompleteProps {
   onExactMatch?: (city: PublicCity) => void;
   /** Callback blur — délégué à RHF si besoin. */
   onBlur?: (e: FocusEvent<HTMLInputElement>) => void;
+  /** Callback focus (mesure de l'étape). */
+  onFocus?: () => void;
   /** Marque le champ requis (étoile visuelle + `required` côté input). */
   required?: boolean;
   /** Désactive le combobox entièrement. */
@@ -176,6 +178,7 @@ export function CityAutocomplete(props: CityAutocompleteProps) {
     onCitySelected,
     onExactMatch,
     onBlur,
+    onFocus,
     required,
     disabled,
     countryCode = 'MA',
@@ -283,7 +286,8 @@ export function CityAutocomplete(props: CityAutocompleteProps) {
   const handleInputFocus = useCallback(() => {
     // Ouvre l'autocomplete dès le focus — pattern "open on focus" standard.
     setOpen(true);
-  }, []);
+    onFocus?.();
+  }, [onFocus]);
 
   const handleInputBlur = useCallback(
     (e: FocusEvent<HTMLInputElement>) => {

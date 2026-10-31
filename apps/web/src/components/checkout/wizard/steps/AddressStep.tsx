@@ -44,7 +44,7 @@
  */
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useCallback, useEffect, useId, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -52,11 +52,17 @@ import { Button } from '@/components/ui/Button';
 import { Heading } from '@/components/ui/Heading';
 import { Text } from '@/components/ui/Text';
 import { TextField, TextAreaField } from '@/components/forms/Field';
+import {
+  deriveAddressPhase,
+  isAddressCityValid,
+} from '@/lib/checkout/address/address-phase';
+import { useAddressStepTracking } from '@/lib/checkout/address/use-address-step-tracking';
 import { useWizardTranslation } from '@/lib/checkout/i18n/use-wizard-translation';
 import { useAddressMutation } from '@/lib/checkout/state/use-wizard-mutations';
 import { useWizardStore } from '@/lib/checkout/state/wizard-store';
 import { useAppliedCoupon } from '@/lib/checkout/state/use-applied-coupon';
 import type { PublicCity } from '@/lib/checkout/delivery/use-delivery-cities';
+import { DEFAULT_DELIVERY_PRICE_MAD } from '@/lib/checkout/shipping-fee';
 
 import { StockIndicator } from '../StockIndicator';
 import { CityAutocomplete } from '../components/CityAutocomplete';
@@ -209,6 +215,16 @@ export function AddressStep({ cta }: AddressStepProps) {
   const mutation = useAddressMutation();
   const { freeShipping } = useShippingConfig();
 
+  // Lu au moment de l'abandon, jamais à chaque rendu.
+  const submittingRef = useRef(false);
+  const tracking = useAddressStepTracking(() => {
+    const { city, addressLine1 } = useWizardStore.getState().addressDraft;
+    return {
+      phase: deriveAddressPhase({ city, addressLine1, submitting: submittingRef.current }),
+      hasCity: isAddressCityValid(city),
+    };
+  });
+
   const {
     register,
     control,
@@ -245,6 +261,12 @@ export function AddressStep({ cta }: AddressStepProps) {
   // depuis le listbox du combobox. On met à jour le formulaire ET le store
   // pour persister les champs cached (citySlug + cityNameAr + prix + ETA).
   const onCitySelected = (city: PublicCity) => {
+    tracking.trackCitySelected({
+      slug: city.slug,
+      matched: true,
+      priceMad: city.deliveryPriceMad,
+      eta: city.deliveryEta,
+    });
     setValue('city', city.nameFr, { shouldValidate: true, shouldDirty: true });
     mergeAddressDraft({
       city: city.nameFr,
@@ -257,8 +279,15 @@ export function AddressStep({ cta }: AddressStepProps) {
 
   // Texte saisi = nom exact d'une ville (sans clic dans le listbox) : on
   // applique son tarif sans toucher au texte. Le serveur fait le même match.
+  const { trackCitySelected } = tracking;
   const onCityMatched = useCallback(
     (city: PublicCity) => {
+      trackCitySelected({
+        slug: city.slug,
+        matched: true,
+        priceMad: city.deliveryPriceMad,
+        eta: city.deliveryEta,
+      });
       if (useWizardStore.getState().addressDraft.citySlug === city.slug) return;
       mergeAddressDraft({
         citySlug: city.slug,
@@ -267,8 +296,15 @@ export function AddressStep({ cta }: AddressStepProps) {
         cityDeliveryEta: city.deliveryEta,
       });
     },
-    [mergeAddressDraft],
+    [mergeAddressDraft, trackCitySelected],
   );
+
+  // Ville hors catalogue : le serveur applique le tarif par défaut.
+  const onCityBlur = () => {
+    const { city, citySlug } = useWizardStore.getState().addressDraft;
+    if (citySlug || !isAddressCityValid(city)) return;
+    tracking.trackCitySelected({ matched: false, priceMad: DEFAULT_DELIVERY_PRICE_MAD });
+  };
 
   // Si l'utilisateur modifie le champ texte SANS passer par le listbox
   // (frappe libre), on invalide les champs cached pour éviter qu'un prix
@@ -311,6 +347,24 @@ export function AddressStep({ cta }: AddressStepProps) {
   });
 
   const submitting = mutation.status === 'loading';
+  submittingRef.current = submitting;
+
+  const { trackValidationError } = tracking;
+  const cityErrorType = errors.city?.type;
+  const lineErrorType = errors.addressLine1?.type;
+  const notesErrorType = errors.notes?.type;
+  useEffect(() => {
+    if (cityErrorType) trackValidationError('city', String(cityErrorType));
+    if (lineErrorType) trackValidationError('addressLine1', String(lineErrorType));
+    if (notesErrorType) trackValidationError('notes', String(notesErrorType));
+  }, [cityErrorType, lineErrorType, notesErrorType, trackValidationError]);
+
+  // Un bouton désactivé ne reçoit aucun évènement : le tap est capté par son
+  // conteneur (`pointer-events-none` sur le bouton grisé).
+  const onSubmitAreaPress = () => {
+    if (isValid || submitting) return;
+    tracking.trackCtaTapIncomplete(isAddressCityValid(watchedCity) ? 'addressLine1' : 'city');
+  };
 
   const networkBanner = useMemo(() => {
     if (!mutation.error) return null;
@@ -389,7 +443,11 @@ export function AddressStep({ cta }: AddressStepProps) {
               error={errors.city?.message}
               value={field.value ?? ''}
               onChange={field.onChange}
-              onBlur={field.onBlur}
+              onBlur={() => {
+                field.onBlur();
+                onCityBlur();
+              }}
+              onFocus={tracking.trackCityFocus}
               onCitySelected={onCitySelected}
               onExactMatch={onCityMatched}
               testId="wizard-address-city"
@@ -405,6 +463,7 @@ export function AddressStep({ cta }: AddressStepProps) {
           required
           error={errors.addressLine1?.message}
           data-testid="wizard-address-line1"
+          onFocus={tracking.trackLineFocus}
           {...register('addressLine1')}
         />
 
@@ -543,16 +602,23 @@ export function AddressStep({ cta }: AddressStepProps) {
           >
             {t.common.back}
           </Button>
-          <Button
-            type="submit"
-            variant="primary"
-            size="lg"
-            loading={submitting}
-            disabled={!isValid || submitting}
-            data-testid="wizard-address-submit"
+          <div
+            onPointerDown={onSubmitAreaPress}
+            className="[&_button:disabled]:pointer-events-none"
+            data-testid="wizard-address-submit-area"
           >
-            {cta ?? t.address.ctaSubmit}
-          </Button>
+            <Button
+              ref={tracking.ctaRef}
+              type="submit"
+              variant="primary"
+              size="lg"
+              loading={submitting}
+              disabled={!isValid || submitting}
+              data-testid="wizard-address-submit"
+            >
+              {cta ?? t.address.ctaSubmit}
+            </Button>
+          </div>
         </div>
       </form>
     </section>
