@@ -43,35 +43,23 @@
  * - Tous les champs `dir="auto"` pour bilingue FR/AR.
  */
 
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { useId, useMemo } from 'react';
+import { Controller } from 'react-hook-form';
 
 import { Button } from '@/components/ui/Button';
 import { Heading } from '@/components/ui/Heading';
 import { Text } from '@/components/ui/Text';
 import { TextField, TextAreaField } from '@/components/forms/Field';
-import {
-  buildAddressFormSchema,
-  type AddressFormValues,
-} from '@/lib/checkout/address/address-form-schema';
-import {
-  deriveAddressPhase,
-  isAddressCityValid,
-} from '@/lib/checkout/address/address-phase';
-import { useAddressStepTracking } from '@/lib/checkout/address/use-address-step-tracking';
+import { isAddressCityValid } from '@/lib/checkout/address/address-phase';
 import { useWizardTranslation } from '@/lib/checkout/i18n/use-wizard-translation';
-import { useAddressMutation } from '@/lib/checkout/state/use-wizard-mutations';
 import { useWizardStore } from '@/lib/checkout/state/wizard-store';
 import { useAppliedCoupon } from '@/lib/checkout/state/use-applied-coupon';
-import type { PublicCity } from '@/lib/checkout/delivery/use-delivery-cities';
-import { DEFAULT_DELIVERY_PRICE_MAD } from '@/lib/checkout/shipping-fee';
 
+import { AddressCouponDisclosure } from '../AddressCouponDisclosure';
 import { StockIndicator } from '../StockIndicator';
 import { CityAutocomplete } from '../components/CityAutocomplete';
 import { NoCommitmentBadge } from '../NoCommitmentBadge';
-import { InvitationCodeField } from '@/components/sections/InvitationCodeField';
-import { cn } from '@/lib/utils/cn';
+import { useAddressForm } from './use-address-form';
 import { useShippingConfig } from '@/lib/checkout/use-shipping-config';
 import { ShippingPriceDisplay } from '@/components/checkout/ShippingPriceDisplay';
 import { DEFAULT_WIZARD_FEATURES } from '@/lib/checkout/copy/wizard-copy';
@@ -174,143 +162,37 @@ export function AddressStep({ cta }: AddressStepProps) {
 
   const { t, language } = useWizardTranslation();
 
-  const addressDraft = useWizardStore((s) => s.addressDraft);
-  const mergeAddressDraft = useWizardStore((s) => s.mergeAddressDraft);
   const goToStep = useWizardStore((s) => s.goToStep);
   const cartSnapshot = useWizardStore((s) => s.cartSnapshot);
-  // Phase 3 — crédit de fidélité
   // Cette étape n'est jamais dans la première peinture serveur (le wizard
   // démarre à l'étape « lead » tant qu'il n'est pas hydraté) : pas de parité
   // d'hydratation à préserver, et la garde masquerait le code à la reprise.
   const appliedCoupon = useAppliedCoupon({ hydrationSafe: false });
   const couponCode = appliedCoupon.code;
   const creditCents = appliedCoupon.creditCents;
-  const couponKind = appliedCoupon.kind;
-  const setCoupon = useWizardStore((s) => s.setCoupon);
-  const clearCoupon = useWizardStore((s) => s.clearCoupon);
-  const isArabic = language === 'ar';
-  // Disclosure crédit : ouverte d'office si un code a déjà été saisi (reprise).
-  const [couponDisclosureOpen, setCouponDisclosureOpen] = useState<boolean>(!!couponCode);
   // Code de CAMPAGNE (arrivé par l'URL publicitaire) déjà appliqué et chiffré.
   // Un crédit de fidélité saisi à la main garde le champ ouvert historique.
   const isCampaignPromo = appliedCoupon.isPromo && appliedCoupon.hasDiscount;
 
-  const mutation = useAddressMutation();
   const { freeShipping } = useShippingConfig();
 
-  // Lu au moment de l'abandon, jamais à chaque rendu.
-  const submittingRef = useRef(false);
-  const tracking = useAddressStepTracking(() => {
-    const { city, addressLine1 } = useWizardStore.getState().addressDraft;
-    return {
-      phase: deriveAddressPhase({ city, addressLine1, submitting: submittingRef.current }),
-      hasCity: isAddressCityValid(city),
-    };
-  });
-
-  const addressFormSchema = useMemo(
-    () => buildAddressFormSchema(t.address.errors),
-    [t.address.errors],
-  );
-
   const {
-    register,
-    control,
-    handleSubmit,
-    watch,
-    setValue,
-    formState: { errors, isValid },
-  } = useForm<AddressFormValues>({
-    resolver: zodResolver(addressFormSchema),
-    mode: 'onChange',
-    defaultValues: {
-      city: addressDraft.city ?? '',
-      addressLine1: addressDraft.addressLine1 ?? '',
-      notes: addressDraft.notes ?? '',
+    form: {
+      register,
+      control,
+      formState: { errors, isValid },
     },
-  });
-
-  // Persistance du draft (resume après refresh).
-  const watchedCity = watch('city');
-  const watchedLine1 = watch('addressLine1');
-  const watchedNotes = watch('notes');
-  useEffect(() => {
-    mergeAddressDraft({
-      city: typeof watchedCity === 'string' ? watchedCity : '',
-      addressLine1: typeof watchedLine1 === 'string' ? watchedLine1 : '',
-      notes: typeof watchedNotes === 'string' ? watchedNotes : '',
-      // CHA-231 : mode unique forcé côté UI — on garde le champ pour le payload
-      // serveur mais l'utilisateur n'a plus le choix.
-      shippingMode: 'standard',
-    });
-  }, [watchedCity, watchedLine1, watchedNotes, mergeAddressDraft]);
-
-  // Callback de commit : appelé quand l'utilisateur sélectionne une ville
-  // depuis le listbox du combobox. On met à jour le formulaire ET le store
-  // pour persister les champs cached (citySlug + cityNameAr + prix + ETA).
-  const onCitySelected = (city: PublicCity) => {
-    tracking.trackCitySelected({
-      slug: city.slug,
-      matched: true,
-      priceMad: city.deliveryPriceMad,
-      eta: city.deliveryEta,
-    });
-    setValue('city', city.nameFr, { shouldValidate: true, shouldDirty: true });
-    mergeAddressDraft({
-      city: city.nameFr,
-      citySlug: city.slug,
-      cityNameAr: city.nameAr,
-      cityDeliveryPriceMad: city.deliveryPriceMad,
-      cityDeliveryEta: city.deliveryEta,
-    });
-  };
-
-  // Texte saisi = nom exact d'une ville (sans clic dans le listbox) : on
-  // applique son tarif sans toucher au texte. Le serveur fait le même match.
-  const { trackCitySelected } = tracking;
-  const onCityMatched = useCallback(
-    (city: PublicCity) => {
-      trackCitySelected({
-        slug: city.slug,
-        matched: true,
-        priceMad: city.deliveryPriceMad,
-        eta: city.deliveryEta,
-      });
-      if (useWizardStore.getState().addressDraft.citySlug === city.slug) return;
-      mergeAddressDraft({
-        citySlug: city.slug,
-        cityNameAr: city.nameAr,
-        cityDeliveryPriceMad: city.deliveryPriceMad,
-        cityDeliveryEta: city.deliveryEta,
-      });
-    },
-    [mergeAddressDraft, trackCitySelected],
-  );
-
-  // Ville hors catalogue : le serveur applique le tarif par défaut.
-  const onCityBlur = () => {
-    const { city, citySlug } = useWizardStore.getState().addressDraft;
-    if (citySlug || !isAddressCityValid(city)) return;
-    tracking.trackCitySelected({ matched: false, priceMad: DEFAULT_DELIVERY_PRICE_MAD });
-  };
-
-  // Si l'utilisateur modifie le champ texte SANS passer par le listbox
-  // (frappe libre), on invalide les champs cached pour éviter qu'un prix
-  // stale soit affiché alors que le texte ne correspond plus.
-  useEffect(() => {
-    if (!addressDraft.citySlug) return;
-    if (
-      typeof watchedCity === 'string' &&
-      watchedCity.trim().toLowerCase() !== addressDraft.city.trim().toLowerCase()
-    ) {
-      mergeAddressDraft({
-        citySlug: null,
-        cityNameAr: null,
-        cityDeliveryPriceMad: null,
-        cityDeliveryEta: null,
-      });
-    }
-  }, [watchedCity, addressDraft.citySlug, addressDraft.city, mergeAddressDraft]);
+    tracking,
+    addressDraft,
+    watchedCity,
+    cityDisplayValue,
+    onCitySelected,
+    onCityMatched,
+    onCityBlur,
+    onSubmit,
+    submitting,
+    networkBanner,
+  } = useAddressForm({ validationMode: 'onChange' });
 
   // VariantId pour le StockIndicator (premier item du panier).
   const primaryVariantId = useMemo(
@@ -318,52 +200,12 @@ export function AddressStep({ cta }: AddressStepProps) {
     [cartSnapshot],
   );
 
-  const onSubmit = handleSubmit(async (values) => {
-    try {
-      await mutation.execute({
-        // Si la ville a été commit via le combobox, on envoie le nom FR
-        // canonique (déjà persisté dans le draft) ; sinon le texte saisi.
-        city: (addressDraft.city || values.city).trim(),
-        addressLine1: values.addressLine1,
-        country: 'MA',
-        notes: values.notes || undefined,
-        shippingMode: 'standard',
-      });
-    } catch {
-      // Erreur déjà capturée par `mutation.error` — affichée plus bas.
-    }
-  });
-
-  const submitting = mutation.status === 'loading';
-  submittingRef.current = submitting;
-
-  const { trackValidationError } = tracking;
-  const cityErrorType = errors.city?.type;
-  const lineErrorType = errors.addressLine1?.type;
-  const notesErrorType = errors.notes?.type;
-  useEffect(() => {
-    if (cityErrorType) trackValidationError('city', String(cityErrorType));
-    if (lineErrorType) trackValidationError('addressLine1', String(lineErrorType));
-    if (notesErrorType) trackValidationError('notes', String(notesErrorType));
-  }, [cityErrorType, lineErrorType, notesErrorType, trackValidationError]);
-
   // Un bouton désactivé ne reçoit aucun évènement : le tap est capté par son
   // conteneur (`pointer-events-none` sur le bouton grisé).
   const onSubmitAreaPress = () => {
     if (isValid || submitting) return;
     tracking.trackCtaTapIncomplete(isAddressCityValid(watchedCity) ? 'addressLine1' : 'city');
   };
-
-  const networkBanner = useMemo(() => {
-    if (!mutation.error) return null;
-    const e = mutation.error;
-    if (e.code === 'invalid_input') return t.errors.invalidInput;
-    if (e.code === 'stock_insufficient') return t.errors.stockInsufficient;
-    if (e.code === 'price_mismatch') return t.errors.priceMismatch;
-    if (e.code === 'rate_limited') return t.errors.rateLimited;
-    if (e.httpStatus === 0) return t.errors.networkOffline;
-    return e.message || t.errors.addressGeneric;
-  }, [mutation.error, t.errors]);
 
   // Bloc de réassurance — dynamique si une ville a été reconnue.
   const shippingBody = useMemo(() => {
@@ -430,11 +272,7 @@ export function AddressStep({ cta }: AddressStepProps) {
               required
               error={errors.city?.message}
               value={field.value ?? ''}
-              displayValue={
-                isArabic && addressDraft.citySlug && field.value === addressDraft.city
-                  ? (addressDraft.cityNameAr ?? undefined)
-                  : undefined
-              }
+              displayValue={cityDisplayValue}
               language={language}
               onChange={field.onChange}
               onBlur={() => {
@@ -507,50 +345,7 @@ export function AddressStep({ cta }: AddressStepProps) {
             )}
           </p>
         ) : (
-        <>
-        {/* Phase 3 — crédit de fidélité (optionnel). Porte DISCRÈTE repliée
-            par défaut (esprit coupon-doc : zéro friction pour qui n'a pas de
-            code) ; s'ouvre sur clic, ou d'office si un code est déjà saisi
-            (reprise). Validé via /api/coupons/redeem → store → total. */}
-        <details
-          data-testid="wizard-coupon-field"
-          open={couponDisclosureOpen}
-          onToggle={(e) => setCouponDisclosureOpen(e.currentTarget.open)}
-          className="text-sm"
-        >
-          <summary
-            data-testid="wizard-coupon-summary"
-            className="flex w-fit cursor-pointer list-none items-center gap-1.5 text-encre/65 transition-colors hover:text-encre [&::-webkit-details-marker]:hidden"
-          >
-            <svg
-              viewBox="0 0 16 16"
-              width="12"
-              height="12"
-              aria-hidden
-              className={cn(
-                'shrink-0 text-sauge transition-transform duration-300',
-                couponDisclosureOpen && 'rotate-90',
-              )}
-            >
-              <path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <span className="underline decoration-encre/20 underline-offset-4">
-              {t.address.couponToggle}
-            </span>
-          </summary>
-          <div className="mt-2 max-w-[18rem]">
-            <InvitationCodeField
-              isArabic={isArabic}
-              isEnglish={language === 'en'}
-              initialCode={couponCode ?? ''}
-              initialValueCents={creditCents}
-              initialKind={couponKind ?? 'credit'}
-              onValid={(code, cents, kind) => setCoupon(code, cents, kind)}
-              onClear={clearCoupon}
-            />
-          </div>
-        </details>
-        </>
+          <AddressCouponDisclosure />
         )}
 
         {networkBanner && (

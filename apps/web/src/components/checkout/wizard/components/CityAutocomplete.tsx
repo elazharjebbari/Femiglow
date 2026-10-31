@@ -54,8 +54,10 @@ import {
   type ChangeEvent,
   type FocusEvent,
   type KeyboardEvent,
+  type ReactNode,
 } from 'react';
 
+import { useVisualViewportKeyboardInset } from '@/components/chat/hooks/use-visual-viewport';
 import { FieldShell } from '@/components/forms/Field';
 import {
   type PublicCity,
@@ -132,6 +134,16 @@ export interface CityAutocompleteProps {
    * dans un layout spécifique). Le styling de base reste dans le composant.
    */
   className?: string;
+  /** Coche de validation, etc., dans le champ. */
+  inputAdornment?: ReactNode;
+  /**
+   * Liste resserrée : une ligne par ville, prix et délai côté à côté, et
+   * `compactLimit` suggestions clavier ouvert.
+   */
+  compact?: boolean;
+  compactLimit?: number;
+  /** `false` : l'appelant déplace lui-même le focus après un choix. */
+  keepFocusOnCommit?: boolean;
   /** En-tête du groupe villes prioritaires. i18n côté appelant, défaut FR. */
   popularCitiesLabel?: string;
   /** Statut de chargement du listbox. i18n côté appelant, défaut FR. */
@@ -168,6 +180,9 @@ const OPTION_CLASSES = cn(
   'hover:bg-petale-soft/30',
 );
 
+/** En deçà, c'est la barre d'adresse du navigateur, pas le clavier. */
+const KEYBOARD_MIN_HEIGHT_PX = 80;
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Component
 // ─────────────────────────────────────────────────────────────────────────────
@@ -195,6 +210,10 @@ export function CityAutocomplete(props: CityAutocompleteProps) {
     testId,
     autoComplete = 'address-level2',
     className,
+    inputAdornment,
+    compact = false,
+    compactLimit = 3,
+    keepFocusOnCommit = true,
     popularCitiesLabel = 'Villes populaires',
     searchingLabel = 'Recherche…',
     freeDeliveryLabel = 'Gratuit',
@@ -217,7 +236,14 @@ export function CityAutocomplete(props: CityAutocompleteProps) {
   // Quand la query est vide, on montre les villes prioritaires (position > 0)
   // — on demande davantage de résultats pour les couvrir toutes.
   const isPopularView = value.trim() === '';
-  const effectiveLimit = isPopularView ? 13 : limit;
+  const keyboardOpen = useVisualViewportKeyboardInset(compact) >= KEYBOARD_MIN_HEIGHT_PX;
+  const effectiveLimit = compact
+    ? keyboardOpen
+      ? compactLimit
+      : limit
+    : isPopularView
+      ? 13
+      : limit;
   const { items, loading } = useDeliveryCities(value, {
     countryCode,
     limit: effectiveLimit,
@@ -279,9 +305,9 @@ export function CityAutocomplete(props: CityAutocompleteProps) {
       setOpen(false);
       setActiveIndex(-1);
       // Garde le focus sur l'input — discoverabilité visuelle.
-      requestAnimationFrame(() => inputRef.current?.focus());
+      if (keepFocusOnCommit) requestAnimationFrame(() => inputRef.current?.focus());
     },
-    [onChange, onCitySelected],
+    [onChange, onCitySelected, keepFocusOnCommit],
   );
 
   // ── Handlers ───────────────────────────────────────────────────────────────
@@ -418,6 +444,7 @@ export function CityAutocomplete(props: CityAutocompleteProps) {
         hint={effectiveHint}
         error={error}
         required={required}
+        inputAdornment={inputAdornment}
       >
         <input
           ref={inputRef}
@@ -458,7 +485,7 @@ export function CityAutocomplete(props: CityAutocompleteProps) {
           id={listboxId}
           role="listbox"
           aria-label={label}
-          className={LISTBOX_CLASSES}
+          className={cn(LISTBOX_CLASSES, compact && '!max-h-none')}
           // L'utilisateur ne tab pas DANS le listbox — c'est l'input qui
           // garde le focus, et aria-activedescendant pilote la sélection
           // virtuelle. C'est le pattern WAI-ARIA standard.
@@ -474,7 +501,7 @@ export function CityAutocomplete(props: CityAutocompleteProps) {
               {searchingLabel}
             </li>
           )}
-          {isPopularView && items.length > 0 && (
+          {!compact && isPopularView && items.length > 0 && (
             <li
               role="presentation"
               className="px-3 pt-2 pb-1 text-xs font-semibold uppercase tracking-wider text-encre/45"
@@ -490,7 +517,7 @@ export function CityAutocomplete(props: CityAutocompleteProps) {
                 id={optionId(index)}
                 role="option"
                 aria-selected={isActive}
-                className={OPTION_CLASSES}
+                className={cn(OPTION_CLASSES, compact && '!items-center py-2.5')}
                 // Évite de blurrer l'input quand on click sur une option.
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => commitCity(city)}
@@ -499,7 +526,7 @@ export function CityAutocomplete(props: CityAutocompleteProps) {
               >
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-encre">{cityName(city)}</div>
-                  {language === 'ar' ? (
+                  {compact ? null : language === 'ar' ? (
                     <div dir="ltr" className="truncate text-xs text-encre/55" lang="fr">
                       {city.nameFr}
                     </div>
@@ -515,7 +542,12 @@ export function CityAutocomplete(props: CityAutocompleteProps) {
                     )
                   )}
                 </div>
-                <div className="shrink-0 whitespace-nowrap text-xs text-encre/60">
+                <div
+                  className={cn(
+                    'shrink-0 whitespace-nowrap text-xs text-encre/60',
+                    compact && 'flex items-center gap-2',
+                  )}
+                >
                   <div className="flex justify-end text-end">
                     <ShippingPriceDisplay
                       displayPrice={

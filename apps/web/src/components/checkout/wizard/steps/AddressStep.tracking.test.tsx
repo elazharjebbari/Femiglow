@@ -2,6 +2,7 @@
  * Étape 2 — mesure : ce test vérifie les événements `address_*` émis par la
  * version actuelle, et qu'aucun texte saisi n'y figure.
  */
+import { StrictMode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
@@ -160,6 +161,41 @@ describe('AddressStep — événements address_*', () => {
       window.dispatchEvent(new Event('pagehide'));
     });
     expect(names()).not.toContain('address_step_abandon');
+  });
+
+  it('bouton à l’écran : mesuré une fois, y compris en mode strict', () => {
+    const callbacks: IntersectionObserverCallback[] = [];
+    const active = new Set<IntersectionObserverCallback>();
+    vi.stubGlobal(
+      'IntersectionObserver',
+      class {
+        constructor(private readonly cb: IntersectionObserverCallback) {
+          callbacks.push(cb);
+        }
+        observe() {
+          active.add(this.cb);
+        }
+        disconnect() {
+          active.delete(this.cb);
+        }
+      },
+    );
+    render(
+      <StrictMode>
+        <AddressStep />
+      </StrictMode>,
+    );
+    expect(active.size).toBe(1);
+    const entries = [{ isIntersecting: true }] as IntersectionObserverEntry[];
+    act(() => {
+      for (const cb of [...active]) cb(entries, {} as IntersectionObserver);
+    });
+    vi.unstubAllGlobals();
+    expect(names().filter((n) => n === 'address_cta_visible')).toHaveLength(1);
+    expect(paramsOf('address_cta_visible')).toMatchObject({
+      step2_variant: 'control',
+      ms_since_view: expect.any(Number),
+    });
   });
 
   it('la variante du formContext est reprise sur les événements', () => {

@@ -56,8 +56,14 @@ import {
   buildKitCheckoutExposureParams,
   claimKitCheckoutExposure,
 } from '@/lib/checkout/kit-checkout-exposure';
+import {
+  STEP2_QUERY_PARAM,
+  resolveStep2Variant,
+  step2NeedsVisitor,
+} from '@/lib/checkout/step2-variant';
 import { readKitAngleFromDocument } from '@/lib/kit/angle';
 import { readHeroMediaTrackingFromDocument } from '@/lib/kit/hero-media';
+import { getAnonymousId } from '@/lib/tracking/identity';
 import { useTracking } from '@/lib/tracking/use-tracking';
 import {
   DEFAULT_KIT_CHECKOUT_CONFIG,
@@ -239,13 +245,27 @@ export function KitCommanderSection({
   // (A = défilement, B = panneau) jusqu'à `orders.variant_key`. `mode` est
   // posé par la résolution de la variante (effet de synchronisation OU clic
   // antérieur, résolu à la demande) : la clé suit toujours le bras attribué.
+  // Variante de l'étape 2 : `formContext` n'alimente aucun rendu serveur (le
+  // wizard attend l'hydratation), `fg_aid` et l'URL peuvent être lus ici.
+  const { step2V2SharePct } = checkoutConfig;
+  const step2Variant = useMemo(() => {
+    if (typeof window === 'undefined') return 'control';
+    const override = new URLSearchParams(window.location.search).get(STEP2_QUERY_PARAM);
+    return resolveStep2Variant({
+      sharePct: step2V2SharePct,
+      override,
+      visitorId: step2NeedsVisitor(step2V2SharePct, override) ? getAnonymousId() : null,
+    });
+  }, [step2V2SharePct]);
+
   const formContext = useMemo<WizardFormContext>(
     () => ({
       ...KIT_FORM_CONTEXT,
       variantKey: sheetMode ? 'B' : 'A',
+      step2Variant,
       ...(wizardLanguage ? { language: wizardLanguage } : {}),
     }),
-    [sheetMode, wizardLanguage],
+    [sheetMode, step2Variant, wizardLanguage],
   );
 
   // Cette section sait afficher le panneau : le lanceur peut l'utiliser.

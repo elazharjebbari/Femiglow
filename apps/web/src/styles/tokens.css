@@ -26,6 +26,14 @@
   --color-champagne-soft: #E8D9BC;
   --color-champagne-dark: #7A5F38;
 
+  /* Grenat : réservé au bouton de confirmation de commande. */
+  --color-action: #8E3F3B;
+  --color-action-light: #A34A45;
+  --color-on-action: #FFFDF8;
+  --color-notice: #2F5D8A;
+  --color-notice-soft: #E6EEF5;
+  --color-placeholder: #6B675F;
+
   --color-success: var(--color-sauge-dark);
   --color-error: var(--color-petale-dark);
   --color-warning: var(--color-champagne-dark);

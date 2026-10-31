@@ -51,6 +51,8 @@ export interface StockIndicatorProps {
   variantId: string;
   /** Classes additionnelles (positionnement parent). */
   className?: string;
+  /** N'affiche que ce qui change la décision : stock faible ou épuisé. */
+  hideInStock?: boolean;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -283,13 +285,14 @@ function OutOfStockBlock({ variantId }: { variantId: string }) {
 // Main component
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function StockIndicator({ variantId, className }: StockIndicatorProps) {
+export function StockIndicator({ variantId, className, hideInStock }: StockIndicatorProps) {
   const state = useStockSnapshot(variantId);
 
   // Loading & error : volontairement silencieux.
   if (state.status !== 'success') return null;
 
   const status: StockStatus = state.data.status;
+  if (hideInStock && status === 'in_stock') return null;
   return (
     <div className={className}>
       {status === 'in_stock' && <InStockPill />}

@@ -89,6 +89,33 @@ export interface WizardDictionary {
     /** Code de campagne déjà appliqué (montant déjà formaté avec devise). */
     couponApplied: (code: string, amount: string) => string;
   };
+  /** Étape 2 progressive (test A/B `kit-step2-v2`). */
+  addressV2: {
+    progress: (name: string) => string;
+    progressAlmost: (name: string) => string;
+    progressNoName: string;
+    title: string;
+    subtitle: string;
+    cityLabel: string;
+    cityPlaceholder: string;
+    addressLabel: string;
+    addressPlaceholder: string;
+    addNote: string;
+    notePlaceholder: string;
+    back: string;
+    /** Nom complet du lien « Modifier », pour les lecteurs d'écran. */
+    backLabel: string;
+    deliveryLine: (eta: string) => string;
+    deliveryFree: string;
+    deliveryUnknown: string;
+    totalLabel: string;
+    promoLine: (code: string, amount: string) => string;
+    ctaChooseCity: string;
+    ctaAddAddress: string;
+    ctaConfirm: string;
+    ctaSaving: string;
+    reassurance: string;
+  };
   thankYou: {
     title: string;
     subtitle: string;

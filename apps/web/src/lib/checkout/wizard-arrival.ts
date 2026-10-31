@@ -171,6 +171,24 @@ function whenScrollSettles(targetTop: number, token: number, done: () => void): 
 }
 
 /**
+ * Changement d'étape dans la page : l'étape commence juste sous les barres
+ * collées. Sans effet si le formulaire n'est pas à l'écran : une cliente qui
+ * reprend sa commande en haut de page n'est pas déplacée d'autorité.
+ */
+export function alignWizardStep(anchorId = 'commander-femiglow'): void {
+  const target = document.getElementById(anchorId);
+  const shell = target?.querySelector('[data-testid="wizard-shell"]');
+  if (!target || !shell) return;
+  const anchor = target.getBoundingClientRect();
+  if (anchor.bottom <= 0 || anchor.top >= window.innerHeight) return;
+  const zone = shell.querySelector('section[data-testid^="wizard-step-"]') ?? shell;
+  const top = zone.getBoundingClientRect().top + window.scrollY - measureTopInset(shell) - BAND_GAP_PX;
+  const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+  arrivalToken += 1;
+  window.scrollTo({ top: Math.max(0, Math.round(top)), behavior: reduceMotion ? 'auto' : 'smooth' });
+}
+
+/**
  * Défile jusqu'au formulaire, centré, puis joue l'accueil. Sans wizard dans
  * l'ancre (ex. page sans funnel), retombe sur l'ancien `scrollIntoView`.
  */

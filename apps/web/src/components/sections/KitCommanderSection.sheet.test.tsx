@@ -137,7 +137,7 @@ describe('KitCommanderSection — mode défilement (défaut)', () => {
 
   it('?cta=scroll force le défilement même si l’admin a choisi le panneau', async () => {
     search.value = 'cta=scroll';
-    renderPage({ ctaMode: 'sheet', sheetSharePct: 50 });
+    renderPage({ ctaMode: 'sheet', sheetSharePct: 50, step2V2SharePct: 0 });
     await waitFor(() => expect(section()).toHaveAttribute('data-commander-mode', 'scroll'));
     fireEvent.click(cta());
     expect(arriveAtCommander).toHaveBeenCalledTimes(1);
@@ -166,7 +166,7 @@ describe('KitCommanderSection — mode panneau', () => {
   });
 
   it('réglage admin ctaMode=sheet (sans override)', async () => {
-    renderPage({ ctaMode: 'sheet', sheetSharePct: 50 });
+    renderPage({ ctaMode: 'sheet', sheetSharePct: 50, step2V2SharePct: 0 });
     await waitFor(() => expect(section()).toHaveAttribute('data-commander-mode', 'sheet'));
   });
 
@@ -301,7 +301,7 @@ const exposureCalls = () => emit.mock.calls.filter(([name]) => name === 'kit_che
 describe('KitCommanderSection — exposition A/B (kit_checkout_exposure)', () => {
   it('une seule exposition par page vue, avec variante, origine et réglage', async () => {
     search.value = 'cta=sheet';
-    const { unmount } = renderPage({ ctaMode: 'ab', sheetSharePct: 30 });
+    const { unmount } = renderPage({ ctaMode: 'ab', sheetSharePct: 30, step2V2SharePct: 0 });
     await waitFor(() => expect(exposureCalls()).toHaveLength(1));
     expect(exposureCalls()[0]![1]).toEqual({
       assigned_mode: 'sheet',
@@ -311,7 +311,7 @@ describe('KitCommanderSection — exposition A/B (kit_checkout_exposure)', () =>
     });
     // Remontage de la section dans le même chargement de page : pas de doublon.
     unmount();
-    renderPage({ ctaMode: 'ab', sheetSharePct: 30 });
+    renderPage({ ctaMode: 'ab', sheetSharePct: 30, step2V2SharePct: 0 });
     await waitFor(() => expect(section()).toHaveAttribute('data-commander-mode', 'sheet'));
     expect(exposureCalls()).toHaveLength(1);
   });
@@ -320,7 +320,7 @@ describe('KitCommanderSection — exposition A/B (kit_checkout_exposure)', () =>
     const hero = document.createElement('section');
     hero.setAttribute('data-kit-angle', 'e');
     document.body.appendChild(hero);
-    renderPage({ ctaMode: 'scroll', sheetSharePct: 50 });
+    renderPage({ ctaMode: 'scroll', sheetSharePct: 50, step2V2SharePct: 0 });
     await waitFor(() => expect(exposureCalls()).toHaveLength(1));
     expect(exposureCalls()[0]![1]).toEqual({
       assigned_mode: 'scroll',
@@ -338,7 +338,7 @@ describe('KitCommanderSection — exposition A/B (kit_checkout_exposure)', () =>
     hero.setAttribute('data-hero-media-variant', 'angle-e.ar.v3');
     hero.setAttribute('data-hero-media-level', '1');
     document.body.appendChild(hero);
-    renderPage({ ctaMode: 'scroll', sheetSharePct: 50 });
+    renderPage({ ctaMode: 'scroll', sheetSharePct: 50, step2V2SharePct: 0 });
     await waitFor(() => expect(exposureCalls()).toHaveLength(1));
     expect(exposureCalls()[0]![1]).toEqual({
       assigned_mode: 'scroll',
@@ -356,7 +356,7 @@ describe('KitCommanderSection — exposition A/B (kit_checkout_exposure)', () =>
 describe('KitCommanderSection — clic avant la synchronisation du mode', () => {
   it('A/B à 100 % : le clic ouvre le panneau (variante attribuée), variantKey B', async () => {
     search.suspend = true;
-    renderPage({ ctaMode: 'ab', sheetSharePct: 100 });
+    renderPage({ ctaMode: 'ab', sheetSharePct: 100, step2V2SharePct: 0 });
     // La synchronisation (sous Suspense) n'a pas eu lieu : rien n'est résolu.
     expect(useCommanderLauncherStore.getState().assignment).toBeNull();
     fireEvent.click(cta());
@@ -376,7 +376,7 @@ describe('KitCommanderSection — clic avant la synchronisation du mode', () => 
   it('?cta=scroll dans l’URL : le clic défile, variantKey A', () => {
     search.suspend = true;
     window.history.replaceState(null, '', '/kit?cta=scroll');
-    renderPage({ ctaMode: 'sheet', sheetSharePct: 50 });
+    renderPage({ ctaMode: 'sheet', sheetSharePct: 50, step2V2SharePct: 0 });
     fireEvent.click(cta());
     expect(arriveAtCommander).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole('dialog')).toBeNull();

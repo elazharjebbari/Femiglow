@@ -15,9 +15,20 @@ interface FieldShellProps {
   required?: boolean;
   children: ReactNode;
   trailing?: ReactNode;
+  /** Marque posée dans le champ, côté fin de ligne (coche de validation). */
+  inputAdornment?: ReactNode;
 }
 
-export function FieldShell({ id, label, hint, error, required, children, trailing }: FieldShellProps) {
+export function FieldShell({
+  id,
+  label,
+  hint,
+  error,
+  required,
+  children,
+  trailing,
+  inputAdornment,
+}: FieldShellProps) {
   const hintId = hint ? `${id}-hint` : undefined;
   const errorId = error ? `${id}-error` : undefined;
   return (
@@ -30,7 +41,16 @@ export function FieldShell({ id, label, hint, error, required, children, trailin
           </span>
         )}
       </label>
-      {children}
+      {inputAdornment ? (
+        <div className="relative">
+          {children}
+          <span className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2">
+            {inputAdornment}
+          </span>
+        </div>
+      ) : (
+        children
+      )}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           {hint && !error && (
@@ -63,16 +83,24 @@ interface TextFieldProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
   hint?: string;
   error?: string;
+  inputAdornment?: ReactNode;
 }
 
 export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function TextField(
-  { id, label, hint, error, required, className, ...rest },
+  { id, label, hint, error, required, className, inputAdornment, ...rest },
   ref,
 ) {
   if (!id) throw new Error('TextField requires an id for label association.');
   const describedBy = [hint && `${id}-hint`, error && `${id}-error`].filter(Boolean).join(' ') || undefined;
   return (
-    <FieldShell id={id} label={label} hint={hint} error={error} required={required}>
+    <FieldShell
+      id={id}
+      label={label}
+      hint={hint}
+      error={error}
+      required={required}
+      inputAdornment={inputAdornment}
+    >
       <input
         ref={ref}
         id={id}

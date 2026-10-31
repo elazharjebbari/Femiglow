@@ -101,6 +101,9 @@ interface CommanderLauncherState {
   /** Ouvre le formulaire ; renvoie le mode réellement appliqué. */
   openCommander: (options: OpenCommanderOptions) => CommanderMode;
   closeCommander: () => void;
+  /** Barre d'action de l'étape 2 à l'écran : le bouton de chat s'efface. */
+  actionBarActive: boolean;
+  setActionBarActive: (active: boolean) => void;
 }
 
 export const useCommanderLauncherStore = create<CommanderLauncherState>()((set, get) => ({
@@ -188,6 +191,9 @@ export const useCommanderLauncherStore = create<CommanderLauncherState>()((set, 
   },
 
   closeCommander: () => set({ isSheetOpen: false }),
+
+  actionBarActive: false,
+  setActionBarActive: (active) => set({ actionBarActive: active }),
 }));
 
 /** Mode qu'appliquerait un clic maintenant (pour le tracking `kit_cta_mode`). */

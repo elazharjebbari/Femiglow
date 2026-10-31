@@ -1,6 +1,32 @@
 # 10 — Plan d'action
 
-**Statut : à valider. Rien n'est lancé.**
+**Statut au 31/10/2026 : P0, P1 et P4 développés et testés en local, rien n'est en prod.** Part V2 à 0 %.
+
+| Phase | État | Branche |
+|---|---|---|
+| P0 Mesure | Développée, à déployer | `feat/step2-tracking` |
+| P1 Bugs critiques | Développée, à déployer | `fix/step2-bugs` |
+| P2 Récupération des leads | Attend la vérification juridique | — |
+| P3 Observation | Démarre au déploiement de P0 | — |
+| P4 V2 | Développée, part à 0 % | `feat/step2-v2` |
+| P5 Recette sur appareils | À faire avec vous | — |
+| P6 et P7 | Après P5 | — |
+
+### Écarts par rapport au plan initial
+
+| Sujet | Plan | Réalisé | Raison |
+|---|---|---|---|
+| Faux CTA | Masquer dès l'étape 2 | Masqué si le formulaire engagé est à l'écran | Le store est persisté : une cliente revenue en haut de page aurait perdu la barre |
+| Double prix | Vérifier à l'étape 1 | Même règle dès qu'une ville est connue | Retour à l'étape 1 après choix de la ville |
+| Récapitulatif | Sous l'en-tête | Non collant en page, épinglé dans le panneau | La barre promo collante varie en hauteur : décaler `top` serait fragile |
+| Plan de tracking (0.2) | Ajouter les événements | Sans objet | L'ingestion ne vérifie que les validateurs ; événements first-party |
+| Assignation A/B | Côté serveur | Côté client, sur `fg_aid` | `fg_aid` vit dans le navigateur ; l'étape 2 n'est jamais rendue côté serveur, donc pas de clignotement |
+| Coupe-circuit | Champ CMS ou variable | Les deux : `step2V2SharePct` (défaut 0), `CHECKOUT_STEP2_V2=off` | |
+| Lien de retour | « Modifier mes coordonnées » | « Modifier », nom complet pour les lecteurs d'écran | Le long libellé tronquait la phrase de progression sur 360 px |
+
+**Ajouts absents du dossier :** la bulle de chat s'efface pendant que la barre V2 est à l'écran (elle recouvrait le CTA) ; la barre V2 disparaît quand le formulaire quitte l'écran (sinon deux barres fixes) ; l'étape se recale sous les barres collées à l'arrivée ; verrou contre le double tap dans `useAddressForm`, valable pour les deux versions.
+
+**Limite à arbitrer :** le bouton « Commander » de la barre promo reste visible à l'étape 2. Même défaut que le faux CTA, sur une zone que le plan ne couvrait pas.
 
 ## 1. Vue d'ensemble
 
