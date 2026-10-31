@@ -239,9 +239,11 @@ export const DEFAULT_CONSENT_VERSION = '2025-11-01';
  *
  * Rationale produit : la case "J'accepte d'être contactée" pré-cochée
  * augmente significativement la conversion (cf. retours qualitatifs des
- * users qui décrochent au step 1). L'utilisateur peut toujours décocher
- * — la valeur reste **persistée** côté store, donc un user qui décoche
- * et refresh garde sa préférence. La preuve d'acceptation reste valide
+ * users qui décrochent au step 1). L'utilisateur peut toujours décocher :
+ * le choix vaut pour la page en cours, et la case revient cochée au
+ * chargement suivant (cf. `onRehydrateStorage`) — une case décochée bloque le
+ * formulaire et resterait sinon collée à ce navigateur, sans que la cliente
+ * comprenne pourquoi. La preuve d'acceptation reste valide
  * d'un point de vue RGPD parce que :
  *   1. Le label est explicite ("J'accepte d'être contactée par la maison
  *      FemiGlow pour ma commande").
@@ -509,6 +511,7 @@ const persistOpts: PersistOptions<WizardState, Partial<WizardState>> = {
     resumeBannerDismissed: state.resumeBannerDismissed,
   }),
   onRehydrateStorage: () => (state) => {
+    state?.mergeLeadDraft({ consent: true });
     state?.setHydrated();
   },
 };
