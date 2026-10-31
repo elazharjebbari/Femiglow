@@ -6,6 +6,8 @@ import { getMediaWithRelations, findMediaBySlug } from '@/lib/db/queries/media';
 import { listUsagesForMedia } from '@/lib/db/queries/media-usages';
 import { listJobsByMedia } from '@/lib/db/queries/media-jobs';
 import { listAuditEventsForResource } from '@/lib/audit/list-events';
+import { listMediaSetUsages } from '@/lib/db/queries/component-media-sets';
+import { MediaSetUsagesList } from '@/components/admin/media/MediaSetUsagesList';
 import { MediaDetailActions } from '@/components/admin/media/MediaDetailActions';
 import { MediaUpdateForm } from '@/components/admin/media/MediaUpdateForm';
 
@@ -26,10 +28,13 @@ export default async function MediaDetailPage({ params }: { params: Params }) {
   }
   if (!media) notFound();
 
-  const [usages, jobs, audits] = await Promise.all([
+  const [usages, jobs, audits, setUsages] = await Promise.all([
     listUsagesForMedia(media.id),
     listJobsByMedia(media.id),
     listAuditEventsForResource('media', media.id),
+    // Médias par audience : une panne ne casse pas la fiche (`null` →
+    // « usages indisponibles », jamais « aucun »).
+    listMediaSetUsages(media.id).catch(() => null),
   ]);
 
   const totalSize = media.variants.reduce((s, v) => s + (v.sizeBytes ?? 0), 0);
@@ -118,6 +123,7 @@ export default async function MediaDetailPage({ params }: { params: Params }) {
               ))}
             </ul>
           )}
+          <MediaSetUsagesList usages={setUsages} />
         </section>
 
         <section aria-labelledby="journal-title" className="rounded-md border border-stone-200 bg-white p-5">

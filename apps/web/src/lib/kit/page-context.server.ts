@@ -187,13 +187,14 @@ export async function resolveKitPageContext({
   fallbackAlt,
   envValue = process.env.HERO_MEDIA_VARIANTS,
 }: ResolveKitPageContextInput): Promise<KitPageContext> {
+  const draftPreview = await resolveDraftPreview(searchParams);
   const kitAngle = resolveKitAngle({
     angleParam: searchParams?.angle,
     utmContent: searchParams?.utm_content,
-    cookie: cookies.get(KIT_ANGLE_COOKIE)?.value,
+    // Aperçu : seule l'URL décide (comme le diagnostic `GET /resolve`).
+    cookie: draftPreview ? undefined : cookies.get(KIT_ANGLE_COOKIE)?.value,
   });
 
-  const draftPreview = await resolveDraftPreview(searchParams);
   const heroMediaVariantsEnabled = draftPreview
     ? isHeroMediaVariantsEnabled({ cmsEnabled: true, queryOverride: searchParams?.hmv, envValue: 'on' })
     : await resolveHeroMediaVariantsFlag({ queryOverride: searchParams?.hmv, envValue });

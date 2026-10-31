@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { decodeSession, SESSION_COOKIE } from '@/lib/auth/session';
 import { DEFAULT_LOCALE, isLocale, LOCALE_COOKIE_NAME } from '@/i18n.config';
+import { HMV_PREVIEW_HEADER, isKitDraftPreviewUrl } from '@/lib/kit/hmv-preview';
 import { buildChatCspExtensions } from '@/lib/chat/csp';
 import { buildTrackingCspExtensions } from '@/lib/tracking/providers/csp';
 import { legacyRedirectIfNeeded } from '@/lib/tracking/plan/legacy-redirect';
@@ -166,12 +167,21 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   // Les routes admin de live-preview sont chargées en iframe par
   // `/admin/components/[key]` → frame-ancestors 'self' + X-Frame-Options
   // SAMEORIGIN. Partout ailleurs on garde le durcissement complet.
+  // Médias par audience — aperçu brouillon `/{locale}/kit?hmv_preview=draft`,
+  // chargé en iframe par l'admin : framing same-origin seulement, marqueur
+  // de requête pour couper la mesure dans le root layout, `noindex`. Les
+  // brouillons restent réservés aux sessions admin (page-context).
+  const isKitDraftPreview = isKitDraftPreviewUrl(pathname, request.nextUrl.searchParams);
   const isAdminPreview =
-    pathname.startsWith('/admin/components/') && pathname.endsWith('/preview');
+    (pathname.startsWith('/admin/components/') && pathname.endsWith('/preview')) ||
+    isKitDraftPreview;
   const csp = buildCsp(nonce, isDev, { allowSelfFraming: isAdminPreview });
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-nonce', nonce);
+  // Jamais accepté du client : seul le middleware pose ce marqueur.
+  requestHeaders.delete(HMV_PREVIEW_HEADER);
+  if (isKitDraftPreview) requestHeaders.set(HMV_PREVIEW_HEADER, '1');
   requestHeaders.set('content-security-policy', csp);
   // i18n SSR — expose la locale active (1er segment d'URL) au root layout
   // pour qu'il rende `<html lang/dir>` côté serveur. Source unique partagée
@@ -199,6 +209,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   res.headers.set('x-content-type-options', 'nosniff');
   res.headers.set('referrer-policy', 'strict-origin-when-cross-origin');
   res.headers.set('x-frame-options', isAdminPreview ? 'SAMEORIGIN' : 'DENY');
+  if (isKitDraftPreview) res.headers.set('x-robots-tag', 'noindex, nofollow');
   if (isAdmin || isAdminApi) {
     res.headers.set('x-robots-tag', 'noindex, nofollow');
     res.headers.set('cache-control', 'no-store, max-age=0');

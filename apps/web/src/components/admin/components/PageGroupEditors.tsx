@@ -35,6 +35,12 @@ const GROUP_EDITORS: Record<string, GroupEditor[]> = {
       href: '/admin/kit/pack',
       description: 'Section « Le Pack » (Kolenda §4.6) : pricing, packshot, arguments.',
     },
+    {
+      label: 'Médias du hero par angle',
+      href: '/admin/components/kit-hero-produit#medias-par-audience',
+      description:
+        'Galerie du hero selon l’angle publicitaire et la langue : matrice, brouillons, publication.',
+    },
   ],
 };
 

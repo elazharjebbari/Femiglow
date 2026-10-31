@@ -365,6 +365,25 @@ describe('component_media_sets — intégration PGlite (vrai chemin SQL)', () =>
     expect(await listMediaSetUsages('me_inconnu')).toEqual([]);
   });
 
+  it('listMediaSetUsages : ORDER BY statut vivant d’abord (DISTINCT compatible), limite sans archives', async () => {
+    const v1 = await upsertDraftSet(draftInput({ items: [{ mediaId: m1.id }] }));
+    await publishSet({ setId: v1.id, actorId: null });
+    const v2 = await upsertDraftSet(draftInput({ items: [{ mediaId: m1.id }] }));
+    await publishSet({ setId: v2.id, actorId: null });
+    const d = await upsertDraftSet(draftInput({ slot: 'secondary', items: [{ mediaId: m1.id }] }));
+    const all = await listMediaSetUsages(m1.id);
+    expect(all.map((u) => u.status)).toEqual(['published', 'draft', 'archived']);
+    expect(all[0]).not.toHaveProperty('statusRank');
+    expect((await listMediaSetUsages(m1.id, 2)).map((u) => u.setId)).toEqual([v2.id, d.id]);
+  });
+
+  it('upsertDraftSet expectNoDraft : 409 si un brouillon existe (Postgres)', async () => {
+    await upsertDraftSet(draftInput({ items: [{ mediaId: m1.id }], expectNoDraft: true }));
+    await expect(
+      upsertDraftSet(draftInput({ items: [{ mediaId: m2.id }], expectNoDraft: true })),
+    ).rejects.toBeInstanceOf(MediaSetConflictError);
+  });
+
   it('findMediaByIds : une requête, supprimés inclus, ids inconnus ignorés', async () => {
     await softDeleteMedia(m2.id);
     const rows = await findMediaByIds([m1.id, m2.id, m1.id, 'me_inconnu']);

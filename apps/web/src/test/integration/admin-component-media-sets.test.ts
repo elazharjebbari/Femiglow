@@ -1233,3 +1233,119 @@ describe('L7 — invalidation ciblée côté médias', () => {
     }
   });
 });
+
+/* ──────────────────────────────────────────────────────────────────
+ * Revue PR 6 — préconditions `If-None-Match: *` et plan revu du bulk
+ * ────────────────────────────────────────────────────────────────── */
+
+describe('PUT /draft + POST /restore — If-None-Match: *', () => {
+  const body = () => ({ slot: 'primary', variantDim: 'angle', variantKey: 'e', locale: 'ar', items: [{ mediaId: m2.id }] });
+
+  it('201 sans brouillon existant ; 409 + brouillon courant s’il en existe un (non écrasé)', async () => {
+    const created = await putDraft(
+      req(`${BASE}/draft`, { method: 'PUT', headers: { 'if-none-match': '*' }, json: body() }),
+      keyCtx(),
+    );
+    expect(created.status).toBe(201);
+    const first = ((await created.json()) as { set: ComponentMediaSetWithItems }).set;
+
+    const res = await putDraft(
+      req(`${BASE}/draft`, { method: 'PUT', headers: { 'if-none-match': '*' }, json: { ...body(), items: [{ mediaId: m3.id }] } }),
+      keyCtx(),
+    );
+    expect(res.status).toBe(409);
+    const err = (await res.json()) as ErrorBody;
+    expect(err.error.code).toBe('version_conflict');
+    expect((err.error.details?.current as { id: string }).id).toBe(first.id);
+    expect(new Date((await getSetById(first.id))!.updatedAt).toISOString()).toBe(first.updatedAt as unknown as string);
+  });
+
+  it('400 valeur autre que « * » ou combinée à If-Match', async () => {
+    const bad = await putDraft(
+      req(`${BASE}/draft`, { method: 'PUT', headers: { 'if-none-match': '"abc"' }, json: body() }),
+      keyCtx(),
+    );
+    expect(bad.status).toBe(400);
+    const both = await putDraft(
+      req(`${BASE}/draft`, {
+        method: 'PUT',
+        headers: { 'if-none-match': '*', 'if-match': new Date().toISOString() },
+        json: body(),
+      }),
+      keyCtx(),
+    );
+    expect(both.status).toBe(400);
+  });
+
+  it('restore : 409 si un brouillon est apparu, 200 sinon', async () => {
+    const p = await published();
+    const hist = await historyRoute(req(`${BASE}/history?slot=primary&variantDim=angle&variantKey=e&locale=ar`), keyCtx());
+    const entry = ((await hist.json()) as { entries: Array<{ id: string; setId: string; action: string }> }).entries.find(
+      (e) => e.setId === p.id && e.action === 'publish',
+    )!;
+    const ok = await restoreRoute(
+      req(`${BASE}/restore`, { method: 'POST', headers: { 'if-none-match': '*' }, json: { historyId: entry.id } }),
+      keyCtx(),
+    );
+    expect(ok.status).toBe(200);
+    const again = await restoreRoute(
+      req(`${BASE}/restore`, { method: 'POST', headers: { 'if-none-match': '*' }, json: { historyId: entry.id } }),
+      keyCtx(),
+    );
+    expect(again.status).toBe(409);
+  });
+});
+
+describe('POST /bulk-publish — plan revu (`expected`)', () => {
+  type DryBody = { results: Array<{ setId: string; updatedAt: string }> };
+  async function dry(): Promise<DryBody> {
+    const res = await bulkPublishRoute(
+      req(`${BASE}/bulk-publish`, { method: 'POST', json: { filter: { source: 'import' }, dryRun: true } }),
+      keyCtx(),
+    );
+    return (await res.json()) as DryBody;
+  }
+  const run = (expected: Array<{ setId: string; updatedAt: string }>) =>
+    bulkPublishRoute(
+      req(`${BASE}/bulk-publish`, { method: 'POST', json: { filter: { source: 'import' }, expected } }),
+      keyCtx(),
+    );
+
+  it('plan identique : publie', async () => {
+    await draft({ variantKey: 'a', locale: 'fr', source: 'import' });
+    const plan = await dry();
+    expect(plan.results[0]?.updatedAt).toMatch(/Z$/);
+    const res = await run(plan.results.map(({ setId, updatedAt }) => ({ setId, updatedAt })));
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as { published: number }).published).toBe(1);
+  });
+
+  it('nouveau brouillon importé ou brouillon modifié depuis l’essai : 409, rien n’est publié', async () => {
+    const a = await draft({ variantKey: 'a', locale: 'fr', source: 'import' });
+    const plan = (await dry()).results.map(({ setId, updatedAt }) => ({ setId, updatedAt }));
+    const b = await draft({ variantKey: 'b', locale: 'fr', source: 'import' });
+    const res = await run(plan);
+    expect(res.status).toBe(409);
+    const err = (await res.json()) as ErrorBody;
+    expect(err.error.code).toBe('invalid_state');
+    expect(err.error.details?.reason).toBe('bulk.plan_changed');
+    expect((await getSetById(a.id))?.status).toBe('draft');
+    expect((await getSetById(b.id))?.status).toBe('draft');
+
+    const plan2 = (await dry()).results.map(({ setId, updatedAt }) => ({ setId, updatedAt }));
+    await draft({ variantKey: 'a', locale: 'fr', source: 'import', items: [{ mediaId: m2.id }] });
+    expect((await run(plan2)).status).toBe(409);
+    expect(revalidateTagMock).not.toHaveBeenCalled();
+  });
+
+  it('400 `expected` avec dryRun', async () => {
+    const res = await bulkPublishRoute(
+      req(`${BASE}/bulk-publish`, {
+        method: 'POST',
+        json: { filter: { source: 'import' }, dryRun: true, expected: [] },
+      }),
+      keyCtx(),
+    );
+    expect(res.status).toBe(400);
+  });
+});

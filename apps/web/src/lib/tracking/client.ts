@@ -84,6 +84,11 @@ export interface TrackingClientConfig {
    * docs/tracking-attribution/.
    */
   attributionStrategy?: () => AttributionStrategy;
+  /**
+   * Client muet (aperçu brouillon admin `?hmv_preview=draft`) : aucun
+   * événement n'est poussé dans le `dataLayer` ni envoyé à `/api/track`.
+   */
+  disabled?: boolean;
 }
 
 interface QueuedEvent {
@@ -109,7 +114,7 @@ const DEFAULT_REDUNDANCY: Record<string, number> = {
 
 export class TrackingClient {
   private readonly config: Required<
-    Omit<TrackingClientConfig, 'redundancyWindows' | 'attributionStrategy'>
+    Omit<TrackingClientConfig, 'redundancyWindows' | 'attributionStrategy' | 'disabled'>
   > & {
     redundancyWindows: Record<string, number>;
     attributionStrategy: () => AttributionStrategy;
@@ -119,7 +124,11 @@ export class TrackingClient {
   private lastEmitByKey = new Map<string, number>();
   private flushTimer: ReturnType<typeof setTimeout> | null = null;
 
+  /** Vrai en aperçu brouillon admin : `emit` ne fait rien. */
+  readonly disabled: boolean;
+
   constructor(config: TrackingClientConfig) {
+    this.disabled = config.disabled === true;
     this.config = {
       endpoint: config.endpoint ?? '/api/track',
       consent: config.consent,
@@ -134,6 +143,7 @@ export class TrackingClient {
   }
 
   emit(eventName: string, params: Record<string, unknown> = {}, options: EmitOptions = {}): void {
+    if (this.disabled) return;
     const consent = this.config.consent();
     const now = options.timestamp ? new Date(options.timestamp).getTime() : Date.now();
     const redundancyKey = this.computeRedundancyKey(eventName, params, options);

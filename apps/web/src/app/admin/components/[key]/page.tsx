@@ -14,6 +14,8 @@ import { ComponentDetailPanel } from '@/components/admin/components/ComponentDet
 import { loadInitialFields } from '@/components/admin/components/fields/load-initial-fields';
 import type { FieldDirtyState } from '@/components/admin/components/fields/types';
 import { LocaleEditorShell } from '@/components/admin/i18n/LocaleEditorShell';
+import { MediaVariantsSection } from '@/components/admin/components/media-variants/MediaVariantsSection';
+import { readMediaVariantPolicy } from '@/lib/components/media-variants/policy';
 import {
   IconArrowLeft,
   IconExternalLink,
@@ -92,6 +94,9 @@ export default async function AdminComponentDetailPage({
       : null;
 
   const activeBindings = bindings.filter((b) => b.isActive).length;
+  // Médias par audience : section affichée seulement si la politique existe.
+  const mediaVariantsPolicy = readMediaVariantPolicy(component.metadata);
+  const activeLegacySlots = bindings.filter((b) => b.isActive).map((b) => b.slot);
   const draftFieldsCount = Array.isArray(fieldBindings)
     ? fieldBindings.filter((fb) => fb.status === 'draft').length
     : 0;
@@ -178,6 +183,15 @@ export default async function AdminComponentDetailPage({
           </div>
 
           <div className="flex shrink-0 flex-wrap items-center gap-2">
+            {mediaVariantsPolicy ? (
+              <a
+                href="#medias-par-audience"
+                className="inline-flex items-center gap-1.5 rounded-md border border-stone-200 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 shadow-sm transition hover:border-stone-300 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900"
+              >
+                <IconLayers className="h-3.5 w-3.5" />
+                Médias par audience
+              </a>
+            ) : null}
             <Link
               href={`/${component.pageGroup === 'home' ? '' : component.pageGroup}`}
               target="_blank"
@@ -197,6 +211,15 @@ export default async function AdminComponentDetailPage({
         animations={animations}
         allAnimations={allAnimations}
       />
+
+      {mediaVariantsPolicy ? (
+        <MediaVariantsSection
+          componentKey={component.key}
+          policy={mediaVariantsPolicy}
+          activeLegacySlots={activeLegacySlots}
+          pagePath={component.pageGroup === 'home' ? '' : component.pageGroup}
+        />
+      ) : null}
 
       {initialFieldsByLocale ? (
         <section aria-labelledby="editor-heading" className="mt-10">

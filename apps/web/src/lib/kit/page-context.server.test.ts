@@ -175,6 +175,18 @@ describe('resolveKitPageContext — aperçu brouillon admin', () => {
     expect(ctx.draftPreview).toBe(false);
   });
 
+  it('aperçu admin : cookie fg_angle ignoré, seule l’URL décide', async () => {
+    vi.mocked(getAdminSession).mockResolvedValue({ sub: 'admin' } as never);
+    const ctx = await run({ searchParams: { hmv_preview: 'draft' }, cookies: cookieJar({ fg_angle: 'e' }) });
+    expect(ctx.kitAngle.angle).toBeNull();
+    expect(lastGalleryCall()).toMatchObject({ angle: null, draft: true });
+  });
+
+  it('?hmv_preview=draft sans session : cookie fg_angle conservé', async () => {
+    const ctx = await run({ searchParams: { hmv_preview: 'draft' }, cookies: cookieJar({ fg_angle: 'e' }) });
+    expect(ctx.kitAngle).toEqual({ angle: 'e', source: 'cookie' });
+  });
+
   it('?hmv_preview=draft AVEC session : brouillons, drapeau forcé, aucun serverFire', async () => {
     vi.mocked(getAdminSession).mockResolvedValue({ sub: 'admin' } as never);
     const ctx = await run({ searchParams: { hmv_preview: 'draft', angle: 'e' } });

@@ -69,6 +69,12 @@ export interface TrackingProviderProps {
    * Par défaut `last_paid_touch`.
    */
   attributionStrategy?: AttributionStrategy;
+  /**
+   * Aperçu brouillon admin (`?hmv_preview=draft`, marqueur du middleware) :
+   * consentement refusé forcé et client muet — aucun envoi `dataLayer` ni
+   * `/api/track`, quel que soit le consentement stocké.
+   */
+  previewMode?: boolean;
 }
 
 export function TrackingProvider({
@@ -77,9 +83,10 @@ export function TrackingProvider({
   bannerEnabled = true,
   defaultGranted = false,
   attributionStrategy = DEFAULT_ATTRIBUTION_STRATEGY,
+  previewMode = false,
 }: TrackingProviderProps): JSX.Element {
   const initialConsent: TrackingConsentState =
-    !bannerEnabled && defaultGranted ? GRANTED_CONSENT : DENIED_CONSENT;
+    !previewMode && !bannerEnabled && defaultGranted ? GRANTED_CONSENT : DENIED_CONSENT;
   const [consent, setConsent] = useState<TrackingConsentState>(initialConsent);
   const [isReady, setIsReady] = useState(false);
   const consentRef = useRef(consent);
@@ -105,11 +112,19 @@ export function TrackingProvider({
         // Lecture via ref pour refléter un changement de stratégie sans
         // recréer le client (rare, mais utile pour les tests).
         attributionStrategy: () => strategyRef.current,
+        disabled: previewMode,
       }),
-    [endpoint],
+    [endpoint, previewMode],
   );
 
   useEffect(() => {
+    // Aperçu brouillon admin : consentement refusé forcé (ni lecture ni
+    // écriture du stockage, événements de consentement ignorés), client muet.
+    if (previewMode) {
+      setConsent(DENIED_CONSENT);
+      setIsReady(true);
+      return undefined;
+    }
     // Bandeau actif : on lit la valeur stockée (denied par défaut Consent
     // Mode v2). Bandeau désactivé : on applique l'état souhaité par
     // l'admin (granted si juridiction ne l'exige pas, denied sinon).
@@ -146,7 +161,7 @@ export function TrackingProvider({
       window.removeEventListener('visibilitychange', flushOnHide);
       window.removeEventListener('pagehide', flushOnHide);
     };
-  }, [client, bannerEnabled, defaultGranted]);
+  }, [client, bannerEnabled, defaultGranted, previewMode]);
 
   const value = useMemo<TrackingContextValue>(
     () => ({ client, consent, isReady, bannerEnabled }),

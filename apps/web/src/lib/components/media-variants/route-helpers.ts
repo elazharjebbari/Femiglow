@@ -89,6 +89,23 @@ export function readExpectedUpdatedAt(request: Request, fromBody?: string | null
   return date;
 }
 
+/**
+ * Précondition `If-None-Match: *` (« aucun brouillon ne doit exister ») pour
+ * `PUT /draft` et `POST /restore` : le client part d'un état sans brouillon.
+ * Toute autre valeur → 400 ; combinée à `If-Match` / `expectedUpdatedAt` → 400.
+ */
+export function readExpectNoDraft(request: Request, expectedUpdatedAt: Date | null): boolean {
+  const raw = request.headers.get('if-none-match');
+  if (raw === null) return false;
+  if (raw.trim() !== '*') {
+    throw new HttpError('invalid_input', 'If-None-Match : seule la valeur « * » est acceptée');
+  }
+  if (expectedUpdatedAt) {
+    throw new HttpError('invalid_input', 'If-None-Match: * ne se combine pas avec If-Match');
+  }
+  return true;
+}
+
 /** Messages lisibles des refus de transition (`MediaSetStateError.reason`). */
 const STATE_MESSAGES: Record<string, string> = {
   'schedule.scheduled_exists':
@@ -121,7 +138,8 @@ export async function toMediaSetHttpError(err: unknown): Promise<unknown> {
   if (err instanceof MediaSetConflictError) {
     const current = err.set ? await getSetWithItems(err.set.id).catch(() => null) : null;
     return new HttpError('version_conflict', 'Une autre modification a eu lieu sur cet ensemble', {
-      current: current ?? err.set ?? null,
+      // `err.set` n'a pas d'items : jamais renvoyé comme état courant.
+      current: current ?? null,
       remoteUpdatedAt: err.set ? new Date(err.set.updatedAt).toISOString() : null,
     });
   }

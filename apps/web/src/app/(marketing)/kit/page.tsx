@@ -276,10 +276,12 @@ export default async function KitPage({ searchParams }: KitPageProps) {
   };
   return (
     <>
-      <KitAngleCookie
-        angle={kitAngle.angle}
-        fromUrl={kitAngle.source === 'query' || kitAngle.source === 'utm'}
-      />
+      {kitContext.draftPreview ? null : (
+        <KitAngleCookie
+          angle={kitAngle.angle}
+          fromUrl={kitAngle.source === 'query' || kitAngle.source === 'utm'}
+        />
+      )}
       {effectiveLayout === 'v2' ? (
         <KitPageLayoutV2 {...layoutProps} />
       ) : (

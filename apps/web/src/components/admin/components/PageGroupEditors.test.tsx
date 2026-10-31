@@ -22,6 +22,13 @@ describe('PageGroupEditors', () => {
     expect(getByRole('link', { name: /Pack/ }).getAttribute('href')).toBe('/admin/kit/pack');
   });
 
+  it('raccourci « Médias du hero par angle » vers l’onglet médias par audience', () => {
+    const { getByRole } = render(<PageGroupEditors group="kit" />);
+    expect(getByRole('link', { name: /Médias du hero par angle/ }).getAttribute('href')).toBe(
+      '/admin/components/kit-hero-produit#medias-par-audience',
+    );
+  });
+
   it('ne rend rien pour un groupe sans éditeurs dédiés', () => {
     const { container } = render(<PageGroupEditors group="home" />);
     expect(container.firstChild).toBeNull();

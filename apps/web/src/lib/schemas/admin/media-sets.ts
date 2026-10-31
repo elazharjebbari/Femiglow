@@ -45,6 +45,9 @@ const setLocaleSchema = z
   .string()
   .refine((v) => MEDIA_SET_LOCALES.includes(v), { message: 'Langue invalide' });
 
+/** Taille max du plan revu d'une publication en masse (= plafond de la route). */
+export const MEDIA_SET_BULK_EXPECTED_MAX = 200;
+
 /** Identifiant opaque (média, ensemble, historique). */
 const idSchema = z.string().min(1).max(64);
 
@@ -158,6 +161,16 @@ export const mediaSetBulkPublishSchema = z
     /** Publier TOUS les brouillons du composant (filtre vide obligatoire). */
     all: z.literal(true).optional(),
     dryRun: z.boolean().optional().default(false),
+    /**
+     * Plan revu (issu de l'essai à blanc) : `setId` + `updatedAt` de chaque
+     * brouillon à publier. Si les brouillons correspondant au filtre ne sont
+     * plus EXACTEMENT ceux-là (ajout, retrait, modification), rien n'est
+     * publié (409 `bulk.plan_changed`).
+     */
+    expected: z
+      .array(z.object({ setId: idSchema, updatedAt: isoDateSchema }).strict())
+      .max(MEDIA_SET_BULK_EXPECTED_MAX)
+      .optional(),
   })
   .strict()
   .superRefine((v, ctx) => {
@@ -167,6 +180,13 @@ export const mediaSetBulkPublishSchema = z
         code: z.ZodIssueCode.custom,
         path: ['filter'],
         message: 'Filtre vide : précisez au moins un critère, ou `all: true` pour tout publier',
+      });
+    }
+    if (v.expected && v.dryRun) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['expected'],
+        message: '`expected` ne s’emploie qu’avec une publication réelle',
       });
     }
     if (hasFilter && v.all) {

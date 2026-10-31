@@ -34,6 +34,7 @@ import {
   listPublishedSetsWithMedia,
   listScheduledDueSets,
   listSetHistory,
+  listMediaSetUsages,
   listSetsByComponent,
   MediaSetConflictError,
   MediaSetStateError,
@@ -782,5 +783,40 @@ describe('API : les mutations renvoient l’ensemble avec ses items', () => {
     await publishSet({ setId: d.id, actorId: null });
     const u = await unpublishSet({ setId: d.id, actorId: null });
     expect(u.items.map((i) => i.mediaId)).toEqual(expected);
+  });
+});
+
+describe('revue PR 6 — précondition « aucun brouillon » et ordre des usages', () => {
+  it('expectNoDraft : crée si aucun brouillon, 409 (état courant) si un brouillon existe, sans l’écraser', async () => {
+    const created = await upsertDraftSet(draftInput({ expectNoDraft: true }));
+    expect(created.status).toBe('draft');
+    const err = await upsertDraftSet(draftInput({ expectNoDraft: true, items: [{ mediaId: m2.id }] })).catch(
+      (e: unknown) => e,
+    );
+    expect(err).toBeInstanceOf(MediaSetConflictError);
+    expect((err as MediaSetConflictError).set?.id).toBe(created.id);
+    expect((await getSetWithItems(created.id))?.items.map((i) => i.mediaId)).toEqual([m1.id]);
+  });
+
+  it('expectNoDraft sur une restauration : 409 si un brouillon est apparu', async () => {
+    const p = await upsertDraftSet(draftInput());
+    await publishSet({ setId: p.id, actorId: null });
+    const [entry] = await listSetHistory(p);
+    await upsertDraftSet(draftInput({ items: [{ mediaId: m2.id }] }));
+    await expect(
+      restoreSetFromHistory({ historyId: entry!.id, actorId: null, expectNoDraft: true }),
+    ).rejects.toBeInstanceOf(MediaSetConflictError);
+  });
+
+  it('listMediaSetUsages : vivants d’abord, la limite ne garde pas des archives', async () => {
+    const v1 = await upsertDraftSet(draftInput());
+    await publishSet({ setId: v1.id, actorId: null });
+    const v2 = await upsertDraftSet(draftInput());
+    await publishSet({ setId: v2.id, actorId: null }); // v1 archivé
+    const d = await upsertDraftSet(draftInput({ slot: 'secondary' }));
+    const all = await listMediaSetUsages(m1.id);
+    expect(all.map((u) => u.status)).toEqual(['published', 'draft', 'archived']);
+    const limited = await listMediaSetUsages(m1.id, 2);
+    expect(limited.map((u) => u.setId)).toEqual([v2.id, d.id]);
   });
 });
