@@ -71,7 +71,7 @@ export const dictionaryFr: WizardDictionary = {
     subtitle: 'Vous payez à la réception.',
     cityLabel: 'Votre ville',
     cityPlaceholder: 'Casablanca, Rabat, Agadir…',
-    addressLabel: 'Quartier, rue et numéro',
+    addressLabel: 'Quartier, rue et numéro (facultatif)',
     addressPlaceholder: 'Ex. : Hay Salam, rue 4, n° 12',
     addNote: 'Ajouter une note pour le livreur',
     notePlaceholder: 'Point de repère, créneau préféré…',

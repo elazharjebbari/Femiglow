@@ -23,6 +23,13 @@ describe('deriveAddressPhase', () => {
     expect(deriveAddressPhase({ city: 'الرباط', addressLine1: 'حي السلام' })).toBe('ready');
   });
 
+  it('adresse facultative : la ville suffit, une fois le champ à l’écran', () => {
+    const input = { city: 'Fès', addressLine1: '', addressOptional: true };
+    expect(deriveAddressPhase(input)).toBe('ready');
+    expect(deriveAddressPhase({ ...input, addressRevealed: false })).toBe('address');
+    expect(deriveAddressPhase({ ...input, city: '' })).toBe('city');
+  });
+
   it("l'envoi prime sur tout le reste", () => {
     expect(deriveAddressPhase({ city: '', addressLine1: '', submitting: true })).toBe('submitting');
   });

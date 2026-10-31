@@ -1168,9 +1168,9 @@ export const SITE_COMPONENT_REGISTRY: SiteComponentSeed[] = [
         label: 'Part des visiteurs sur la nouvelle étape adresse (%)',
         type: 'number',
         required: false,
-        defaultValue: 0,
+        defaultValue: 100,
         description:
-          "0 = tout le monde sur la version actuelle (coupe-circuit), 100 = tout le monde sur la nouvelle. Chaque visiteur garde toujours la même version. Recette : ajouter ?step2=v2 ou ?step2=control à l'URL.",
+          "100 = tout le monde sur la nouvelle version, 0 = tout le monde sur l'ancienne (coupe-circuit). Chaque visiteur garde toujours la même version. Recette : ajouter ?step2=v2 ou ?step2=control à l'URL.",
         group: 'Comportement',
         order: 3,
         config: { min: 0, max: 100, step: 1 },

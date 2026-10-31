@@ -23,6 +23,8 @@ export interface DeriveAddressPhaseInput {
   addressLine1: string | null | undefined;
   /** Champ adresse à l'écran. `false` : il reste à le révéler. */
   addressRevealed?: boolean;
+  /** L'adresse peut rester vide : la ville suffit. */
+  addressOptional?: boolean;
   submitting?: boolean;
 }
 
@@ -30,10 +32,11 @@ export function deriveAddressPhase({
   city,
   addressLine1,
   addressRevealed = true,
+  addressOptional = false,
   submitting = false,
 }: DeriveAddressPhaseInput): AddressPhase {
   if (submitting) return 'submitting';
   if (!isAddressCityValid(city)) return 'city';
-  if (addressRevealed && isAddressLineValid(addressLine1)) return 'ready';
+  if (addressRevealed && (addressOptional || isAddressLineValid(addressLine1))) return 'ready';
   return 'address';
 }

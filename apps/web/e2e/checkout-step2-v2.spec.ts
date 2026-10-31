@@ -96,6 +96,16 @@ test.describe('étape 2 progressive — parcours', () => {
     await expect(page.getByTestId('wizard-step-thankyou')).toBeVisible();
   });
 
+  test('adresse facultative : commande créée avec la ville seule', async ({ page }) => {
+    test.setTimeout(90_000);
+    await goToStep2(page);
+    await chooseCasablanca(page);
+    await expect(page.getByTestId('wizard-address-submit')).toHaveAttribute('data-phase', 'ready');
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    await page.getByTestId('wizard-address-submit').click();
+    await expect(page.getByTestId('wizard-step-thankyou')).toBeVisible();
+  });
+
   test('ville hors catalogue : adresse ouverte, 45 MAD comme le serveur', async ({ page }) => {
     test.setTimeout(90_000);
     await goToStep2(page);
@@ -164,10 +174,47 @@ test.describe('étape 2 progressive — parcours', () => {
 });
 
 test.describe('étape 2 — réglage par défaut', () => {
-  test('sans paramètre, la version actuelle est servie', async ({ page }) => {
+  test('sans paramètre, la V2 est servie', async ({ page }) => {
     test.setTimeout(90_000);
     await goToStep2(page, '', 'x=1');
+    await expect(page.getByTestId('wizard-step-address')).toHaveAttribute('data-variant', 'v2');
+    await expect(page.getByTestId('wizard-action-bar')).toBeVisible();
+  });
+
+  test('?step2=control ramène l’ancienne version', async ({ page }) => {
+    test.setTimeout(90_000);
+    await goToStep2(page, '', 'step2=control');
     await expect(page.getByTestId('wizard-step-address')).not.toHaveAttribute('data-variant', 'v2');
     await expect(page.getByTestId('wizard-action-bar')).toHaveCount(0);
   });
+});
+
+test.describe('étape 1 — case de rappel', () => {
+  test('refus mémorisé par le navigateur : la case revient cochée', async ({ page }) => {
+    test.setTimeout(90_000);
+    await page.addInitScript(() => {
+      window.localStorage.setItem(
+        'femiglow.wizard.v1',
+        JSON.stringify({ state: { leadDraft: { firstName: '', phone: '', consent: false } }, version: 3 }),
+      );
+    });
+    await page.goto('/kit?cta=scroll');
+    await expect(page.locator('input[name=consent]')).toBeChecked();
+  });
+});
+
+test.describe('étape 1 — numéro pré-rempli', () => {
+  for (const value of ['+212 (0)6 12 34 56 78', '+2120612345678', '٠٦١٢٣٤٥٦٧٨']) {
+    test(`${value} : accepté`, async ({ page }) => {
+      test.setTimeout(90_000);
+      await page.goto('/kit?cta=scroll');
+      const lead = page.getByTestId('wizard-step-lead');
+      await expect(lead).toBeVisible();
+      await page.waitForTimeout(800);
+      const phone = lead.locator('input[type=tel]').first();
+      await phone.fill(value);
+      await expect(phone).toHaveValue('06 12 34 56 78');
+      await expect(lead.getByText(/Numéro à 9 chiffres/)).toHaveCount(0);
+    });
+  }
 });

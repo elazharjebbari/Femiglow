@@ -75,8 +75,8 @@ describe('toLocalMoroccanDigits', () => {
     expect(toLocalMoroccanDigits('06 12 34 56 78')).toBe('0612345678');
   });
 
-  it('national 9 chiffres (sans 0) inchangé', () => {
-    expect(toLocalMoroccanDigits('612345678')).toBe('612345678');
+  it('national 9 chiffres (sans 0) : complété en local', () => {
+    expect(toLocalMoroccanDigits('612345678')).toBe('0612345678');
   });
 
   it('préserve la saisie progressive (ne strippe pas le 0 local)', () => {
@@ -100,5 +100,35 @@ describe('toLocalMoroccanDigits', () => {
   it('indicatif non marocain laissé tel quel (rejeté plus tard par la validation)', () => {
     // France +33 : pas de conversion → reste non-local, donc invalide côté Zod Maroc.
     expect(toLocalMoroccanDigits('+33612345678')).toBe('3361234567');
+  });
+});
+
+describe('toLocalMoroccanDigits — formats de l’autofill', () => {
+  it.each([
+    ['+212 (0)6 12 34 56 78', '0612345678'],
+    ['+2120612345678', '0612345678'],
+    ['002120612345678', '0612345678'],
+    ['212 06 12 34 56 78', '0612345678'],
+    ['612345678', '0612345678'],
+    ['٠٦١٢٣٤٥٦٧٨', '0612345678'],
+    ['۰۶۱۲۳۴۵۶۷۸', '0612345678'],
+    ['+٢١٢٦١٢٣٤٥٦٧٨', '0612345678'],
+  ])('%s', (input, expected) => {
+    expect(toLocalMoroccanDigits(input)).toBe(expected);
+    expect(toLocalMoroccanDigits(expected)).toBe(expected);
+  });
+
+  it('saisie progressive : rien ne saute pendant la frappe', () => {
+    const typed = '+212612345678';
+    let value = '';
+    for (const char of typed) value = toLocalMoroccanDigits(value + char);
+    expect(value).toBe('0612345678');
+    expect(toLocalMoroccanDigits('0')).toBe('0');
+    expect(toLocalMoroccanDigits('06')).toBe('06');
+    expect(toLocalMoroccanDigits('61234')).toBe('61234');
+  });
+
+  it('ne transforme pas un numéro étranger en numéro marocain', () => {
+    expect(toLocalMoroccanDigits('+33612345678')).not.toMatch(/^0[5-7]\d{8}$/);
   });
 });

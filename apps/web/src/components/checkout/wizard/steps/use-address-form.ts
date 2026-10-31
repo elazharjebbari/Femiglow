@@ -33,12 +33,15 @@ interface UseAddressFormOptions {
   onInvalid?: () => void;
   /** Le champ adresse est-il à l'écran ? (révélation progressive de la V2) */
   isAddressRevealed?: () => boolean;
+  /** La ville suffit à commander. Le serveur accepte déjà une adresse vide. */
+  addressOptional?: boolean;
 }
 
 export function useAddressForm({
   validationMode,
   onInvalid,
   isAddressRevealed,
+  addressOptional = false,
 }: UseAddressFormOptions) {
   const { t, language } = useWizardTranslation();
   const addressDraft = useWizardStore((s) => s.addressDraft);
@@ -60,6 +63,7 @@ export function useAddressForm({
         city,
         addressLine1,
         addressRevealed: isAddressRevealedRef.current?.() ?? true,
+        addressOptional,
         submitting: submittingRef.current,
       }),
       hasCity: isAddressCityValid(city),
@@ -68,8 +72,8 @@ export function useAddressForm({
   const { trackCitySelected, trackValidationError } = tracking;
 
   const addressFormSchema = useMemo(
-    () => buildAddressFormSchema(t.address.errors),
-    [t.address.errors],
+    () => buildAddressFormSchema(t.address.errors, { addressOptional }),
+    [t.address.errors, addressOptional],
   );
 
   const form = useForm<AddressFormValues>({

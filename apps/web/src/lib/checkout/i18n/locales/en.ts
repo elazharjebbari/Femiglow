@@ -70,7 +70,7 @@ export const dictionaryEn: WizardDictionary = {
     subtitle: 'You pay on delivery.',
     cityLabel: 'Your city',
     cityPlaceholder: 'Casablanca, Rabat, Agadir…',
-    addressLabel: 'Area, street and number',
+    addressLabel: 'Area, street and number (optional)',
     addressPlaceholder: 'E.g. Hay Salam, street 4, no. 12',
     addNote: 'Add a note for the courier',
     notePlaceholder: 'Landmark, preferred time…',

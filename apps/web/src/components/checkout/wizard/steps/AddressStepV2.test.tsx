@@ -133,7 +133,7 @@ describe('AddressStepV2 — révélation', () => {
     expect(screen.getByTestId('wizard-shipping-notice')).toHaveTextContent('Livraison en 24h-48h');
     expect(screen.getByTestId('wizard-shipping-notice')).toHaveTextContent('35 MAD');
     expect(screen.getByTestId('wizard-action-total-amount')).toHaveTextContent('234 MAD');
-    expect(cta()).toHaveTextContent(fr.ctaAddAddress);
+    expect(cta()).toHaveTextContent(fr.ctaConfirm);
   });
 
   it('ville hors liste : ouverte à la sortie du champ, 45 MAD, la cliente n’est pas bloquée', async () => {
@@ -199,10 +199,11 @@ describe('AddressStepV2 — bouton', () => {
     expect(eventParams('address_cta_tap_incomplete')).toMatchObject({ missing_field: 'city' });
   });
 
-  it('tap adresse vide : curseur dans l’adresse, aucun appel', async () => {
+  it('ville saisie, champ pas encore ouvert : le tap ouvre l’adresse', async () => {
+    cities = [];
     render(<AddressStepV2 />);
-    await pickCasablanca();
-    (document.activeElement as HTMLElement).blur();
+    fireEvent.change(city(), { target: { value: 'Douar X' } });
+    await waitFor(() => expect(cta()).toHaveAttribute('data-phase', 'address'));
     fireEvent.click(cta());
     expect(document.activeElement).toBe(line());
     expect(execute).not.toHaveBeenCalled();
@@ -211,15 +212,44 @@ describe('AddressStepV2 — bouton', () => {
     });
   });
 
-  it('tap adresse trop courte : message sous le champ', async () => {
+  it('tap sur « Ajouter mon adresse » : le champ s’ouvre, aucune commande', async () => {
+    cities = [];
+    render(<AddressStepV2 />);
+    fireEvent.focus(city());
+    fireEvent.change(city(), { target: { value: 'Douar X' } });
+    await waitFor(() => expect(cta()).toHaveAttribute('data-phase', 'address'));
+    // Ordre réel d'un tap : toucher, sortie du champ ville, puis clic.
+    fireEvent.pointerDown(cta());
+    fireEvent.blur(city());
+    await waitFor(() => expect(cta()).toHaveAttribute('data-phase', 'ready'));
+    fireEvent.click(cta());
+    expect(document.activeElement).toBe(line());
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(execute).not.toHaveBeenCalled();
+  });
+
+  it('adresse facultative : commande possible sans adresse', async () => {
+    render(<AddressStepV2 />);
+    await pickCasablanca();
+    await waitFor(() => expect(cta()).toHaveAttribute('data-phase', 'ready'));
+    expect(screen.getByLabelText(/facultatif/)).not.toBeRequired();
+    fireEvent.submit(cta().closest('section')!.querySelector('form')!);
+    await waitFor(() => expect(execute).toHaveBeenCalledTimes(1));
+    expect(execute.mock.calls[0]?.[0]).toMatchObject({ city: 'Casablanca', addressLine1: '' });
+  });
+
+  it('adresse courte : acceptée, sans message', async () => {
     render(<AddressStepV2 />);
     await pickCasablanca();
     fireEvent.change(line(), { target: { value: 'ab' } });
-    fireEvent.click(cta());
+    fireEvent.blur(line());
+    fireEvent.submit(cta().closest('section')!.querySelector('form')!);
+    await waitFor(() => expect(execute).toHaveBeenCalledTimes(1));
     expect(
-      await screen.findByText(getWizardDictionary('fr').address.errors.addressRequired),
-    ).toBeInTheDocument();
-    expect(execute).not.toHaveBeenCalled();
+      screen.queryByText(getWizardDictionary('fr').address.errors.addressRequired),
+    ).not.toBeInTheDocument();
   });
 
   it('prêt : libellé de confirmation, données envoyées au serveur', async () => {
