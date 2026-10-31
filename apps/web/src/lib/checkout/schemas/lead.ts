@@ -120,6 +120,20 @@ export const patchLeadAddressInputSchema = z.object({
 export type PatchLeadAddressInput = z.infer<typeof patchLeadAddressInputSchema>;
 
 /**
+ * Sauvegarde champ par champ de l'étape 2 : seuls les champs présents changent.
+ * Une chaîne vide efface l'adresse ou la note, pas la ville.
+ */
+export const patchLeadAddressDraftInputSchema = z
+  .object({
+    city: z.string().trim().min(2).max(80).optional(),
+    addressLine1: z.string().trim().max(160).optional(),
+    notes: z.string().trim().max(500).optional(),
+  })
+  .strict()
+  .refine((patch) => Object.keys(patch).length > 0, 'Aucun champ à enregistrer.');
+export type PatchLeadAddressDraftInput = z.infer<typeof patchLeadAddressDraftInputSchema>;
+
+/**
  * CHA-231 : `nextStep` accepte `payment` (legacy) ou `thank_you` (wizard v3).
  * Le serveur peut router selon la config du form ; on garde la flexibilité.
  */

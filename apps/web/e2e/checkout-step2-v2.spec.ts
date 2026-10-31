@@ -196,6 +196,73 @@ test.describe('étape 2 — réglage par défaut', () => {
   });
 });
 
+test.describe('étape 2 — arrivée et clavier', () => {
+  for (const { name, width, height } of VIEWPORTS) {
+    test(`${name} : champ ville centré, animation d’accueil`, async ({ page }) => {
+      test.setTimeout(90_000);
+      await page.setViewportSize({ width, height });
+      await goToStep2(page);
+      const field = page.getByTestId('wizard-address-city');
+      await expect(field).toHaveAttribute('data-fg-arrival', 'field', { timeout: 4_000 });
+      const box = await field.evaluate((el) => {
+        const rect = el.getBoundingClientRect();
+        const bar = document.querySelector('[data-testid="wizard-action-bar"]')!.getBoundingClientRect();
+        const stuck = document.elementFromPoint(window.innerWidth / 2, 2)?.closest('header');
+        return { top: rect.top, bottom: rect.bottom, barTop: bar.top, header: stuck?.getBoundingClientRect().bottom ?? 0 };
+      });
+      expect(box.top).toBeGreaterThan(box.header);
+      expect(box.bottom).toBeLessThan(box.barTop);
+      await expect(field).not.toHaveAttribute('data-fg-arrival', 'field', { timeout: 4_000 });
+    });
+  }
+
+  test('clavier ouvert : le champ reste visible au-dessus', async ({ page }) => {
+    test.setTimeout(90_000);
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.addInitScript(() => {
+      // Chromium n'a pas de clavier virtuel : on simule ce qu'il change.
+      const real = window.visualViewport!;
+      const fake = new EventTarget() as EventTarget & { height: number; offsetTop: number };
+      fake.height = real.height;
+      fake.offsetTop = 0;
+      Object.defineProperty(window, 'visualViewport', { value: fake });
+      (window as unknown as { openKeyboard: () => void }).openKeyboard = () => {
+        fake.height = 400;
+        fake.dispatchEvent(new Event('resize'));
+      };
+    });
+    await goToStep2(page);
+    await chooseCasablanca(page);
+    const line = page.getByTestId('wizard-address-line1');
+    await line.click();
+    await page.evaluate(() => (window as unknown as { openKeyboard: () => void }).openKeyboard());
+    await page.waitForTimeout(500);
+    const rect = await line.boundingBox();
+    expect(rect!.y).toBeGreaterThan(40);
+    expect(rect!.y + rect!.height).toBeLessThan(400);
+  });
+});
+
+test.describe('étape 2 — fiche client', () => {
+  test('ville et adresse enregistrées champ par champ, puis commande', async ({ page }) => {
+    test.setTimeout(90_000);
+    const drafts: unknown[] = [];
+    page.on('request', (r) => {
+      if (r.url().includes('/address/draft')) drafts.push(r.postDataJSON());
+    });
+    await goToStep2(page);
+    await chooseCasablanca(page);
+    const line = page.getByTestId('wizard-address-line1');
+    await line.fill('Hay Salam, rue 4');
+    await expect(line).toBeFocused();
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    await expect.poll(() => drafts.length).toBe(2);
+    expect(drafts).toEqual([{ city: 'Casablanca' }, { addressLine1: 'Hay Salam, rue 4' }]);
+    await page.getByTestId('wizard-address-submit').click();
+    await expect(page.getByTestId('wizard-step-thankyou')).toBeVisible();
+  });
+});
+
 test.describe('étape 2 — prix promotionnel', () => {
   for (const { name, width, height } of VIEWPORTS) {
     test(`${name} : prix barré et bouton tiennent à l’écran`, async ({ page }) => {

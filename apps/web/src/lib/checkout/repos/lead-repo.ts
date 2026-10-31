@@ -14,7 +14,7 @@
  * `optInEmail` permet d'ajouter l'opt-in marketing après le thank-you
  * (step 4). Ne crée jamais un nouveau lead → mutation pure.
  */
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 
 import { requireChatDb } from '@/lib/chat/db/client';
 import {
@@ -245,6 +245,33 @@ export const wizardLeadRepo = {
         updatedAt: now,
       })
       .where(eq(chatLead.id, id))
+      .returning();
+    return rows[0] ?? null;
+  },
+
+  /**
+   * Step 2 en cours de saisie — met à jour les seuls champs reçus.
+   *
+   * Ne pose PAS `addressCompletedAt` : il autorise la création de commande et
+   * retire le lead du scanner `lead.step1_abandoned`. Une commande passée fige
+   * la fiche : un envoi retardé ne doit pas écraser l'adresse validée.
+   */
+  async patchAddressDraft(
+    id: string,
+    patch: { city?: string; addressLine1?: string; notes?: string },
+  ): Promise<ChatLeadRow | null> {
+    const db = requireChatDb();
+    const now = new Date();
+    const rows = await db
+      .update(chatLead)
+      .set({
+        ...(patch.city !== undefined ? { shippingCity: patch.city } : {}),
+        ...(patch.addressLine1 !== undefined ? { shippingAddressLine1: patch.addressLine1 } : {}),
+        ...(patch.notes !== undefined ? { shippingNotes: patch.notes } : {}),
+        lastTouchedStep: 'address',
+        updatedAt: now,
+      })
+      .where(and(eq(chatLead.id, id), isNull(chatLead.purchasedAt)))
       .returning();
     return rows[0] ?? null;
   },

@@ -17,13 +17,14 @@ import { wizardLeadRepo } from '@/lib/checkout/repos/lead-repo';
 import { wizardSessionRepo } from '@/lib/checkout/repos/session-repo';
 import {
   createLeadInputSchema,
+  patchLeadAddressDraftInputSchema,
   patchLeadAddressInputSchema,
   patchLeadPaymentInputSchema,
   type CreateLeadInput,
 } from '@/lib/checkout/schemas/lead';
 import type { CreateWizardLeadInput } from '@/lib/checkout/repos/lead-repo';
 
-export type BatchScope = 'lead_create' | 'address_update' | 'payment_select';
+export type BatchScope = 'lead_create' | 'address_draft' | 'address_update' | 'payment_select';
 
 export interface BatchEnvelope {
   mutationId: string;
@@ -131,6 +132,13 @@ export const leadService = {
             continue;
           }
           await leadService.applyLeadCreate(parsed.data);
+        } else if (env.scope === 'address_draft') {
+          const parsed = patchLeadAddressDraftInputSchema.safeParse(env.payload);
+          if (!parsed.success) {
+            results.push({ mutationId: env.mutationId, ok: false, status: 'rejected' });
+            continue;
+          }
+          await wizardLeadRepo.patchAddressDraft(env.leadId, parsed.data);
         } else if (env.scope === 'address_update') {
           const parsed = patchLeadAddressInputSchema.safeParse(env.payload);
           if (!parsed.success) {
