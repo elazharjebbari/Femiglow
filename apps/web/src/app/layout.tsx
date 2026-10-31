@@ -28,6 +28,7 @@ import { ensureSeedOnce } from '@/lib/boot/seed-on-boot';
 import { ChatWidgetMount } from '@/components/chat/ChatWidgetMount';
 import { MobileFocusGuard } from '@/components/a11y/MobileFocusGuard';
 import { listPlacementsForZone } from '@/lib/legal/repository';
+import { isHmvPreviewRequest } from '@/lib/kit/hmv-preview';
 
 async function loadCookieBannerLegalLinks(): Promise<Array<{ slug: string; label: string }>> {
   try {
@@ -150,6 +151,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // source unique serveur+client, donc plus de divergence d'hydratation ni de
   // flash LTR. Fallback DEFAULT_LOCALE pour les routes legacy non préfixées.
   const activeLocale = coerceLocale(headers().get('x-locale'));
+  // Médias par audience — aperçu brouillon chargé en iframe par l'admin
+  // (marqueur posé par le middleware, jamais repris du client) : aucune
+  // couche de mesure, consentement refusé forcé. Le noindex est l'en-tête
+  // `x-robots-tag` du middleware (les pages /kit redéfinissent `robots`).
+  // N'ouvre PAS l'accès aux brouillons (gating admin dans
+  // lib/kit/page-context.server.ts).
+  const hmvPreview = isHmvPreviewRequest(headers());
   const { direction } = getLocaleConfig(activeLocale);
 
   // Lit la configuration globale du bandeau cookies. Les valeurs par
@@ -181,7 +189,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             Assistant / Preview Mode détecte le conteneur dès le HTML
             initial. Le consentement est géré via Consent Mode v2
             (defaults = denied tant que le bandeau n'est pas accepté). */}
-        <GtmHeadScript defaultGranted={defaultGranted} />
+        {hmvPreview ? null : <GtmHeadScript defaultGranted={defaultGranted} />}
         <SkipLink />
         {/* Bloque l'auto-zoom iOS/Android sur les champs texte. Aucun
             impact UX en dehors d'une saisie. cf. MobileFocusGuard. */}
@@ -190,28 +198,33 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           bannerEnabled={bannerEnabled}
           defaultGranted={defaultGranted}
           attributionStrategy={attributionStrategy}
+          previewMode={hmvPreview}
         >
-          <TrackingGlobalListener />
+          {hmvPreview ? null : <TrackingGlobalListener />}
           {/* Kit CRO v2 §1 — Web Vitals réels → /api/track (`web_vitals`,
               first-party, jamais relayé aux pixels). Ignoré sur /admin. */}
-          <WebVitalsReporter />
+          {hmvPreview ? null : <WebVitalsReporter />}
           {/* Garde-fou anti-scroll horizontal : `overflow-x-clip` confine tout
             débordement latéral (bleeds `-mx-*`, carousels, rails) SANS créer de
             scroll-container (position:sticky préservé) ni toucher le scroll
             vertical (règle CSS : clip sur X laisse Y visible). Les overlays
             fixes (bannière, chat…) restent hors du wrapper. */}
           <div className="overflow-x-clip">{children}</div>
-          <ConsentBanner
-            enabled={bannerEnabled}
-            defaultGranted={defaultGranted}
-            legalLinks={cookieBannerLegalLinks}
-            labels={consentLabels}
-          />
-          <AttributionCaptureBridge />
-          <PixelLoader />
-          <SnapPixelEvents />
-          <DebugOverlay />
-          <ChatWidgetMount />
+          {hmvPreview ? null : (
+            <>
+              <ConsentBanner
+                enabled={bannerEnabled}
+                defaultGranted={defaultGranted}
+                legalLinks={cookieBannerLegalLinks}
+                labels={consentLabels}
+              />
+              <AttributionCaptureBridge />
+              <PixelLoader />
+              <SnapPixelEvents />
+              <DebugOverlay />
+              <ChatWidgetMount />
+            </>
+          )}
         </TrackingProvider>
       </body>
     </html>

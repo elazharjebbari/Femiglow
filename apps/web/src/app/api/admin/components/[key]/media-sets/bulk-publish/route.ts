@@ -13,7 +13,10 @@
  *    suivantes et est rapporté par item. Une seule invalidation de cache
  *    à la fin si au moins une publication a réussi.
  *
- * Garde-fous : même origine (403) ; filtre non vide OU `all: true` (400).
+ * Garde-fous : même origine (403) ; filtre non vide OU `all: true` (400) ;
+ * `expected` (plan revu de l'essai à blanc, `setId` + `updatedAt`) : si les
+ * brouillons ont changé entre-temps, rien n'est publié (409
+ * `invalid_state`, raison `bulk.plan_changed`).
  *
  * Audit : `media_set.publish` (avec `bulk: true`) par ensemble publié,
  * plus un `media_set.bulk_publish` récapitulatif — APRÈS l'invalidation,
@@ -65,6 +68,7 @@ function summarize(set: ComponentMediaSetWithItems) {
     source: set.source,
     version: set.version,
     itemCount: set.items.length,
+    updatedAt: new Date(set.updatedAt).toISOString(),
   };
 }
 
@@ -78,7 +82,7 @@ export async function POST(request: Request, ctx: Ctx): Promise<Response> {
     if (!parsed.success) {
       throw new HttpError('invalid_input', 'Payload invalide', parsed.error.flatten());
     }
-    const { filter, dryRun, all: publishAll = false } = parsed.data;
+    const { filter, dryRun, all: publishAll = false, expected } = parsed.data;
 
     const liveSets = await listSetsByComponent(component.id);
     const matching = liveSets.filter(
@@ -92,6 +96,23 @@ export async function POST(request: Request, ctx: Ctx): Promise<Response> {
     );
     const drafts = matching.slice(0, BULK_LIMIT);
     const truncated = matching.length > drafts.length;
+
+    // Plan revu : on ne publie que si les brouillons sont EXACTEMENT ceux
+    // de l'essai à blanc (mêmes ensembles, même `updatedAt`).
+    if (!dryRun && expected) {
+      const reviewed = new Map(expected.map((e) => [e.setId, Date.parse(e.updatedAt)]));
+      const unchanged =
+        reviewed.size === expected.length &&
+        reviewed.size === drafts.length &&
+        drafts.every((d) => reviewed.get(d.id) === new Date(d.updatedAt).getTime());
+      if (!unchanged) {
+        throw new HttpError(
+          'invalid_state',
+          'La liste des brouillons a changé depuis la vérification : relancez l’essai à blanc avant de publier.',
+          { reason: 'bulk.plan_changed', matched: matching.length },
+        );
+      }
+    }
 
     if (dryRun) {
       const byTuple = new Map<string, { published?: ComponentMediaSetWithItems; scheduled?: ComponentMediaSetWithItems }>();

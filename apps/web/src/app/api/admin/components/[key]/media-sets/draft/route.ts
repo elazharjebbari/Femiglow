@@ -9,6 +9,8 @@
  *    médias disponibles : couche requêtes (422 + `issues`).
  *  - Verrouillage optimiste : header `If-Match` = `updatedAt` du brouillon
  *    (ou `expectedUpdatedAt` dans le corps) → 409 + état courant.
+ *    `If-None-Match: *` = le client part d'un état sans brouillon : 409 +
+ *    brouillon courant si un brouillon existe déjà (jamais écrasé en silence).
  *  - Même origine exigée (`requireSameOrigin`, 403).
  *  - Audit : `media_set.draft.{create|update}` (ne lève pas).
  *  - Pas d'invalidation de cache : un brouillon n'est pas servi au public.
@@ -20,6 +22,7 @@ import { HttpError } from '@/lib/errors/http-error';
 import {
   auditMediaSetChange,
   mediaSetErrorResponse,
+  readExpectNoDraft,
   readExpectedUpdatedAt,
   readJsonBody,
   requireAdminApi,
@@ -48,6 +51,7 @@ export async function PUT(request: Request, ctx: Ctx): Promise<Response> {
     }
     const body = parsed.data;
     const expectedUpdatedAt = readExpectedUpdatedAt(request, body.expectedUpdatedAt);
+    const expectNoDraft = readExpectNoDraft(request, expectedUpdatedAt);
 
     const tuple = {
       slot: body.slot,
@@ -67,6 +71,7 @@ export async function PUT(request: Request, ctx: Ctx): Promise<Response> {
       ...(body.notes !== undefined ? { notes: body.notes } : {}),
       authorId: session.adminId,
       expectedUpdatedAt,
+      ...(expectNoDraft ? { expectNoDraft: true } : {}),
     });
 
     await auditMediaSetChange({

@@ -9,12 +9,21 @@ type MediaWithMaybeVariants = Media & {
   thumbUrl?: string;
 };
 
+/** Résumé du média choisi (vignette déjà résolue), pour les appelants qui l'affichent. */
+export interface PickedMedia {
+  id: string;
+  slug: string;
+  thumbUrl: string | null;
+  alt: string | null;
+}
+
 interface MediaPickerDrawerProps {
   slotKey: string;
   slotLabel: string;
-  acceptKinds?: ('image' | 'video')[];
+  acceptKinds?: readonly ('image' | 'video')[];
   onClose: () => void;
-  onPick: (mediaId: string) => void;
+  /** `media` : résumé du média choisi (vignette, slug, alt de la médiathèque). */
+  onPick: (mediaId: string, media: PickedMedia) => void;
 }
 
 interface MediaListResponse {
@@ -164,7 +173,14 @@ export function MediaPickerDrawer({
                   <li key={m.id}>
                     <button
                       type="button"
-                      onClick={() => onPick(m.id)}
+                      onClick={() =>
+                        onPick(m.id, {
+                          id: m.id,
+                          slug: m.slug,
+                          thumbUrl: m.kind === 'image' ? (thumb ?? null) : null,
+                          alt: m.alt ?? null,
+                        })
+                      }
                       className="group block w-full overflow-hidden rounded-md border border-stone-200 bg-white text-left transition hover:border-stone-900 hover:shadow-md focus-visible:border-stone-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900"
                       aria-label={`Choisir ${m.slug}`}
                     >

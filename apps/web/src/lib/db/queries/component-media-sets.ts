@@ -20,7 +20,7 @@
  *
  * cf. docs/hero-media-par-angle/05-architecture-technique.md §4.1
  */
-import { and, asc, desc, eq, inArray, isNull, lte, or } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, lte, or, sql } from 'drizzle-orm';
 import type { PgDatabase, PgQueryResultHKT } from 'drizzle-orm/pg-core';
 import { db, memoryStore, schema } from '@/lib/db/client';
 import { createId } from '@/lib/ids';
@@ -89,6 +89,12 @@ export interface UpsertDraftSetInput extends MediaSetTuple {
   expectedUpdatedAt?: Date | null;
   /** version attendue — alternative à `expectedUpdatedAt`. */
   expectedVersion?: number | null;
+  /**
+   * `If-None-Match: *` — le client part d'un état SANS brouillon (publié,
+   * programmé ou rien) : si un brouillon existe déjà, `MediaSetConflictError`
+   * au lieu de l'écraser en silence.
+   */
+  expectNoDraft?: boolean;
 }
 
 export interface MediaSetMutationInput {
@@ -107,6 +113,8 @@ export interface RestoreSetInput {
   historyId: string;
   actorId: string | null;
   expectedUpdatedAt?: Date | null;
+  /** `If-None-Match: *` : aucun brouillon ne doit exister (cf. `upsertDraftSet`). */
+  expectNoDraft?: boolean;
 }
 
 /* ──────────────────────────────────────────────────────────────────
@@ -1014,12 +1022,19 @@ export interface MediaSetUsage {
 /**
  * Ensembles (tous statuts) dont un item référence `mediaId` (desktop ou
  * mobile). C'est exactement ce que la FK `ON DELETE RESTRICT` protège (I5).
+ * Ordre : publiés, programmés, brouillons, puis archivés (versions récentes
+ * d'abord) — la limite ne coupe jamais un usage vivant au profit d'archives.
  */
 export async function listMediaSetUsages(mediaId: string, limit = 50): Promise<MediaSetUsage[]> {
   const drizzle = db();
   if (drizzle) {
     const sets = schema.componentMediaSets;
     const items = schema.componentMediaSetItems;
+    // Statuts vivants d'abord (publié, programmé, brouillon), archivés
+    // ensuite : la limite ne doit jamais masquer un usage servi au public.
+    // `SELECT DISTINCT` impose que les expressions d'`ORDER BY` figurent
+    // dans la sélection, d'où `statusRank`.
+    const statusRank = sql<number>`case ${sets.status} when 'published' then 0 when 'scheduled' then 1 when 'draft' then 2 else 3 end`;
     const rows = await drizzle
       .selectDistinct({
         setId: sets.id,
@@ -1031,13 +1046,24 @@ export async function listMediaSetUsages(mediaId: string, limit = 50): Promise<M
         locale: sets.locale,
         status: sets.status,
         version: sets.version,
+        statusRank,
       })
       .from(items)
       .innerJoin(sets, eq(sets.id, items.setId))
       .leftJoin(schema.siteComponents, eq(schema.siteComponents.id, sets.componentId))
       .where(or(eq(items.mediaId, mediaId), eq(items.mobileMediaId, mediaId)))
+      .orderBy(
+        asc(statusRank),
+        asc(schema.siteComponents.key),
+        asc(sets.slot),
+        asc(sets.variantDim),
+        asc(sets.variantKey),
+        asc(sets.locale),
+        desc(sets.version),
+        asc(sets.id),
+      )
       .limit(limit);
-    return rows.map((r) => ({ ...r, componentKey: r.componentKey ?? null }) as MediaSetUsage);
+    return rows.map(({ statusRank: _rank, ...r }) => ({ ...r, componentKey: r.componentKey ?? null }) as MediaSetUsage);
   }
   const store = memoryStore();
   const setIds = new Set(
@@ -1045,11 +1071,13 @@ export async function listMediaSetUsages(mediaId: string, limit = 50): Promise<M
       .filter((i) => i.mediaId === mediaId || i.mobileMediaId === mediaId)
       .map((i) => i.setId),
   );
+  const rank: Record<FieldBindingStatus, number> = { published: 0, scheduled: 1, draft: 2, archived: 3 };
   return sortSets(
     Array.from(setIds)
       .map((id) => store.componentMediaSets.get(id))
       .filter((s): s is ComponentMediaSet => !!s),
   )
+    .sort((a, b) => rank[a.status] - rank[b.status])
     .slice(0, limit)
     .map((s) => ({
       setId: s.id,
@@ -1089,6 +1117,7 @@ export async function upsertDraftSet(
     const existing = list.find((s) => s.status === 'draft');
 
     if (existing) {
+      if (input.expectNoDraft) throw new MediaSetConflictError(existing);
       if (input.expectedUpdatedAt && !sameInstant(existing.updatedAt, input.expectedUpdatedAt)) {
         throw new MediaSetConflictError(existing);
       }
@@ -1378,6 +1407,7 @@ export async function restoreSetFromHistory(
       authorId: input.actorId,
       notes: `restore from version ${snapshot.version}`,
       expectedUpdatedAt: input.expectedUpdatedAt,
+      ...(input.expectNoDraft ? { expectNoDraft: true } : {}),
     },
     { historyAction: 'restore' },
   );

@@ -54,6 +54,30 @@ describe('middleware — /kit et i18n', () => {
     expect(res.headers.get('x-frame-options')).toBe('DENY');
   });
 
+  it('aperçu brouillon des médias par audience : framing same-origin seulement', async () => {
+    const res = await middleware(makeRequest('/ar/kit?angle=e&hmv_preview=draft'));
+    expect(res.headers.get('x-frame-options')).toBe('SAMEORIGIN');
+    expect(res.headers.get('content-security-policy')).toContain("frame-ancestors 'self'");
+    const plain = await middleware(makeRequest('/ar/kit?angle=e'));
+    expect(plain.headers.get('x-frame-options')).toBe('DENY');
+    expect(plain.headers.get('content-security-policy')).toContain("frame-ancestors 'none'");
+    const other = await middleware(makeRequest('/ar/rituel?hmv_preview=draft'));
+    expect(other.headers.get('x-frame-options')).not.toBe('SAMEORIGIN');
+  });
+
+  it('aperçu brouillon : marqueur de requête x-fg-hmv-preview + noindex ; jamais repris du client', async () => {
+    const res = await middleware(makeRequest('/ar/kit?angle=e&hmv_preview=draft'));
+    expect(forwardedRequestHeader(res, 'x-fg-hmv-preview')).toBe('1');
+    expect(res.headers.get('x-robots-tag')).toBe('noindex, nofollow');
+
+    const spoofed = new NextRequest(new URL('/ar/kit?angle=e', 'https://femiglow.test'), {
+      headers: new Headers({ 'x-fg-hmv-preview': '1' }),
+    });
+    const plain = await middleware(spoofed);
+    expect(forwardedRequestHeader(plain, 'x-fg-hmv-preview')).toBeNull();
+    expect(plain.headers.get('x-robots-tag')).toBeNull();
+  });
+
   it('capture click-ids et UTM dès le premier passage (plus de second hop)', async () => {
     const res = await middleware(makeRequest('/kit?fbclid=abc123&utm_source=meta'));
     expect(res.cookies.get('_fg_fbclid')?.value).toBe('abc123');

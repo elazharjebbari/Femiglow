@@ -116,7 +116,7 @@ describe('MediaPickerDrawer', () => {
     expect(screen.queryByText('video-demo')).toBeNull();
   });
 
-  it('clic sur un média → onPick(id)', async () => {
+  it('clic sur un média → onPick(id, résumé avec vignette)', async () => {
     const onPick = vi.fn();
     render(
       <MediaPickerDrawer
@@ -128,7 +128,12 @@ describe('MediaPickerDrawer', () => {
     );
     await waitFor(() => screen.getByText('visuel-hero'));
     fireEvent.click(screen.getByRole('button', { name: /choisir visuel-hero/i }));
-    expect(onPick).toHaveBeenCalledWith('med_1');
+    expect(onPick).toHaveBeenCalledWith(
+      'med_1',
+      expect.objectContaining({ id: 'med_1', slug: 'visuel-hero' }),
+    );
+    const summary = onPick.mock.calls[0]![1] as { thumbUrl: string | null };
+    expect(summary).toHaveProperty('thumbUrl');
   });
 
   it('Escape → onClose', async () => {

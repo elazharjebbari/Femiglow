@@ -7,7 +7,8 @@
  * doivent toujours exister : sinon 422 avec la liste des problèmes.
  *
  * Corps : `{ historyId, expectedUpdatedAt? }` (ou header `If-Match` =
- * `updatedAt` du brouillon courant). Pas d'invalidation : brouillon.
+ * `updatedAt` du brouillon courant ; `If-None-Match: *` si le client ne
+ * connaît aucun brouillon → 409 s'il en existe un). Pas d'invalidation.
  *
  * cf. docs/hero-media-par-angle/05-architecture-technique.md §4.7
  */
@@ -16,6 +17,7 @@ import { HttpError } from '@/lib/errors/http-error';
 import {
   auditMediaSetChange,
   mediaSetErrorResponse,
+  readExpectNoDraft,
   readExpectedUpdatedAt,
   readJsonBody,
   requireAdminApi,
@@ -46,6 +48,7 @@ export async function POST(request: Request, ctx: Ctx): Promise<Response> {
       throw new HttpError('invalid_input', 'Payload invalide', parsed.error.flatten());
     }
     const expectedUpdatedAt = readExpectedUpdatedAt(request, parsed.data.expectedUpdatedAt);
+    const expectNoDraft = readExpectNoDraft(request, expectedUpdatedAt);
 
     // L'entrée doit appartenir au composant de l'URL (pas de restauration
     // croisée entre composants).
@@ -58,6 +61,7 @@ export async function POST(request: Request, ctx: Ctx): Promise<Response> {
       historyId: snapshot.id,
       actorId: session.adminId,
       expectedUpdatedAt,
+      ...(expectNoDraft ? { expectNoDraft: true } : {}),
     });
 
     await auditMediaSetChange({

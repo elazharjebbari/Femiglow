@@ -28,6 +28,7 @@ import {
 import { listMediaSetUsages, type MediaSetUsage } from '@/lib/db/queries/component-media-sets';
 import { revalidateForMediaChange } from '@/lib/components/media-variants/revalidate.server';
 import { logger } from '@/lib/logging/logger';
+import { describeMediaSetUsage } from '@/lib/media/media-set-usage';
 import { enqueueJob } from '@/lib/db/queries/media-jobs';
 import type { MediaOverrides } from '@/lib/db/types';
 
@@ -60,19 +61,6 @@ function isForeignKeyViolation(err: unknown): boolean {
   return false;
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  draft: 'brouillon',
-  published: 'publié',
-  scheduled: 'programmé',
-  archived: 'archivé',
-};
-
-function describeUsage(u: MediaSetUsage): string {
-  const variant = u.variantDim === 'default' ? 'défaut' : `${u.variantDim} ${u.variantKey}`;
-  const locale = u.locale === '*' ? 'toutes langues' : u.locale;
-  return `${u.componentKey ?? u.componentId} · ${u.slot} · ${variant} · ${locale} (${STATUS_LABELS[u.status] ?? u.status} v${u.version})`;
-}
-
 /** 409 explicite pour une suppression définitive refusée (média encore référencé). */
 async function mediaInUseError(mediaId: string): Promise<HttpError> {
   const usages = await listMediaSetUsages(mediaId).catch((err: unknown) => {
@@ -86,7 +74,7 @@ async function mediaInUseError(mediaId: string): Promise<HttpError> {
     usages.length > 0
       ? `Suppression définitive impossible : ce média est utilisé par ${usages.length} ensemble(s) de médias — ${usages
           .slice(0, 5)
-          .map(describeUsage)
+          .map(describeMediaSetUsage)
           .join(' ; ')}${usages.length > 5 ? ' ; …' : ''}. Retirez-le de ces ensembles (ou abandonnez les brouillons) avant de le supprimer définitivement.`
       : 'Suppression définitive impossible : ce média est encore référencé ailleurs sur le site. Retirez ses usages ou utilisez la suppression simple.';
   return new HttpError('conflict', message, { mediaId, usages });
