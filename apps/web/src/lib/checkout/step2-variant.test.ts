@@ -65,7 +65,8 @@ describe('variante de l’étape 2', () => {
 
   it('valeur illisible : le test se coupe', () => {
     expect(normalizeStep2SharePct('abc')).toBe(0);
-    expect(normalizeStep2SharePct(null)).toBe(0);
+    expect(normalizeStep2SharePct(null)).toBe(100);
+    expect(normalizeStep2SharePct(undefined)).toBe(100);
     expect(normalizeStep2SharePct('30')).toBe(30);
     expect(normalizeStep2SharePct(140)).toBe(100);
     expect(parseStep2Override(' V2 ')).toBe('v2');

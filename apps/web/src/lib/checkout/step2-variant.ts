@@ -4,7 +4,7 @@
  * Module pur. L'attribution se fait côté client, comme `commander-mode` : elle
  * est stable par visiteur (hash de `fg_aid`). L'étape 2 n'est jamais dans le
  * rendu serveur, le choix ne provoque donc ni clignotement ni écart
- * d'hydratation. Part CMS à 0 : tout le monde reste sur `control`.
+ * d'hydratation. V2 pour toutes par défaut ; part CMS à 0 : retour à `control`.
  */
 
 import { assignVariant } from '@/lib/chat/services/ab-engine';
@@ -14,7 +14,7 @@ import type { Step2Variant } from '@/lib/tracking/address-step-events';
 export const STEP2_EXPERIMENT_KEY = 'kit-step2-v2';
 /** Paramètre d'URL qui force la variante (`?step2=v2`), pour la recette. */
 export const STEP2_QUERY_PARAM = 'step2';
-export const DEFAULT_STEP2_V2_SHARE_PCT = 0;
+export const DEFAULT_STEP2_V2_SHARE_PCT = 100;
 
 export function parseStep2Override(raw: unknown): Step2Variant | null {
   if (typeof raw !== 'string') return null;
@@ -22,10 +22,14 @@ export function parseStep2Override(raw: unknown): Step2Variant | null {
   return v === 'v2' || v === 'control' ? v : null;
 }
 
-/** Part bornée. Toute valeur illisible coupe le test : retour au témoin. */
+/**
+ * Part bornée. Champ absent (composant pas encore synchronisé) : réglage par
+ * défaut. Valeur illisible : retour à la version la mieux connue, `control`.
+ */
 export function normalizeStep2SharePct(raw: unknown): number {
+  if (raw === null || raw === undefined) return DEFAULT_STEP2_V2_SHARE_PCT;
   const n = typeof raw === 'string' && raw.trim() !== '' ? Number(raw) : raw;
-  if (typeof n !== 'number' || !Number.isFinite(n)) return DEFAULT_STEP2_V2_SHARE_PCT;
+  if (typeof n !== 'number' || !Number.isFinite(n)) return 0;
   return Math.min(100, Math.max(0, n));
 }
 

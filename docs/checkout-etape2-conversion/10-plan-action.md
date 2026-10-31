@@ -1,6 +1,6 @@
 # 10 — Plan d'action
 
-**Statut au 31/10/2026 : P0, P1 et P4 développés et testés en local, rien n'est en prod.** Part V2 à 0 %.
+**Statut au 31/10/2026 : V2 activée pour 100 % des visiteuses, à la demande de l'utilisateur, sans test A/B ni recette préalable sur appareils.** Retour à l'ancienne version : `?step2=control` pour un visiteur, part CMS à 0 ou `CHECKOUT_STEP2_V2=off` pour toutes. L'effet se lit désormais en avant/après, à partir de la date de bascule.
 
 | Phase | État | Branche |
 |---|---|---|
@@ -8,9 +8,10 @@
 | P1 Bugs critiques | Développée, à déployer | `fix/step2-bugs` |
 | P2 Récupération des leads | Attend la vérification juridique | — |
 | P3 Observation | Démarre au déploiement de P0 | — |
-| P4 V2 | Développée, part à 0 % | `feat/step2-v2` |
+| P4 V2 | Active à 100 % | `fix/phone-autofill` |
 | P5 Recette sur appareils | À faire avec vous | — |
-| P6 et P7 | Après P5 | — |
+| P6 Test A/B | Remplacé par une comparaison avant/après | — |
+| P7 Décision | Après lecture des chiffres | — |
 
 ### Écarts par rapport au plan initial
 

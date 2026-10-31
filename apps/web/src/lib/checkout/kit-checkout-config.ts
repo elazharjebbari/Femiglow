@@ -31,7 +31,7 @@ export interface KitCheckoutConfig {
   ctaMode: CommanderCmsMode;
   /** Part (0–100) des visiteurs en panneau quand `ctaMode === 'ab'`. */
   sheetSharePct: number;
-  /** Part (0–100) des visiteurs sur l'étape 2 progressive. 0 : test coupé. */
+  /** Part (0–100) des visiteurs sur l'étape 2 progressive. 0 : coupe-circuit. */
   step2V2SharePct: number;
 }
 
