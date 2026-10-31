@@ -243,6 +243,40 @@ test.describe('étape 2 — arrivée et clavier', () => {
   });
 });
 
+test.describe('étape 1 — reprise dans la même session', () => {
+  test('retour par « Modifier », puis commande', async ({ page }) => {
+    test.setTimeout(90_000);
+    await goToStep2(page);
+    await page.getByTestId('wizard-address-back').click();
+    await expect(page.getByTestId('wizard-step-lead')).toBeVisible();
+    await page.getByTestId('wizard-lead-submit').evaluate((el) => (el as HTMLElement).click());
+    await expect(page.getByTestId('wizard-step-address')).toBeVisible();
+    await chooseCasablanca(page);
+    await page.getByTestId('wizard-address-submit').click();
+    await expect(page.getByTestId('wizard-step-thankyou')).toBeVisible();
+  });
+
+  test('seconde commande juste après la première', async ({ page }) => {
+    test.setTimeout(90_000);
+    await goToStep2(page);
+    await chooseCasablanca(page);
+    await page.getByTestId('wizard-address-submit').click();
+    const thanks = page.getByTestId('wizard-step-thankyou');
+    await expect(thanks).toBeVisible();
+    await thanks.getByRole('button', { name: /nouvelle commande/i }).click();
+    const lead = page.getByTestId('wizard-step-lead');
+    await expect(lead).toBeVisible();
+    await lead.locator('input[autocomplete="given-name"], input[name=firstName]').first().fill('Salma');
+    await lead.locator('input[type=tel]').first().fill('0612345678');
+    await lead.locator('input[type=checkbox]').first().check({ force: true });
+    await page.getByTestId('wizard-lead-submit').evaluate((el) => (el as HTMLElement).click());
+    await expect(page.getByTestId('wizard-step-address')).toBeVisible();
+    await chooseCasablanca(page);
+    await page.getByTestId('wizard-address-submit').click();
+    await expect(page.getByTestId('wizard-step-thankyou')).toBeVisible();
+  });
+});
+
 test.describe('étape 2 — fiche client', () => {
   test('ville et adresse enregistrées champ par champ, puis commande', async ({ page }) => {
     test.setTimeout(90_000);
