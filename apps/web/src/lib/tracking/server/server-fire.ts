@@ -37,6 +37,7 @@ import { logger } from '@/lib/logging/logger';
 import { dispatchToProviders } from './dispatcher';
 import { anonymizeIp, hashUserAgent, parseDevice } from './enricher';
 import { logEvent } from '@/lib/db/queries/tracking/events-log';
+import { findTrackingPageByRoute } from '@/lib/db/queries/tracking/pages';
 import { createId } from '@/lib/ids';
 import { getEventCategory } from '@/lib/tracking/schemas';
 
@@ -181,12 +182,15 @@ export async function serverFire(input: ServerFireInput): Promise<ServerFireResu
     // Le champ `source='server_fire'` distingue de 'client_fire' (default).
     // Référence : docs/live-systems-fix-2026-05/08-system-tracking.md § QW5
     try {
+      // `input.pageId` est un libellé (matière de l'event_id), pas une clé de
+      // `tracking_pages` : la page se résout par sa route, comme `/api/track`.
+      const page = await findTrackingPageByRoute(input.pageRoute).catch(() => null);
       await logEvent({
         id: createId('tev'),
         eventId,
         eventName: input.eventName,
         eventCategory: getEventCategory(input.eventName),
-        pageId: input.pageId,
+        pageId: page?.id ?? null,
         pageRoute: input.pageRoute,
         anonymousId: sessionId,
         sessionId,
