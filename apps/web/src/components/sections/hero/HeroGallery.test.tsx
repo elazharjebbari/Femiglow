@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { afterEach, describe, it, expect, vi, beforeEach } from 'vitest';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { HeroGallery } from './HeroGallery';
 import type { HeroGalleryImage } from '@/lib/products/hero-gallery-types';
 
@@ -101,5 +101,114 @@ describe('HeroGallery — art direction (images par audience)', () => {
   it('sans art direction : aucun <picture> (rendu historique)', () => {
     const { container } = render(<HeroGallery images={[IMG('a'), IMG('b')]} />);
     expect(container.querySelector('picture')).toBeNull();
+  });
+});
+
+describe('HeroGallery — vignettes et carrousel mobile', () => {
+  let observed: IntersectionObserverCallback;
+  const scrollIntoView = vi.fn();
+  const OriginalObserver = window.IntersectionObserver;
+  const IMAGES = ['a', 'b', 'c', 'd', 'e', 'f', 'g'].map((id) => IMG(id));
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    scrollIntoView.mockClear();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    window.IntersectionObserver = class {
+      constructor(callback: IntersectionObserverCallback) {
+        observed = callback;
+      }
+      observe() {}
+      disconnect() {}
+    } as unknown as typeof IntersectionObserver;
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    window.IntersectionObserver = OriginalObserver;
+  });
+
+  function setup() {
+    const { container } = render(<HeroGallery images={IMAGES} />);
+    const slides = container.querySelectorAll('[data-slide-index]');
+    const carousel = slides[0]!.parentElement!;
+    // Les deux arbres sont rendus : la liste horizontale (mobile) est la dernière.
+    const list = screen.getAllByRole('list', { name: 'Vignettes produit' }).at(-1)!;
+    const thumbs = Array.from(list.querySelectorAll('button'));
+    const passOver = (index: number) =>
+      act(() => {
+        vi.spyOn(performance, 'now').mockReturnValue(performance.now() + 1000);
+        observed(
+          [
+            { isIntersecting: true, intersectionRatio: 1, target: slides[index]! },
+          ] as unknown as IntersectionObserverEntry[],
+          {} as IntersectionObserver,
+        );
+        vi.restoreAllMocks();
+      });
+    const active = () => thumbs.findIndex((t) => t.getAttribute('aria-current') === 'true');
+    return { carousel, thumbs, passOver, active };
+  }
+
+  it.each([
+    [0, 6],
+    [6, 0],
+    [1, 5],
+    [5, 2],
+  ])('vignette %i → %i : les slides de passage ne déplacent pas le sélecteur', (from, to) => {
+    const { thumbs, passOver, active } = setup();
+    fireEvent.click(thumbs[from]!);
+    act(() => void vi.advanceTimersByTime(200));
+
+    fireEvent.click(thumbs[to]!);
+    const step = from < to ? 1 : -1;
+    for (let i = from + step; i !== to; i += step) passOver(i);
+    passOver(to);
+
+    expect(active()).toBe(to);
+  });
+
+  it('le défilement relance le verrou tant que le carrousel bouge', () => {
+    const { carousel, thumbs, passOver, active } = setup();
+    fireEvent.click(thumbs[6]!);
+    act(() => void vi.advanceTimersByTime(100));
+    fireEvent.scroll(carousel);
+    act(() => void vi.advanceTimersByTime(100));
+    passOver(3);
+    expect(active()).toBe(6);
+  });
+
+  it('un swipe reprend la main sur un défilement en cours', () => {
+    const { carousel, thumbs, passOver, active } = setup();
+    fireEvent.click(thumbs[6]!);
+    fireEvent.touchStart(carousel);
+    passOver(3);
+    expect(active()).toBe(3);
+  });
+
+  it('après un swipe, le carrousel n’est pas relancé vers la slide déjà en place', () => {
+    const { passOver, active } = setup();
+    passOver(2);
+    expect(active()).toBe(2);
+    expect(scrollIntoView).not.toHaveBeenCalled();
+  });
+
+  it('préférence « mouvement réduit » : défilement instantané', () => {
+    vi.mocked(window.matchMedia).mockImplementation(
+      (query: string) =>
+        ({
+          matches: query.includes('reduce'),
+          media: query,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+        }) as unknown as MediaQueryList,
+    );
+    const { thumbs } = setup();
+    fireEvent.click(thumbs[4]!);
+    expect(scrollIntoView).toHaveBeenLastCalledWith(
+      expect.objectContaining({ behavior: 'instant' }),
+    );
   });
 });
