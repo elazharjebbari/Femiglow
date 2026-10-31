@@ -13,12 +13,24 @@ vi.mock('@/lib/logging/logger', () => ({
   },
 }));
 
+vi.mock('@/lib/db/queries/tracking/events-log', () => ({
+  logEvent: vi.fn(),
+}));
+
+vi.mock('@/lib/db/queries/tracking/pages', () => ({
+  findTrackingPageByRoute: vi.fn(),
+}));
+
+import { logEvent } from '@/lib/db/queries/tracking/events-log';
+import { findTrackingPageByRoute } from '@/lib/db/queries/tracking/pages';
 import { dispatchToProviders } from './dispatcher';
 import { serverFire, type ServerFireInput } from './server-fire';
 import { logger } from '@/lib/logging/logger';
 
 const dispatchMock = vi.mocked(dispatchToProviders);
 const loggerErrorMock = vi.mocked(logger.error);
+const logEventMock = vi.mocked(logEvent);
+const findPageMock = vi.mocked(findTrackingPageByRoute);
 
 function makeHeaders(map: Record<string, string>): Headers {
   const h = new Headers();
@@ -80,6 +92,30 @@ function input(overrides: Partial<ServerFireInput> = {}): ServerFireInput {
 beforeEach(() => {
   vi.clearAllMocks();
   dispatchMock.mockResolvedValue({ dispatched: ['meta'], results: {} });
+  findPageMock.mockResolvedValue(null);
+});
+
+describe('serverFire — persistance tracking_events_log', () => {
+  it('page_id = id tracking_pages de la route, jamais le libellé passé par la page', async () => {
+    findPageMock.mockResolvedValue({ id: 'tp_kit' } as never);
+    await serverFire(input());
+    expect(findPageMock).toHaveBeenCalledWith('/kit');
+    expect(logEventMock.mock.calls[0]![0]).toMatchObject({ pageId: 'tp_kit', pageRoute: '/kit' });
+  });
+
+  it('route inconnue ou lecture en échec : page_id null, événement quand même enregistré', async () => {
+    await serverFire(input({ pageRoute: '/ar/kit' }));
+    findPageMock.mockRejectedValue(new Error('db down'));
+    await serverFire(input());
+    expect(logEventMock).toHaveBeenCalledTimes(2);
+    expect(logEventMock.mock.calls.map(([e]) => e.pageId)).toEqual([null, null]);
+  });
+
+  it('l’event_id reste dérivé du libellé : la déduplication Meta ne change pas', async () => {
+    findPageMock.mockResolvedValue({ id: 'tp_kit' } as never);
+    await serverFire(input());
+    expect(logEventMock.mock.calls[0]![0].eventId).toBe(dispatchMock.mock.calls[0]![0].eventId);
+  });
 });
 
 describe('serverFire', () => {
