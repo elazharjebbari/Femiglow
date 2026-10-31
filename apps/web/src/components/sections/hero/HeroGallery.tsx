@@ -151,10 +151,18 @@ interface MobileSnapScrollProps {
   reducedMotion: boolean;
 }
 
+/** Silence de scroll au-delà duquel un défilement programmatique est terminé. */
+const PROGRAMMATIC_SCROLL_IDLE_MS = 150;
+
 /**
  * Carrousel mobile en scroll-snap natif. On utilise IntersectionObserver
  * pour synchroniser l'index avec le swipe utilisateur, et `scrollIntoView`
- * pour reagir aux changements programmatiques (click sur dot).
+ * pour reagir aux changements programmatiques (click sur vignette).
+ *
+ * Un défilement programmatique traverse les slides intermédiaires : tant
+ * qu'il dure, l'observer est ignoré, sinon une slide de passage remplacerait
+ * la cible choisie. Un contact avec le carrousel lève ce verrou (le swipe
+ * reprend la main).
  */
 function MobileSnapScroll({
   images,
@@ -163,23 +171,60 @@ function MobileSnapScroll({
   reducedMotion,
 }: MobileSnapScrollProps): JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null);
-  const lastProgrammaticIndex = useRef(currentIndex);
+  // Slide affichée (ou visée) par le carrousel. Égale à `currentIndex` après
+  // un swipe : la slide est déjà en place, il n'y a rien à faire défiler.
+  const syncedIndex = useRef(currentIndex);
+  const programmaticScroll = useRef(false);
+  const idleTimer = useRef<ReturnType<typeof setTimeout>>();
   // Cooldown post-détection : empêche l'observer d'émettre plusieurs changements
   // pendant l'inertia d'un swipe rapide (cause du bug "1 → 5").
   const lastDetectedAt = useRef(0);
 
+  const endProgrammaticScroll = useCallback(() => {
+    clearTimeout(idleTimer.current);
+    programmaticScroll.current = false;
+  }, []);
+
+  // Relancé à chaque événement `scroll` : couvre les navigateurs sans
+  // `scrollend` et un défilement qui n'a rien à parcourir.
+  const armIdleTimer = useCallback(() => {
+    clearTimeout(idleTimer.current);
+    idleTimer.current = setTimeout(endProgrammaticScroll, PROGRAMMATIC_SCROLL_IDLE_MS);
+  }, [endProgrammaticScroll]);
+
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    const slide = container.children[currentIndex] as HTMLElement | undefined;
+    if (currentIndex === syncedIndex.current) return;
+    const slide = containerRef.current?.children[currentIndex] as HTMLElement | undefined;
     if (!slide) return;
-    lastProgrammaticIndex.current = currentIndex;
+    syncedIndex.current = currentIndex;
+    programmaticScroll.current = true;
+    armIdleTimer();
     slide.scrollIntoView({
-      behavior: reducedMotion ? 'auto' : 'smooth',
+      // `auto` hériterait de la classe `scroll-smooth` du conteneur.
+      behavior: reducedMotion ? 'instant' : 'smooth',
       inline: 'center',
       block: 'nearest',
     });
-  }, [currentIndex, reducedMotion]);
+  }, [armIdleTimer, currentIndex, reducedMotion]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const onScroll = () => {
+      if (programmaticScroll.current) armIdleTimer();
+    };
+    container.addEventListener('scroll', onScroll, { passive: true });
+    container.addEventListener('touchstart', endProgrammaticScroll, { passive: true });
+    container.addEventListener('pointerdown', endProgrammaticScroll);
+    container.addEventListener('wheel', endProgrammaticScroll, { passive: true });
+    return () => {
+      container.removeEventListener('scroll', onScroll);
+      container.removeEventListener('touchstart', endProgrammaticScroll);
+      container.removeEventListener('pointerdown', endProgrammaticScroll);
+      container.removeEventListener('wheel', endProgrammaticScroll);
+      clearTimeout(idleTimer.current);
+    };
+  }, [armIdleTimer, endProgrammaticScroll]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -187,6 +232,7 @@ function MobileSnapScroll({
     const COOLDOWN_MS = 120;
     const observer = new IntersectionObserver(
       (entries) => {
+        if (programmaticScroll.current) return;
         const now = performance.now();
         if (now - lastDetectedAt.current < COOLDOWN_MS) return;
         // Seuil 0.7 (vs 0.6 avant) : pendant un swipe rapide, plusieurs slides
@@ -197,8 +243,9 @@ function MobileSnapScroll({
         );
         if (!visible) return;
         const idx = Array.from(container.children).indexOf(visible.target);
-        if (idx === -1 || idx === lastProgrammaticIndex.current) return;
+        if (idx === -1 || idx === syncedIndex.current) return;
         lastDetectedAt.current = now;
+        syncedIndex.current = idx;
         onIndexChange(idx);
       },
       { root: container, threshold: 0.7 },
