@@ -8,6 +8,9 @@ import 'server-only';
  * Tolérant : base indisponible ou composant non synchronisé → réglage par
  * défaut (`scroll`, comportement historique). Le checkout ne doit jamais
  * casser à cause d'un réglage d'A/B.
+ *
+ * `CHECKOUT_STEP2_V2=off` : coupe-circuit de l'étape 2 progressive, sans passer
+ * par le CMS.
  */
 
 import { resolveComponentFields } from '@/lib/components/field-resolver';
@@ -22,7 +25,8 @@ import {
 export async function getKitCheckoutConfig(): Promise<KitCheckoutConfig> {
   try {
     const fields = await resolveComponentFields(KIT_CHECKOUT_COMPONENT_KEY, KIT_CHECKOUT_LOCALE);
-    return parseKitCheckoutConfig(fields);
+    const config = parseKitCheckoutConfig(fields);
+    return process.env.CHECKOUT_STEP2_V2 === 'off' ? { ...config, step2V2SharePct: 0 } : config;
   } catch {
     return DEFAULT_KIT_CHECKOUT_CONFIG;
   }

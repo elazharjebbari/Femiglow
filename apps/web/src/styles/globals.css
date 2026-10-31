@@ -324,3 +324,138 @@
     [dir='rtl'] .fg-hero-lustre { animation-direction: reverse; }
   }
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Étape 2 du wizard — bouton de confirmation (`ConfirmOrderButton`).
+   Gris qui guide tant qu'il manque un champ, grenat une fois prêt. Le fondu
+   passe par un calque (un dégradé ne s'anime pas). Reflet : 3 passages au
+   plus, `transform` seulement. Rien de tout cela sous prefers-reduced-motion.
+   ────────────────────────────────────────────────────────────────────────── */
+.fg-cta {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  width: 100%;
+  height: 56px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--color-encre-soft);
+  color: var(--color-on-action);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1;
+  transition: transform 120ms ease-out, box-shadow 320ms ease-out;
+  -webkit-tap-highlight-color: transparent;
+}
+[dir='rtl'] .fg-cta {
+  font-size: 17px;
+  font-weight: 600;
+}
+.fg-cta--compact {
+  height: 48px;
+}
+.fg-cta::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  border-radius: inherit;
+  background: linear-gradient(180deg, var(--color-action-light), var(--color-action));
+  opacity: 0;
+  transition: opacity 320ms ease-out;
+}
+.fg-cta:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.fg-cta:focus-visible {
+  outline: 2px solid var(--color-encre);
+  outline-offset: 3px;
+}
+.fg-cta:disabled {
+  cursor: wait;
+}
+.fg-cta[data-phase='ready'],
+.fg-cta[data-phase='submitting'] {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.2),
+    0 8px 18px rgb(142 63 59 / 0.3);
+}
+.fg-cta[data-phase='ready']::before,
+.fg-cta[data-phase='submitting']::before {
+  opacity: 1;
+}
+.fg-cta-badge {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  place-items: center;
+  border-radius: 50%;
+  background: rgb(255 253 248 / 0.16);
+}
+.fg-cta--compact .fg-cta-badge {
+  width: 28px;
+  height: 28px;
+}
+.fg-cta-label {
+  white-space: nowrap;
+}
+@keyframes fg-cta-sheen {
+  0% {
+    transform: translateX(-120%);
+  }
+  26%,
+  100% {
+    transform: translateX(320%);
+  }
+}
+@keyframes fg-cta-sheen-rtl {
+  0% {
+    transform: translateX(120%);
+  }
+  26%,
+  100% {
+    transform: translateX(-320%);
+  }
+}
+@keyframes fg-cta-lift {
+  0%,
+  8%,
+  100% {
+    transform: translateY(0);
+  }
+  4% {
+    transform: translateY(-2px);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .fg-cta[data-phase='ready'] {
+    transform: translateY(-1px);
+  }
+  .fg-cta[data-phase='ready']:active {
+    transform: scale(0.98);
+  }
+  .fg-cta[data-phase='ready']::after {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    z-index: -1;
+    width: 45%;
+    background: linear-gradient(100deg, transparent, rgb(255 255 255 / 0.28), transparent);
+    transform: translateX(-120%);
+    animation: fg-cta-sheen 5s ease-in-out 1s 3;
+  }
+  [dir='rtl'] .fg-cta[data-phase='ready']::after {
+    right: 0;
+    left: auto;
+    transform: translateX(120%);
+    animation-name: fg-cta-sheen-rtl;
+  }
+  .fg-cta[data-phase='ready'] .fg-cta-icon {
+    animation: fg-cta-lift 5s ease-in-out 1s 3;
+  }
+}

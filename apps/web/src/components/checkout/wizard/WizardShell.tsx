@@ -63,6 +63,11 @@ const AddressStep = lazy(() =>
     .then((m) => ({ default: m.AddressStep }))
     .catch(() => ({ default: () => <StepUnavailable name="address" /> })),
 );
+const AddressStepV2 = lazy(() =>
+  import('./steps/AddressStepV2')
+    .then((m) => ({ default: m.AddressStepV2 }))
+    .catch(() => ({ default: () => <StepUnavailable name="address" /> })),
+);
 const ThankYouStep = lazy(() =>
   import('./steps/ThankYouStep')
     .then((m) => ({ default: m.ThankYouStep }))
@@ -259,6 +264,9 @@ export function WizardShell({
     }
   }, [hydrated, leadId, currentStep, goToStep]);
 
+  const addressV2 = formContext.step2Variant === 'v2';
+  const compactAddress = addressV2 && currentStep === 'address';
+
   const stepView = useMemo(() => {
     switch (currentStep) {
       case 'cart_review':
@@ -266,7 +274,7 @@ export function WizardShell({
       case 'lead':
         return <LeadCaptureStep cta={copy?.ctaLead} title={copy?.title} />;
       case 'address':
-        return <AddressStep cta={copy?.ctaAddress} />;
+        return addressV2 ? <AddressStepV2 /> : <AddressStep cta={copy?.ctaAddress} />;
       case 'thank_you':
         return (
           <ThankYouStep
@@ -281,7 +289,7 @@ export function WizardShell({
       default:
         return <StepUnavailable name={currentStep} />;
     }
-  }, [currentStep, copy]);
+  }, [currentStep, copy, addressV2]);
 
   if (!hydrated) return <HydrationFallback language={formContext.language} />;
 
@@ -341,6 +349,7 @@ export function WizardShell({
         <WizardCartRecap
           cart={cartForRecap}
           pinned={inPanel}
+          className={compactAddress ? 'max-sm:hidden' : undefined}
           thumbnailSrc={cartRecapThumbnailSrc}
           priceCompareAt={formatCartCompareAt(cartForRecap)}
           ariaLabel={t.cartRecap.ariaLabel}
@@ -364,15 +373,18 @@ export function WizardShell({
         />
       )}
       {header}
-      {features.timeEstimate && (
+      {/* V2 : `StepProgressLine` remplace les deux, pour tenir sans défilement. */}
+      {features.timeEstimate && !compactAddress && (
         <TimeEstimateBadge label={t.shell.timeEstimateTotal} />
       )}
-      <WizardStepIndicator
-        steps={steps}
-        currentStep={currentStep}
-        labels={stepLabels}
-        timesPerStep={stepTimes}
-      />
+      {!compactAddress && (
+        <WizardStepIndicator
+          steps={steps}
+          currentStep={currentStep}
+          labels={stepLabels}
+          timesPerStep={stepTimes}
+        />
+      )}
       {/* OWBS F05 — indicateur discret de sync dégradée (non bloquant). */}
       <WizardSyncIndicator />
       {/* OWBS F08-S13 — annonce a11y du changement d'étape (flux optimiste

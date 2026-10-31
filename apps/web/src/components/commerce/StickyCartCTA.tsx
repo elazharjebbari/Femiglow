@@ -7,7 +7,8 @@ import {
   type StickyPromoFlagStrings,
 } from '@/components/commerce/StickyPromoFlag';
 import { useChatStore } from '@/components/chat/chat-store';
-import { COMMANDER_ANCHOR_ID, useCommanderLauncherStore } from '@/lib/checkout/commander-launcher';
+import { useCommanderLauncherStore } from '@/lib/checkout/commander-launcher';
+import { useCommanderOnScreen } from '@/lib/checkout/use-commander-on-screen';
 import { useWizardStore } from '@/lib/checkout/state/wizard-store';
 import type { Currency } from '@/lib/products/currency';
 
@@ -69,24 +70,7 @@ export function StickyCartCTA({
   const orderStarted = useWizardStore(
     (s) => s.currentStep !== 'lead' || s.addressDraft.city.trim() !== '',
   );
-  const [formOnScreen, setFormOnScreen] = useState(false);
-  useEffect(() => {
-    if (!orderStarted) {
-      setFormOnScreen(false);
-      return;
-    }
-    const form = document.getElementById(COMMANDER_ANCHOR_ID);
-    if (!form) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (entry) setFormOnScreen(entry.isIntersecting);
-      },
-      { threshold: 0 },
-    );
-    observer.observe(form);
-    return () => observer.disconnect();
-  }, [orderStarted]);
+  const formOnScreen = useCommanderOnScreen(orderStarted);
 
   useEffect(() => {
     const sentinel = document.getElementById(observeId);

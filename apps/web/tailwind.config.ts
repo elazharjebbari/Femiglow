@@ -33,6 +33,16 @@ const config: Config = {
           soft: 'var(--color-champagne-soft)',
           dark: 'var(--color-champagne-dark)',
         },
+        action: {
+          DEFAULT: 'var(--color-action)',
+          light: 'var(--color-action-light)',
+          on: 'var(--color-on-action)',
+        },
+        notice: {
+          DEFAULT: 'var(--color-notice)',
+          soft: 'var(--color-notice-soft)',
+        },
+        placeholder: 'var(--color-placeholder)',
         // Content Studio v2 — scoped tokens (only used under .cs-v2-shell).
         cs: {
           'bg-base': 'var(--cs-bg-base)',

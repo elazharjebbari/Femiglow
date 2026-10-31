@@ -7,6 +7,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
+import { useCommanderLauncherStore } from '@/lib/checkout/commander-launcher';
 import { ChatLauncher } from './ChatLauncher';
 
 let mockedPathname = '/';
@@ -62,5 +63,22 @@ describe('ChatLauncher (positionnement)', () => {
     expect(button!.style.zIndex).toBe('var(--z-chat-overlay)');
     // Aucune classe Tailwind `z-…` ne doit subsister.
     expect(button!.className).not.toMatch(/\bz-\d+\b/);
+  });
+});
+
+describe('ChatLauncher — barre d’action de l’étape 2', () => {
+  afterEach(() => useCommanderLauncherStore.setState({ actionBarActive: false }));
+
+  it('s’efface en mobile tant que la barre est à l’écran, reste sur grand écran', () => {
+    useCommanderLauncherStore.setState({ actionBarActive: true });
+    const { container } = render(<ChatLauncher />);
+    const button = container.querySelector('[data-testid="chat-launcher"]');
+    expect(button?.className).toContain('hidden lg:flex');
+  });
+
+  it('revient quand la barre disparaît', () => {
+    const { container } = render(<ChatLauncher />);
+    const button = container.querySelector('[data-testid="chat-launcher"]');
+    expect(button?.className).not.toContain('hidden');
   });
 });

@@ -15,6 +15,10 @@ import {
   normalizeSharePct,
   type CommanderCmsMode,
 } from '@/lib/checkout/commander-mode';
+import {
+  DEFAULT_STEP2_V2_SHARE_PCT,
+  normalizeStep2SharePct,
+} from '@/lib/checkout/step2-variant';
 
 export const KIT_CHECKOUT_COMPONENT_KEY = 'kit-checkout';
 /**
@@ -27,11 +31,14 @@ export interface KitCheckoutConfig {
   ctaMode: CommanderCmsMode;
   /** Part (0–100) des visiteurs en panneau quand `ctaMode === 'ab'`. */
   sheetSharePct: number;
+  /** Part (0–100) des visiteurs sur l'étape 2 progressive. 0 : test coupé. */
+  step2V2SharePct: number;
 }
 
 export const DEFAULT_KIT_CHECKOUT_CONFIG: KitCheckoutConfig = {
   ctaMode: DEFAULT_COMMANDER_CMS_MODE,
   sheetSharePct: DEFAULT_SHEET_SHARE_PCT,
+  step2V2SharePct: DEFAULT_STEP2_V2_SHARE_PCT,
 };
 
 export function parseKitCheckoutConfig(
@@ -45,5 +52,6 @@ export function parseKitCheckoutConfig(
       rawPct === null || rawPct === undefined
         ? DEFAULT_KIT_CHECKOUT_CONFIG.sheetSharePct
         : normalizeSharePct(rawPct),
+    step2V2SharePct: normalizeStep2SharePct(fields?.step2V2SharePct?.value),
   };
 }

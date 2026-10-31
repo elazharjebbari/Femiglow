@@ -24,6 +24,23 @@ export function shippingCentsFromPrice(
   return Math.round(mad * 100);
 }
 
+/**
+ * Total payé à la réception : mêmes opérations que le serveur, qui plafonne le
+ * crédit au total produit puis ajoute ses frais.
+ */
+export function checkoutTotalCents({
+  cartTotalCents,
+  creditCents,
+  shippingCents,
+}: {
+  cartTotalCents: number;
+  creditCents: number;
+  shippingCents: number;
+}): number {
+  const credit = Math.max(0, Math.min(creditCents, cartTotalCents));
+  return cartTotalCents - credit + Math.max(0, shippingCents);
+}
+
 export function matchesCityExactly(
   city: Pick<DeliveryCity, 'nameFr' | 'nameAr' | 'slug' | 'aliases'>,
   input: string,

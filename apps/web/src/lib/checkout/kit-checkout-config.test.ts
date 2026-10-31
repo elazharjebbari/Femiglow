@@ -45,7 +45,7 @@ describe('registre — kit-checkout', () => {
     expect(seed).toBeDefined();
     expect(seed!.pageGroup).toBe('kit');
     expect(seed!.slots).toEqual([]);
-    expect(seed!.fields?.map((f) => f.key)).toEqual(['ctaMode', 'sheetSharePct']);
+    expect(seed!.fields?.map((f) => f.key)).toEqual(['ctaMode', 'sheetSharePct', 'step2V2SharePct']);
   });
 
   it('ctaMode : enum scroll | sheet | ab, défaut scroll', () => {
@@ -80,23 +80,23 @@ describe('parseKitCheckoutConfig', () => {
   it('valeurs valides', () => {
     expect(parseKitCheckoutConfig(resolved({ ctaMode: 'ab', sheetSharePct: 20 }))).toEqual({
       ctaMode: 'ab',
-      sheetSharePct: 20,
+      sheetSharePct: 20, step2V2SharePct: 0,
     });
   });
 
   it('absence de champs → défauts (scroll, 50)', () => {
     expect(parseKitCheckoutConfig({})).toEqual(DEFAULT_KIT_CHECKOUT_CONFIG);
-    expect(parseKitCheckoutConfig(null)).toEqual({ ctaMode: 'scroll', sheetSharePct: 50 });
+    expect(parseKitCheckoutConfig(null)).toEqual({ ctaMode: 'scroll', sheetSharePct: 50, step2V2SharePct: 0 });
   });
 
   it('valeurs invalides → repli sûr', () => {
     expect(parseKitCheckoutConfig(resolved({ ctaMode: 'modal', sheetSharePct: 'x' }))).toEqual({
       ctaMode: 'scroll',
-      sheetSharePct: 50,
+      sheetSharePct: 50, step2V2SharePct: 0,
     });
     expect(parseKitCheckoutConfig(resolved({ ctaMode: 'sheet', sheetSharePct: 400 }))).toEqual({
       ctaMode: 'sheet',
-      sheetSharePct: 100,
+      sheetSharePct: 100, step2V2SharePct: 0,
     });
   });
 });
@@ -114,7 +114,7 @@ describe('getKitCheckoutConfig — résolution via le registre', () => {
   it('registre seedé → défauts du registre (scroll, 50)', async () => {
     await syncComponentRegistry();
     await seedComponentFields();
-    expect(await getKitCheckoutConfig()).toEqual({ ctaMode: 'scroll', sheetSharePct: 50 });
+    expect(await getKitCheckoutConfig()).toEqual({ ctaMode: 'scroll', sheetSharePct: 50, step2V2SharePct: 0 });
   });
 
   it('un binding publié depuis l’admin prime sur le défaut', async () => {
@@ -140,6 +140,21 @@ describe('getKitCheckoutConfig — résolution via le registre', () => {
         actorId: 'adm_test',
       });
     }
-    expect(await getKitCheckoutConfig()).toEqual({ ctaMode: 'ab', sheetSharePct: 30 });
+    expect(await getKitCheckoutConfig()).toEqual({ ctaMode: 'ab', sheetSharePct: 30, step2V2SharePct: 0 });
+  });
+});
+
+describe('étape 2 progressive — réglage et coupe-circuit', () => {
+  it('coupée par défaut, même si le champ n’existe pas encore en base', () => {
+    expect(parseKitCheckoutConfig(null).step2V2SharePct).toBe(0);
+    expect(DEFAULT_KIT_CHECKOUT_CONFIG.step2V2SharePct).toBe(0);
+  });
+
+  it('lit la part publiée, bornée', () => {
+    const fields = (value: unknown) =>
+      ({ step2V2SharePct: { value } }) as unknown as Parameters<typeof parseKitCheckoutConfig>[0];
+    expect(parseKitCheckoutConfig(fields(50)).step2V2SharePct).toBe(50);
+    expect(parseKitCheckoutConfig(fields(250)).step2V2SharePct).toBe(100);
+    expect(parseKitCheckoutConfig(fields('x')).step2V2SharePct).toBe(0);
   });
 });

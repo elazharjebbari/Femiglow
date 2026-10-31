@@ -11,6 +11,7 @@ import { getShippingConfig } from '@/lib/checkout/shipping-config';
 import { searchDeliveryCities } from '@/lib/db/queries/delivery-cities';
 import {
   DEFAULT_DELIVERY_PRICE_MAD,
+  checkoutTotalCents,
   matchesCityExactly,
   shippingCentsFromPrice,
 } from './shipping-fee';
@@ -66,5 +67,53 @@ describe('resolveShippingCents', () => {
     vi.mocked(searchDeliveryCities).mockClear();
     await expect(resolveShippingCents('Rabat')).resolves.toBe(0);
     expect(searchDeliveryCities).not.toHaveBeenCalled();
+  });
+});
+
+describe('checkoutTotalCents', () => {
+  it.each([19, 29, 35, 39, 45])('panier 199 MAD, frais %i MAD', (mad) => {
+    expect(
+      checkoutTotalCents({
+        cartTotalCents: 19900,
+        creditCents: 0,
+        shippingCents: shippingCentsFromPrice(mad, false),
+      }),
+    ).toBe(19900 + mad * 100);
+  });
+
+  it('ville hors catalogue : 45 MAD, comme le serveur', () => {
+    expect(
+      checkoutTotalCents({
+        cartTotalCents: 9900,
+        creditCents: 0,
+        shippingCents: shippingCentsFromPrice(null, false),
+      }),
+    ).toBe(9900 + DEFAULT_DELIVERY_PRICE_MAD * 100);
+  });
+
+  it('livraison offerte : aucun frais', () => {
+    expect(
+      checkoutTotalCents({
+        cartTotalCents: 19900,
+        creditCents: 0,
+        shippingCents: shippingCentsFromPrice(35, true),
+      }),
+    ).toBe(19900);
+  });
+
+  it('remise GLOW99 : déduite du produit, pas des frais', () => {
+    expect(
+      checkoutTotalCents({
+        cartTotalCents: 19900,
+        creditCents: 9000,
+        shippingCents: shippingCentsFromPrice(35, false),
+      }),
+    ).toBe(10900 + 3500);
+  });
+
+  it('crédit supérieur au panier : plafonné, les frais restent dus', () => {
+    expect(
+      checkoutTotalCents({ cartTotalCents: 9900, creditCents: 50000, shippingCents: 3500 }),
+    ).toBe(3500);
   });
 });

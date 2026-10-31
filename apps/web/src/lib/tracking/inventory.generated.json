@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-02T13:03:48.483Z",
+  "generatedAt": "2026-10-31T15:41:24.650Z",
   "components": [
     {
       "name": "MobileFocusGuard",
@@ -447,9 +447,69 @@
       "category": "admin"
     },
     {
+      "name": "BulkPublishDialog",
+      "path": "src/components/admin/components/media-variants/BulkPublishDialog.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "CopyToDialog",
+      "path": "src/components/admin/components/media-variants/CopyToDialog.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "CoverageBadge",
+      "path": "src/components/admin/components/media-variants/CoverageBadge.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "MediaSetConflictDialog",
+      "path": "src/components/admin/components/media-variants/MediaSetConflictDialog.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "MediaSetEditorDrawer",
+      "path": "src/components/admin/components/media-variants/MediaSetEditorDrawer.tsx",
+      "category": "modal"
+    },
+    {
+      "name": "MediaSetHistoryPanel",
+      "path": "src/components/admin/components/media-variants/MediaSetHistoryPanel.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "MediaSetPreviewDialog",
+      "path": "src/components/admin/components/media-variants/MediaSetPreviewDialog.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "MediaVariantsMatrix",
+      "path": "src/components/admin/components/media-variants/MediaVariantsMatrix.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "MediaVariantsSection",
+      "path": "src/components/admin/components/media-variants/MediaVariantsSection.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "SortableMediaList",
+      "path": "src/components/admin/components/media-variants/SortableMediaList.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "Pill",
+      "path": "src/components/admin/components/media-variants/ui.tsx",
+      "category": "admin"
+    },
+    {
       "name": "MediaPickerDrawer",
       "path": "src/components/admin/components/MediaPickerDrawer.tsx",
       "category": "modal"
+    },
+    {
+      "name": "PageGroupEditors",
+      "path": "src/components/admin/components/PageGroupEditors.tsx",
+      "category": "admin"
     },
     {
       "name": "PreviewFrame",
@@ -822,6 +882,11 @@
       "category": "admin"
     },
     {
+      "name": "CouponsManager",
+      "path": "src/components/admin/coupons/CouponsManager.tsx",
+      "category": "admin"
+    },
+    {
       "name": "AudienceDetailActions",
       "path": "src/components/admin/emails/audiences/AudienceDetailActions.tsx",
       "category": "admin"
@@ -847,13 +912,28 @@
       "category": "admin"
     },
     {
+      "name": "ClickUrlCombobox",
+      "path": "src/components/admin/emails/audiences/ClickUrlCombobox.tsx",
+      "category": "admin"
+    },
+    {
       "name": "CountryAutocomplete",
       "path": "src/components/admin/emails/audiences/CountryAutocomplete.tsx",
       "category": "admin"
     },
     {
+      "name": "CountryMultiSelect",
+      "path": "src/components/admin/emails/audiences/CountryMultiSelect.tsx",
+      "category": "admin"
+    },
+    {
       "name": "DurationInput",
       "path": "src/components/admin/emails/audiences/DurationInput.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ExclusionFlagsFieldset",
+      "path": "src/components/admin/emails/audiences/ExclusionFlagsFieldset.tsx",
       "category": "admin"
     },
     {
@@ -864,6 +944,11 @@
     {
       "name": "RuleEditor",
       "path": "src/components/admin/emails/audiences/RuleEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "SnapshotsPanel",
+      "path": "src/components/admin/emails/audiences/SnapshotsPanel.tsx",
       "category": "admin"
     },
     {
@@ -917,8 +1002,18 @@
       "category": "admin"
     },
     {
+      "name": "RetryButton",
+      "path": "src/components/admin/emails/cockpit/RetryButton.tsx",
+      "category": "cta_secondary"
+    },
+    {
       "name": "SavedViewsSidebar",
       "path": "src/components/admin/emails/cockpit/SavedViewsSidebar.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "SuppressionList",
+      "path": "src/components/admin/emails/cockpit/SuppressionList.tsx",
       "category": "admin"
     },
     {
@@ -927,13 +1022,68 @@
       "category": "admin"
     },
     {
+      "name": "Breadcrumb",
+      "path": "src/components/admin/emails/common/Breadcrumb.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "TemplateCombobox",
+      "path": "src/components/admin/emails/common/combobox-wrappers.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "EntityCombobox",
+      "path": "src/components/admin/emails/common/EntityCombobox.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "StatusBadge",
+      "path": "src/components/admin/emails/common/StatusBadge.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "DashboardAutoRefresh",
+      "path": "src/components/admin/emails/DashboardAutoRefresh.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "EmailsTabs",
+      "path": "src/components/admin/emails/EmailsTabs.tsx",
+      "category": "tab"
+    },
+    {
+      "name": "EventsDashboardView",
+      "path": "src/components/admin/emails/events/EventsDashboardView.tsx",
+      "category": "admin"
+    },
+    {
       "name": "GlobalCommandPalette",
       "path": "src/components/admin/emails/GlobalCommandPalette.tsx",
       "category": "admin"
     },
     {
+      "name": "HealthBadge",
+      "path": "src/components/admin/emails/HealthBadge.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "KpiCards",
+      "path": "src/components/admin/emails/KpiCards.tsx",
+      "category": "card"
+    },
+    {
       "name": "ListmonkFrame",
       "path": "src/components/admin/emails/ListmonkFrame.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "Sparkline",
+      "path": "src/components/admin/emails/Sparkline.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "PreviewViewportToggle",
+      "path": "src/components/admin/emails/templates/PreviewViewportToggle.tsx",
       "category": "admin"
     },
     {
@@ -942,8 +1092,103 @@
       "category": "admin"
     },
     {
+      "name": "TemplatesListClient",
+      "path": "src/components/admin/emails/templates/TemplatesListClient.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "VersionDiff",
+      "path": "src/components/admin/emails/templates/VersionDiff.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "Banner",
+      "path": "src/components/admin/emails/ui/Banner.tsx",
+      "category": "banner"
+    },
+    {
+      "name": "Button",
+      "path": "src/components/admin/emails/ui/Button.tsx",
+      "category": "cta_secondary"
+    },
+    {
+      "name": "Card",
+      "path": "src/components/admin/emails/ui/Card.tsx",
+      "category": "card"
+    },
+    {
+      "name": "ConfirmDialog",
+      "path": "src/components/admin/emails/ui/ConfirmDialog.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "EmptyState",
+      "path": "src/components/admin/emails/ui/EmptyState.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "Field",
+      "path": "src/components/admin/emails/ui/Field.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "Freshness",
+      "path": "src/components/admin/emails/ui/Freshness.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "Input",
+      "path": "src/components/admin/emails/ui/Input.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "Pill",
+      "path": "src/components/admin/emails/ui/Pill.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "Skeleton",
+      "path": "src/components/admin/emails/ui/Skeleton.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ToastProvider",
+      "path": "src/components/admin/emails/ui/toast.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "UnsavedChangesGuard",
+      "path": "src/components/admin/emails/ui/use-dirty-guard.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "Wizard",
+      "path": "src/components/admin/emails/ui/Wizard.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "WindowSelector",
+      "path": "src/components/admin/emails/WindowSelector.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "AutosaveIndicator",
+      "path": "src/components/admin/emails/wizard/AutosaveIndicator.tsx",
+      "category": "admin"
+    },
+    {
       "name": "CampaignWizard",
       "path": "src/components/admin/emails/wizard/CampaignWizard.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "MergeTagInserter",
+      "path": "src/components/admin/emails/wizard/MergeTagInserter.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ScheduleShortcuts",
+      "path": "src/components/admin/emails/wizard/ScheduleShortcuts.tsx",
       "category": "admin"
     },
     {
@@ -1069,6 +1314,11 @@
     {
       "name": "MediaLibraryGrid",
       "path": "src/components/admin/media/MediaLibraryGrid.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "MediaSetUsagesList",
+      "path": "src/components/admin/media/MediaSetUsagesList.tsx",
       "category": "admin"
     },
     {
@@ -1372,6 +1622,11 @@
       "category": "admin"
     },
     {
+      "name": "StoriesManager",
+      "path": "src/components/admin/stories/StoriesManager.tsx",
+      "category": "admin"
+    },
+    {
       "name": "ProvidersAnalyticsTable",
       "path": "src/components/admin/tracking/analytics/ProvidersAnalyticsTable.tsx",
       "category": "admin"
@@ -1647,14 +1902,29 @@
       "category": "card"
     },
     {
+      "name": "LoyaltyCodeCard",
+      "path": "src/components/checkout/LoyaltyCodeCard.tsx",
+      "category": "card"
+    },
+    {
       "name": "ShippingPriceDisplay",
       "path": "src/components/checkout/ShippingPriceDisplay.tsx",
+      "category": "card"
+    },
+    {
+      "name": "AddressCouponDisclosure",
+      "path": "src/components/checkout/wizard/AddressCouponDisclosure.tsx",
       "category": "card"
     },
     {
       "name": "CityAutocomplete",
       "path": "src/components/checkout/wizard/components/CityAutocomplete.tsx",
       "category": "card"
+    },
+    {
+      "name": "ConfirmOrderButton",
+      "path": "src/components/checkout/wizard/ConfirmOrderButton.tsx",
+      "category": "cta_secondary"
     },
     {
       "name": "NoCommitmentBadge",
@@ -1672,8 +1942,23 @@
       "category": "banner"
     },
     {
+      "name": "StepActionBar",
+      "path": "src/components/checkout/wizard/StepActionBar.tsx",
+      "category": "card"
+    },
+    {
+      "name": "StepProgressLine",
+      "path": "src/components/checkout/wizard/StepProgressLine.tsx",
+      "category": "progress"
+    },
+    {
       "name": "AddressStep",
       "path": "src/components/checkout/wizard/steps/AddressStep.tsx",
+      "category": "card"
+    },
+    {
+      "name": "AddressStepV2",
+      "path": "src/components/checkout/wizard/steps/AddressStepV2.tsx",
       "category": "card"
     },
     {
@@ -1699,6 +1984,11 @@
     {
       "name": "TimeEstimateBadge",
       "path": "src/components/checkout/wizard/TimeEstimateBadge.tsx",
+      "category": "card"
+    },
+    {
+      "name": "WizardScrollContainerProvider",
+      "path": "src/components/checkout/wizard/wizard-scroll-container.tsx",
       "category": "card"
     },
     {
@@ -1918,6 +2208,11 @@
       "category": "progress"
     },
     {
+      "name": "PromoCodeAutoApply",
+      "path": "src/components/commerce/PromoCodeAutoApply.tsx",
+      "category": "commerce_cart"
+    },
+    {
       "name": "PromoCodeInput",
       "path": "src/components/commerce/PromoCodeInput.tsx",
       "category": "commerce_cart"
@@ -1925,6 +2220,11 @@
     {
       "name": "QuantitySelector",
       "path": "src/components/commerce/QuantitySelector.tsx",
+      "category": "commerce_cart"
+    },
+    {
+      "name": "RecommendationProof",
+      "path": "src/components/commerce/RecommendationProof.tsx",
       "category": "commerce_cart"
     },
     {
@@ -1960,6 +2260,11 @@
     {
       "name": "StickyCartCTA",
       "path": "src/components/commerce/StickyCartCTA.tsx",
+      "category": "commerce_cart"
+    },
+    {
+      "name": "StickyPromoFlag",
+      "path": "src/components/commerce/StickyPromoFlag.tsx",
       "category": "commerce_cart"
     },
     {
@@ -2055,6 +2360,11 @@
     {
       "name": "CompositionCard",
       "path": "src/components/kit/CompositionCard.tsx",
+      "category": "card"
+    },
+    {
+      "name": "KitAngleCookie",
+      "path": "src/components/kit/KitAngleCookie.tsx",
       "category": "card"
     },
     {
@@ -2293,6 +2603,11 @@
       "category": "section_hero"
     },
     {
+      "name": "CouponWelcomeNote",
+      "path": "src/components/sections/CouponWelcomeNote.tsx",
+      "category": "section_content"
+    },
+    {
       "name": "CrossLinkBanner",
       "path": "src/components/sections/CrossLinkBanner.tsx",
       "category": "banner"
@@ -2398,6 +2713,11 @@
       "category": "section_hero"
     },
     {
+      "name": "HeroPicture",
+      "path": "src/components/sections/hero/HeroPicture.tsx",
+      "category": "section_hero"
+    },
+    {
       "name": "HeroBound",
       "path": "src/components/sections/HeroBound.tsx",
       "category": "section_hero"
@@ -2450,6 +2770,11 @@
     {
       "name": "InterviewQRBound",
       "path": "src/components/sections/InterviewQRBound.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "InvitationCodeField",
+      "path": "src/components/sections/InvitationCodeField.tsx",
       "category": "section_content"
     },
     {
@@ -2578,6 +2903,11 @@
       "category": "section_content"
     },
     {
+      "name": "RescueOffer",
+      "path": "src/components/sections/RescueOffer.tsx",
+      "category": "section_content"
+    },
+    {
       "name": "RitualCard",
       "path": "src/components/sections/rituals/RitualCard.tsx",
       "category": "card"
@@ -2665,6 +2995,26 @@
     {
       "name": "StepsTimeline",
       "path": "src/components/sections/StepsTimeline.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "StoriesRail",
+      "path": "src/components/sections/StoriesRail.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "StoriesVideo",
+      "path": "src/components/sections/StoriesVideo.tsx",
+      "category": "media_video"
+    },
+    {
+      "name": "StoriesVideoBound",
+      "path": "src/components/sections/StoriesVideoBound.tsx",
+      "category": "media_video"
+    },
+    {
+      "name": "StoryViewer",
+      "path": "src/components/sections/StoryViewer.tsx",
       "category": "section_content"
     },
     {
@@ -2785,6 +3135,16 @@
       "events": [
         "view_item"
       ]
+    },
+    {
+      "name": "WebVitalsReporter",
+      "path": "src/components/tracking/WebVitalsReporter.tsx",
+      "category": "card"
+    },
+    {
+      "name": "BOTTOM_SHEET_HISTORY_FLAG",
+      "path": "src/components/ui/BottomSheet.tsx",
+      "category": "card"
     },
     {
       "name": "Button",
@@ -3214,6 +3574,12 @@
       "filePath": "src/app/admin/content-studio/health/page.tsx"
     },
     {
+      "route": "/admin/coupons",
+      "title": "/admin/coupons",
+      "category": "admin",
+      "filePath": "src/app/admin/coupons/page.tsx"
+    },
+    {
       "route": "/admin/emails",
       "title": "/admin/emails",
       "category": "admin",
@@ -3230,6 +3596,12 @@
       "title": "/admin/emails/audiences/:id",
       "category": "admin",
       "filePath": "src/app/admin/emails/audiences/[id]/page.tsx"
+    },
+    {
+      "route": "/admin/emails/audiences/:id/edit",
+      "title": "/admin/emails/audiences/:id/edit",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/audiences/[id]/edit/page.tsx"
     },
     {
       "route": "/admin/emails/audiences/new",
@@ -3256,6 +3628,12 @@
       "filePath": "src/app/admin/emails/automation/new/page.tsx"
     },
     {
+      "route": "/admin/emails/automation/runs",
+      "title": "/admin/emails/automation/runs",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/automation/runs/page.tsx"
+    },
+    {
       "route": "/admin/emails/automation/runs/:id",
       "title": "/admin/emails/automation/runs/:id",
       "category": "admin",
@@ -3280,6 +3658,12 @@
       "filePath": "src/app/admin/emails/campaigns/[id]/edit/page.tsx"
     },
     {
+      "route": "/admin/emails/campaigns/new",
+      "title": "/admin/emails/campaigns/new",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/campaigns/new/page.tsx"
+    },
+    {
       "route": "/admin/emails/events",
       "title": "/admin/emails/events",
       "category": "admin",
@@ -3290,6 +3674,12 @@
       "title": "/admin/emails/listmonk/::path*",
       "category": "admin",
       "filePath": "src/app/admin/emails/listmonk/[[...path]]/page.tsx"
+    },
+    {
+      "route": "/admin/emails/suppression",
+      "title": "/admin/emails/suppression",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/suppression/page.tsx"
     },
     {
       "route": "/admin/emails/templates",
@@ -3640,6 +4030,12 @@
       "filePath": "src/app/admin/settings/seeders/page.tsx"
     },
     {
+      "route": "/admin/stories",
+      "title": "/admin/stories",
+      "category": "admin",
+      "filePath": "src/app/admin/stories/page.tsx"
+    },
+    {
       "route": "/admin/tracking",
       "title": "/admin/tracking",
       "category": "admin",
@@ -3863,7 +4259,7 @@
     },
     {
       "route": "/rituel",
-      "title": "Le rituel \\u2014 manucure japonaise halal, deux gestes",
+      "title": "Le rituel \\u2014 manucure japonaise halal, quatre gestes",
       "category": "landing",
       "filePath": "src/app/(marketing)/rituel/page.tsx"
     }

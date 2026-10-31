@@ -8,7 +8,7 @@
  * ne doit pas se réabonner à chaque frappe.
  */
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { AddressPhase } from '@/lib/checkout/address/address-phase';
 import { useWizardStore } from '@/lib/checkout/state/wizard-store';
@@ -142,27 +142,24 @@ export function useAddressStepTracking(
     };
   }, [emitStepEvent, flush, msSinceView, once]);
 
-  const observerRef = useRef<IntersectionObserver | null>(null);
-  const ctaRef = useCallback(
-    (node: HTMLElement | null) => {
-      observerRef.current?.disconnect();
-      observerRef.current = null;
-      if (!node || typeof IntersectionObserver === 'undefined') return;
-      const observer = new IntersectionObserver(
-        (entries) => {
-          if (!entries.some((e) => e.isIntersecting)) return;
-          observer.disconnect();
-          if (!once('cta_visible')) return;
+  // Le nœud passe par un état : l'observation suit son cycle de vie, y compris
+  // le double montage du mode strict.
+  const [ctaNode, setCtaNode] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    if (!ctaNode || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        observer.disconnect();
+        if (once('cta_visible')) {
           emitStepEvent(ADDRESS_STEP_EVENTS.ctaVisible, { ms_since_view: msSinceView() });
-        },
-        { threshold: CTA_VISIBLE_THRESHOLD },
-      );
-      observer.observe(node);
-      observerRef.current = observer;
-    },
-    [emitStepEvent, msSinceView, once],
-  );
-  useEffect(() => () => observerRef.current?.disconnect(), []);
+        }
+      },
+      { threshold: CTA_VISIBLE_THRESHOLD },
+    );
+    observer.observe(ctaNode);
+    return () => observer.disconnect();
+  }, [ctaNode, emitStepEvent, msSinceView, once]);
 
   const trackCityFocus = useCallback(() => {
     if (once('city_focus')) emitStepEvent(ADDRESS_STEP_EVENTS.cityFocus);
@@ -200,6 +197,6 @@ export function useAddressStepTracking(
     trackValidationError,
     trackCtaTapIncomplete,
     trackNoteOpened,
-    ctaRef,
+    ctaRef: setCtaNode,
   };
 }

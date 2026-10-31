@@ -1163,6 +1163,18 @@ export const SITE_COMPONENT_REGISTRY: SiteComponentSeed[] = [
         order: 2,
         config: { min: 0, max: 100, step: 1 },
       },
+      {
+        key: 'step2V2SharePct',
+        label: 'Part des visiteurs sur la nouvelle étape adresse (%)',
+        type: 'number',
+        required: false,
+        defaultValue: 0,
+        description:
+          "0 = tout le monde sur la version actuelle (coupe-circuit), 100 = tout le monde sur la nouvelle. Chaque visiteur garde toujours la même version. Recette : ajouter ?step2=v2 ou ?step2=control à l'URL.",
+        group: 'Comportement',
+        order: 3,
+        config: { min: 0, max: 100, step: 1 },
+      },
     ],
   },
   {
