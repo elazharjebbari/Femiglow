@@ -107,8 +107,11 @@ export function StickyCartCTA({
       className="group/sticky fixed inset-x-0 bottom-0 border-t border-encre/10 bg-creme/95 px-4 py-3 backdrop-blur transition-[transform,opacity] duration-base ease-out-soft data-[visible=false]:translate-y-full data-[chat-open=true]:opacity-0 data-[chat-open=true]:pointer-events-none data-[commander-sheet-open=true]:opacity-0 data-[commander-sheet-open=true]:pointer-events-none motion-reduce:transition-none motion-reduce:data-[visible=false]:opacity-0 motion-reduce:data-[visible=false]:translate-y-0 lg:bottom-6 lg:start-auto lg:end-6 lg:w-[340px] lg:rounded-md lg:border"
     >
       {/* Onglet « Code X appliqué » : rendu seulement si un code promo réduit
-          le prix (sinon `null`, barre inchangée). */}
-      <StickyPromoFlag currency={currency} locale={locale} strings={promoFlagStrings} />
+          le prix (sinon `null`, barre inchangée). Barre retirée : il dépasserait
+          seul en bas d'écran, sur la barre d'action du formulaire. */}
+      {!hiddenByForm && (
+        <StickyPromoFlag currency={currency} locale={locale} strings={promoFlagStrings} />
+      )}
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-[11px] uppercase tracking-[0.18em] text-encre/70">

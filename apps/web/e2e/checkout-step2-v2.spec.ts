@@ -18,11 +18,18 @@ const LOCALES = [
   { prefix: '/ar', street: 'حي السلام، زنقة 4' },
 ];
 
+/** Le bandeau cookies passe au-dessus des barres fixes : on y répond d'abord. */
+async function answerCookies(page: Page): Promise<void> {
+  const refuse = page.getByRole('button', { name: /tout refuser|رفض/i }).first();
+  await refuse.click({ timeout: 3_000 }).catch(() => undefined);
+}
+
 async function goToStep2(page: Page, prefix = '', query = 'step2=v2'): Promise<void> {
   await page.goto(`${prefix}/kit?cta=scroll&${query}`);
   const lead = page.getByTestId('wizard-step-lead');
   await expect(lead).toBeVisible();
   await page.waitForTimeout(800);
+  await answerCookies(page);
   await lead.locator('input[autocomplete="given-name"], input[name=firstName]').first().fill('Salma');
   await lead.locator('input[type=tel], input[name=phone]').first().fill('0612345678');
   await lead.locator('input[type=checkbox]').first().check({ force: true });
@@ -186,6 +193,52 @@ test.describe('étape 2 — réglage par défaut', () => {
     await goToStep2(page, '', 'step2=control');
     await expect(page.getByTestId('wizard-step-address')).not.toHaveAttribute('data-variant', 'v2');
     await expect(page.getByTestId('wizard-action-bar')).toHaveCount(0);
+  });
+});
+
+test.describe('étape 2 — prix promotionnel', () => {
+  for (const { name, width, height } of VIEWPORTS) {
+    test(`${name} : prix barré et bouton tiennent à l’écran`, async ({ page }) => {
+      test.setTimeout(90_000);
+      await page.setViewportSize({ width, height });
+      await goToStep2(page);
+      await page.evaluate(() => {
+        const key = 'femiglow.wizard.v1';
+        const stored = JSON.parse(window.localStorage.getItem(key) ?? '{}');
+        stored.state = { ...stored.state, couponCode: 'GLOW99', creditCents: 10000, couponKind: 'promo' };
+        window.localStorage.setItem(key, JSON.stringify(stored));
+      });
+      await page.route('**/api/coupons/redeem', (route) =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: '{"valid":true,"valueCents":10000,"kind":"promo"}' }),
+      );
+      await page.reload();
+      await expect(page.getByTestId('wizard-step-address')).toBeVisible({ timeout: 20_000 });
+      await page.waitForTimeout(900);
+      await chooseCasablanca(page);
+      await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+      await expect(page.getByTestId('wizard-action-total-reference')).toBeVisible();
+      await page.getByTestId('wizard-step-address').scrollIntoViewIfNeeded();
+      await page.waitForTimeout(400);
+      await expectCtaOnScreen(page);
+    });
+  }
+});
+
+test.describe('bandeau cookies', () => {
+  test('sans réponse à l’étape 2 : ses boutons restent touchables', async ({ page }) => {
+    test.setTimeout(90_000);
+    await page.addInitScript(() => {
+      window.localStorage.setItem(
+        'femiglow.wizard.v1',
+        JSON.stringify({ state: { currentStep: 'address', leadId: 'cl_e2e' }, version: 3 }),
+      );
+    });
+    await page.setViewportSize({ width: 360, height: 640 });
+    await page.goto('/kit?cta=scroll');
+    await expect(page.getByTestId('wizard-step-address')).toBeVisible();
+    const refuse = page.getByRole('button', { name: /tout refuser/i }).first();
+    await refuse.click({ timeout: 10_000 });
+    await expect(refuse).toHaveCount(0);
   });
 });
 

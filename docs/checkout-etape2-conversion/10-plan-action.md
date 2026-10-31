@@ -29,6 +29,8 @@
 
 **Décision du 31/10/2026 :** l'adresse devient facultative dans la V2 : la ville suffit à commander. À suivre : colis non livrés et temps de confirmation au téléphone. La case de rappel revient cochée à chaque chargement de page.
 
+**Prix promotionnel de la barre (31/10/2026) :** prix final grand, barré petit sur la même ligne, écart égal à la remise, couleur grenat à partir de 30 % de remise (`Pricing.pdf` p. 5, 10, 13, 15, 17, 23, 75). Le grenat n'est donc plus réservé au seul bouton. Le bandeau cookies passe au-dessus des barres fixes.
+
 **Limite à arbitrer :** le bouton « Commander » de la barre promo reste visible à l'étape 2. Même défaut que le faux CTA, sur une zone que le plan ne couvrait pas.
 
 ## 1. Vue d'ensemble

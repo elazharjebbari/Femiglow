@@ -11,6 +11,7 @@ import { getShippingConfig } from '@/lib/checkout/shipping-config';
 import { searchDeliveryCities } from '@/lib/db/queries/delivery-cities';
 import {
   DEFAULT_DELIVERY_PRICE_MAD,
+  checkoutReferenceCents,
   checkoutTotalCents,
   matchesCityExactly,
   shippingCentsFromPrice,
@@ -115,5 +116,38 @@ describe('checkoutTotalCents', () => {
     expect(
       checkoutTotalCents({ cartTotalCents: 9900, creditCents: 50000, shippingCents: 3500 }),
     ).toBe(3500);
+  });
+});
+
+describe('checkoutReferenceCents', () => {
+  const base = { cartTotalCents: 19900, compareAtTotalCents: 28900, shippingCents: 3500 };
+
+  it('avec un code : l’écart barré égale exactement la remise', () => {
+    const reference = checkoutReferenceCents({ ...base, creditCents: 10000 });
+    const total = checkoutTotalCents({
+      cartTotalCents: 19900,
+      creditCents: 10000,
+      shippingCents: 3500,
+    });
+    expect(reference).toBe(23400);
+    expect(reference! - total).toBe(10000);
+  });
+
+  it('sans code : prix de référence du produit, frais compris', () => {
+    expect(checkoutReferenceCents({ ...base, creditCents: 0 })).toBe(32400);
+  });
+
+  it('sans code ni prix de référence : rien à barrer', () => {
+    expect(
+      checkoutReferenceCents({ cartTotalCents: 19900, creditCents: 0, shippingCents: 3500 }),
+    ).toBeNull();
+    expect(
+      checkoutReferenceCents({
+        cartTotalCents: 19900,
+        compareAtTotalCents: 19900,
+        creditCents: 0,
+        shippingCents: 0,
+      }),
+    ).toBeNull();
   });
 });

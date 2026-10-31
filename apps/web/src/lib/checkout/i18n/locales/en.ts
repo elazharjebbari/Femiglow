@@ -80,6 +80,7 @@ export const dictionaryEn: WizardDictionary = {
     deliveryFree: 'Free',
     deliveryUnknown: 'Delivery time confirmed by phone',
     totalLabel: 'Total on delivery',
+    insteadOf: 'instead of',
     promoLine: (code, amount) => `Code ${code}: −${amount}`,
     ctaChooseCity: 'Choose my city',
     ctaAddAddress: 'Add my address',

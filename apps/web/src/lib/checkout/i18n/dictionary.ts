@@ -109,6 +109,8 @@ export interface WizardDictionary {
     deliveryFree: string;
     deliveryUnknown: string;
     totalLabel: string;
+    /** Devant le prix barré, pour les lecteurs d'écran. */
+    insteadOf: string;
     promoLine: (code: string, amount: string) => string;
     ctaChooseCity: string;
     ctaAddAddress: string;

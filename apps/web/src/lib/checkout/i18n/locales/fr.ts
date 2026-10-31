@@ -81,6 +81,7 @@ export const dictionaryFr: WizardDictionary = {
     deliveryFree: 'Offerte',
     deliveryUnknown: 'Délai confirmé par téléphone',
     totalLabel: 'Total à la réception',
+    insteadOf: 'au lieu de',
     promoLine: (code, amount) => `Code ${code} : −${amount}`,
     ctaChooseCity: 'Choisir ma ville',
     ctaAddAddress: 'Ajouter mon adresse',
