@@ -97,6 +97,18 @@ describe('StickyCartCTA et le formulaire', () => {
     expect(bar).toHaveAttribute('data-visible', 'false');
   });
 
+  it('barre retirée : l’onglet du code ne reste pas seul à l’écran', () => {
+    useWizardStore.setState({
+      currentStep: 'address',
+      couponCode: 'GLOW99',
+      creditCents: 10000,
+      couponKind: 'promo',
+    });
+    setup();
+    setOnScreen(COMMANDER_ANCHOR_ID, true);
+    expect(screen.queryByTestId('sticky-promo-flag')).not.toBeInTheDocument();
+  });
+
   it('passage à l’étape 2 pendant que le formulaire est à l’écran', () => {
     const bar = setup();
     expect(bar).toHaveAttribute('data-visible', 'true');

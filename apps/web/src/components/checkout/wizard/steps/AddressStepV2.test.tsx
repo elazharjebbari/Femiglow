@@ -324,6 +324,34 @@ describe('AddressStepV2 — total et remises', () => {
     expect(screen.queryByTestId('wizard-coupon-field')).not.toBeInTheDocument();
   });
 
+  it('code de campagne : prix barré sans la remise, écart égal à la remise', async () => {
+    useWizardStore.setState({ couponCode: 'GLOW99', creditCents: 10000, couponKind: 'promo' });
+    render(<AddressStepV2 />);
+    await pickCasablanca();
+    expect(screen.getByTestId('wizard-action-total-amount')).toHaveTextContent('134 MAD');
+    const reference = screen.getByTestId('wizard-action-total-reference');
+    expect(reference.tagName).toBe('S');
+    expect(reference).toHaveTextContent('au lieu de 234 MAD');
+    expect(screen.getByTestId('wizard-action-total-amount').className).toContain('text-action');
+  });
+
+  it('sans remise ni prix de référence : aucun prix barré', async () => {
+    render(<AddressStepV2 />);
+    await pickCasablanca();
+    expect(screen.queryByTestId('wizard-action-total-reference')).not.toBeInTheDocument();
+    expect(screen.getByTestId('wizard-action-total-amount').className).toContain('text-encre');
+  });
+
+  it('prix de référence du produit, sans code : barré frais compris', async () => {
+    useWizardStore.setState((s) => ({
+      cartSnapshot: { ...s.cartSnapshot!, compareAtTotalCents: 28900 },
+    }));
+    render(<AddressStepV2 />);
+    await pickCasablanca();
+    expect(screen.getByTestId('wizard-action-total-reference')).toHaveTextContent('324 MAD');
+    expect(screen.getByTestId('wizard-action-total-amount').className).toContain('text-encre');
+  });
+
   it('sans code, le lien fidélité reste accessible après la ville', async () => {
     render(<AddressStepV2 />);
     expect(screen.queryByTestId('wizard-coupon-field')).not.toBeInTheDocument();

@@ -36,13 +36,18 @@ import { ADDRESS_NOTES_MAX_LENGTH } from '@/lib/checkout/address/address-form-sc
 import { useAddressReveal } from '@/lib/checkout/address/use-address-reveal';
 import type { PublicCity } from '@/lib/checkout/delivery/use-delivery-cities';
 import { useWizardTranslation } from '@/lib/checkout/i18n/use-wizard-translation';
-import { checkoutTotalCents, shippingCentsFromPrice } from '@/lib/checkout/shipping-fee';
+import {
+  checkoutReferenceCents,
+  checkoutTotalCents,
+  shippingCentsFromPrice,
+} from '@/lib/checkout/shipping-fee';
 import { useAppliedCoupon } from '@/lib/checkout/state/use-applied-coupon';
 import { useWizardStore } from '@/lib/checkout/state/wizard-store';
 import { useShippingConfig } from '@/lib/checkout/use-shipping-config';
 import { alignWizardStep } from '@/lib/checkout/wizard-arrival';
 import { cn } from '@/lib/utils/cn';
 
+import { ActionBarTotal } from '../ActionBarTotal';
 import { AddressCouponDisclosure } from '../AddressCouponDisclosure';
 import { ConfirmOrderButton } from '../ConfirmOrderButton';
 import { StepActionBar } from '../StepActionBar';
@@ -204,6 +209,15 @@ export function AddressStepV2() {
         : null,
     [cart, appliedCoupon.creditCents, shippingCents],
   );
+
+  const referenceCents = cart
+    ? checkoutReferenceCents({
+        cartTotalCents: cart.totalCents,
+        compareAtTotalCents: cart.compareAtTotalCents,
+        creditCents: appliedCoupon.creditCents,
+        shippingCents,
+      })
+    : null;
 
   const ctaLabels: Record<AddressPhase, string> = {
     city: copy.ctaChooseCity,
@@ -377,23 +391,15 @@ export function AddressStepV2() {
         {({ keyboardOpen }) => (
           <>
             {cityKnown && totalCents !== null && (
-              <div data-testid="wizard-action-total">
-                <p className="flex items-baseline justify-between gap-3 text-encre">
-                  <span className="text-sm">{copy.totalLabel}</span>
-                  <span
-                    dir="ltr"
-                    className="text-lg font-semibold tabular-nums"
-                    data-testid="wizard-action-total-amount"
-                  >
-                    {formatAmount(totalCents)}
-                  </span>
-                </p>
-                {appliedCoupon.hasDiscount && appliedCoupon.code && (
-                  <p className="text-xs text-sauge-dark" data-testid="wizard-promo-applied">
-                    {copy.promoLine(appliedCoupon.code, formatAmount(appliedCoupon.creditCents))}
-                  </p>
-                )}
-              </div>
+              <ActionBarTotal
+                totalCents={totalCents}
+                referenceCents={referenceCents}
+                promoLine={
+                  appliedCoupon.hasDiscount && appliedCoupon.code
+                    ? copy.promoLine(appliedCoupon.code, formatAmount(appliedCoupon.creditCents))
+                    : null
+                }
+              />
             )}
             <ConfirmOrderButton
               ref={tracking.ctaRef}

@@ -41,6 +41,31 @@ export function checkoutTotalCents({
   return cartTotalCents - credit + Math.max(0, shippingCents);
 }
 
+/**
+ * Prix barré du total : ce que la cliente paierait sans la remise, frais
+ * compris, pour que l'écart affiché soit exactement la remise annoncée. Sans
+ * code, le prix de référence du produit (`compareAtTotalCents`). `null` : rien
+ * à barrer.
+ */
+export function checkoutReferenceCents({
+  cartTotalCents,
+  compareAtTotalCents,
+  creditCents,
+  shippingCents,
+}: {
+  cartTotalCents: number;
+  compareAtTotalCents?: number;
+  creditCents: number;
+  shippingCents: number;
+}): number | null {
+  const shipping = Math.max(0, shippingCents);
+  if (creditCents > 0) return cartTotalCents + shipping;
+  if (compareAtTotalCents !== undefined && compareAtTotalCents > cartTotalCents) {
+    return compareAtTotalCents + shipping;
+  }
+  return null;
+}
+
 export function matchesCityExactly(
   city: Pick<DeliveryCity, 'nameFr' | 'nameAr' | 'slug' | 'aliases'>,
   input: string,

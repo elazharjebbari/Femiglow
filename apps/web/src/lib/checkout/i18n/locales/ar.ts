@@ -83,6 +83,7 @@ export const dictionaryAr: WizardDictionary = {
     deliveryFree: 'مجاني',
     deliveryUnknown: 'نؤكد مدة التوصيل عبر الهاتف',
     totalLabel: 'المجموع عند الاستلام',
+    insteadOf: 'بدلًا من',
     promoLine: (code, amount) => `الرمز ${code}: −${amount}`,
     ctaChooseCity: 'اختيار مدينتي',
     ctaAddAddress: 'إضافة عنواني',
