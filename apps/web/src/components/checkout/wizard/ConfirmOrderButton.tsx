@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef, type MouseEventHandler } from 'react';
+import { forwardRef, type MouseEventHandler, type PointerEventHandler } from 'react';
 
 import type { AddressPhase } from '@/lib/checkout/address/address-phase';
 import { cn } from '@/lib/utils/cn';
@@ -12,6 +12,7 @@ export interface ConfirmOrderButtonProps {
   formId: string;
   /** Hauteur réduite, clavier ouvert. */
   compact?: boolean;
+  onPointerDown?: PointerEventHandler<HTMLButtonElement>;
   onClick: MouseEventHandler<HTMLButtonElement>;
 }
 
@@ -42,7 +43,10 @@ function ParcelIcon() {
  * grenat n'apparaît qu'à l'état `ready` (cf. `.fg-cta` dans `globals.css`).
  */
 export const ConfirmOrderButton = forwardRef<HTMLButtonElement, ConfirmOrderButtonProps>(
-  function ConfirmOrderButton({ phase, label, formId, compact, onClick }, ref) {
+  function ConfirmOrderButton(
+    { phase, label, formId, compact, onPointerDown, onClick },
+    ref,
+  ) {
     const submitting = phase === 'submitting';
     return (
       <>
@@ -50,6 +54,7 @@ export const ConfirmOrderButton = forwardRef<HTMLButtonElement, ConfirmOrderButt
           ref={ref}
           type="submit"
           form={formId}
+          onPointerDown={onPointerDown}
           onClick={onClick}
           disabled={submitting}
           aria-busy={submitting || undefined}

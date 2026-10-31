@@ -11,7 +11,10 @@ export const ADDRESS_LINE_MAX_LENGTH = 160;
 export const ADDRESS_NOTES_MAX_LENGTH = 500;
 
 /** Miroir client de `patchLeadAddressInputSchema`, messages dans la langue active. */
-export function buildAddressFormSchema(errors: WizardDictionary['address']['errors']) {
+export function buildAddressFormSchema(
+  errors: WizardDictionary['address']['errors'],
+  { addressOptional = false }: { addressOptional?: boolean } = {},
+) {
   return z.object({
     city: z
       .string()
@@ -21,7 +24,7 @@ export function buildAddressFormSchema(errors: WizardDictionary['address']['erro
     addressLine1: z
       .string()
       .trim()
-      .min(ADDRESS_LINE_MIN_LENGTH, errors.addressRequired)
+      .min(addressOptional ? 0 : ADDRESS_LINE_MIN_LENGTH, errors.addressRequired)
       .max(ADDRESS_LINE_MAX_LENGTH, errors.addressTooLong),
     notes: z.string().trim().max(ADDRESS_NOTES_MAX_LENGTH, errors.noteTooLong).optional(),
   });

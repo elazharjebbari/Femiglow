@@ -96,6 +96,16 @@ test.describe('étape 2 progressive — parcours', () => {
     await expect(page.getByTestId('wizard-step-thankyou')).toBeVisible();
   });
 
+  test('adresse facultative : commande créée avec la ville seule', async ({ page }) => {
+    test.setTimeout(90_000);
+    await goToStep2(page);
+    await chooseCasablanca(page);
+    await expect(page.getByTestId('wizard-address-submit')).toHaveAttribute('data-phase', 'ready');
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    await page.getByTestId('wizard-address-submit').click();
+    await expect(page.getByTestId('wizard-step-thankyou')).toBeVisible();
+  });
+
   test('ville hors catalogue : adresse ouverte, 45 MAD comme le serveur', async ({ page }) => {
     test.setTimeout(90_000);
     await goToStep2(page);
@@ -176,6 +186,20 @@ test.describe('étape 2 — réglage par défaut', () => {
     await goToStep2(page, '', 'step2=control');
     await expect(page.getByTestId('wizard-step-address')).not.toHaveAttribute('data-variant', 'v2');
     await expect(page.getByTestId('wizard-action-bar')).toHaveCount(0);
+  });
+});
+
+test.describe('étape 1 — case de rappel', () => {
+  test('refus mémorisé par le navigateur : la case revient cochée', async ({ page }) => {
+    test.setTimeout(90_000);
+    await page.addInitScript(() => {
+      window.localStorage.setItem(
+        'femiglow.wizard.v1',
+        JSON.stringify({ state: { leadDraft: { firstName: '', phone: '', consent: false } }, version: 3 }),
+      );
+    });
+    await page.goto('/kit?cta=scroll');
+    await expect(page.locator('input[name=consent]')).toBeChecked();
   });
 });
 

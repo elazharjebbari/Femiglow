@@ -27,6 +27,8 @@
 
 **Ajouts absents du dossier :** la bulle de chat s'efface pendant que la barre V2 est à l'écran (elle recouvrait le CTA) ; la barre V2 disparaît quand le formulaire quitte l'écran (sinon deux barres fixes) ; l'étape se recale sous les barres collées à l'arrivée ; verrou contre le double tap dans `useAddressForm`, valable pour les deux versions.
 
+**Décision du 31/10/2026 :** l'adresse devient facultative dans la V2 : la ville suffit à commander. À suivre : colis non livrés et temps de confirmation au téléphone. La case de rappel revient cochée à chaque chargement de page.
+
 **Limite à arbitrer :** le bouton « Commander » de la barre promo reste visible à l'étape 2. Même défaut que le faux CTA, sur une zone que le plan ne couvrait pas.
 
 ## 1. Vue d'ensemble

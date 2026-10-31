@@ -73,7 +73,7 @@ export const dictionaryAr: WizardDictionary = {
     subtitle: 'تدفعين عند الاستلام.',
     cityLabel: 'مدينتكِ',
     cityPlaceholder: 'الدار البيضاء، الرباط، أكادير…',
-    addressLabel: 'الحي والشارع والرقم',
+    addressLabel: 'الحي والشارع والرقم (اختياري)',
     addressPlaceholder: 'مثال: حي السلام، زنقة 4، رقم 12',
     addNote: 'إضافة ملاحظة لعامل التوصيل',
     notePlaceholder: 'معلم قريب، الوقت المفضل…',

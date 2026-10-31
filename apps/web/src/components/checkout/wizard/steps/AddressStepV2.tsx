@@ -11,7 +11,15 @@
  * partagé avec `AddressStep`.
  */
 
-import { useEffect, useId, useMemo, useState, type CSSProperties, type MouseEvent } from 'react';
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type MouseEvent,
+} from 'react';
 import { flushSync } from 'react-dom';
 import { Controller } from 'react-hook-form';
 
@@ -111,7 +119,6 @@ export function AddressStepV2() {
     form: {
       register,
       control,
-      trigger,
       formState: { errors },
     },
     tracking,
@@ -127,6 +134,7 @@ export function AddressStepV2() {
     networkBanner,
   } = useAddressForm({
     validationMode: 'onTouched',
+    addressOptional: true,
     onInvalid: reveal,
     isAddressRevealed: () => revealed,
   });
@@ -139,6 +147,7 @@ export function AddressStepV2() {
     city: watchedCity,
     addressLine1: watchedLine1,
     addressRevealed: revealed,
+    addressOptional: true,
     submitting,
   });
 
@@ -153,11 +162,18 @@ export function AddressStepV2() {
     if (!watchedLine1.trim()) focusField(lineId);
   };
 
+  // Le tap fait sortir du champ ville, ce qui peut ouvrir l'adresse et rendre le
+  // formulaire prêt avant le `click`. Le geste suit ce que le bouton annonçait
+  // quand la cliente l'a touché : « Ajouter mon adresse » ne passe pas commande.
+  const pressedPhaseRef = useRef<AddressPhase | null>(null);
+
   const onCtaClick = (event: MouseEvent<HTMLButtonElement>) => {
-    if (phase === 'ready') return;
+    const pressedPhase = pressedPhaseRef.current ?? phase;
+    pressedPhaseRef.current = null;
+    if (pressedPhase === 'ready') return;
     event.preventDefault();
-    if (phase === 'submitting') return;
-    if (phase === 'city') {
+    if (pressedPhase === 'submitting') return;
+    if (pressedPhase === 'city') {
       tracking.trackCtaTapIncomplete('city');
       focusField(cityId);
       return;
@@ -165,7 +181,6 @@ export function AddressStepV2() {
     tracking.trackCtaTapIncomplete('addressLine1');
     flushSync(reveal);
     focusField(lineId);
-    if (watchedLine1.trim()) void trigger('addressLine1');
   };
 
   const openNote = () => {
@@ -310,7 +325,6 @@ export function AddressStepV2() {
               placeholder={copy.addressPlaceholder}
               autoComplete="shipping street-address"
               enterKeyHint="done"
-              required
               error={errors.addressLine1?.message}
               inputAdornment={isAddressLineValid(watchedLine1) ? <ValidMark /> : undefined}
               className={FIELD_CLASS}
@@ -387,6 +401,9 @@ export function AddressStepV2() {
               label={ctaLabels[phase]}
               formId={formId}
               compact={keyboardOpen}
+              onPointerDown={() => {
+                pressedPhaseRef.current = phase;
+              }}
               onClick={onCtaClick}
             />
             {!keyboardOpen && (

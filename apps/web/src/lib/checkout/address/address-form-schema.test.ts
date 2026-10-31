@@ -37,6 +37,16 @@ describe('buildAddressFormSchema', () => {
     expect(max.success).toBe(true);
   });
 
+  it('adresse facultative : vide ou courte acceptée, longueur maximale gardée', () => {
+    const schema = buildAddressFormSchema(getWizardDictionary('fr').address.errors, {
+      addressOptional: true,
+    });
+    expect(schema.safeParse({ city: 'Fès', addressLine1: '' }).success).toBe(true);
+    expect(schema.safeParse({ city: 'Fès', addressLine1: 'ab' }).success).toBe(true);
+    expect(schema.safeParse({ city: 'Fès', addressLine1: repeat(161) }).success).toBe(false);
+    expect(schema.safeParse({ city: 'a', addressLine1: '' }).success).toBe(false);
+  });
+
   it('accepte une saisie en arabe', () => {
     expect(
       schemaFor('ar').safeParse({ city: 'وجدة', addressLine1: 'حي السلام' }).success,
