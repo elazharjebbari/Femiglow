@@ -16,7 +16,7 @@ import {
 const NOW = new Date('2026-06-03T12:00:00Z').getTime();
 const OPTS: CartAbandonEligibilityOpts = {
   now: NOW,
-  idleMs: 30 * 60 * 1000, // 30 min
+  idleMs: 15 * 60 * 1000, // 15 min
   maxAgeMs: 7 * 24 * 60 * 60 * 1000, // 7 j
 };
 
@@ -33,7 +33,7 @@ function lead(over: Partial<CartAbandonCandidate> = {}): CartAbandonCandidate {
     phoneRaw: '0661234567',
     purchasedAt: null,
     abandonWebhookAt: null,
-    // 1h avant NOW → passé le seuil d'inaction (30 min), sous le TTL (7 j).
+    // 1h avant NOW → passé le seuil d'inaction (15 min), sous le TTL (7 j).
     createdAt: new Date(NOW - 60 * 60 * 1000),
     ...over,
   } as CartAbandonCandidate;
