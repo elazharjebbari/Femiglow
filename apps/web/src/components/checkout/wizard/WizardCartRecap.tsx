@@ -3,8 +3,9 @@
  * (Kolenda §5 W3, Pricing #6 « cart visible during checkout »).
  *
  * Affiché en premier enfant du `WizardShell` :
- *  - **Mobile (< sm)** : sticky `top-0 z-30`, 1 ligne compacte avec
- *    thumbnail + label + total + barré.
+ *  - **Mobile (< sm)** : 1 ligne compacte avec thumbnail + label + total +
+ *    barré, épinglée en haut du panneau de commande (`pinned`). Dans la page,
+ *    elle défile : l'en-tête et la barre promo collants la recouvriraient.
  *  - **Desktop (≥ sm)** : statique, 2 lignes (détail produits sous label).
  *
  * Server Component pur — la cart est passée en prop depuis le serveur
@@ -22,6 +23,8 @@ export interface WizardCartRecapProps {
   priceCompareAt?: string;
   /** Classes additionnelles sur le wrapper. */
   className?: string;
+  /** Mobile : reste en haut du conteneur qui défile. */
+  pinned?: boolean;
   /**
    * CHA-232 — Libellés i18n (injectés par le WizardShell client). Server
    * Component pur : on ne peut pas appeler `useWizardTranslation` ici, donc
@@ -77,6 +80,7 @@ export function WizardCartRecap({
   thumbnailSrc = '/products/kit-principale.png',
   priceCompareAt,
   className,
+  pinned = false,
   ariaLabel = 'Récapitulatif de votre commande',
   packLabel = (quantity) => `${quantity} × Pack FemiGlow`,
   shippingIncludedLabel = 'livraison incluse',
@@ -140,9 +144,10 @@ export function WizardCartRecap({
       aria-label={ariaLabel}
       data-testid="wizard-cart-recap"
       className={cn(
-        // Mobile : sticky top-0 z-30 + backdrop blur + bord bas
+        // Mobile : pleine largeur, backdrop blur + bord bas
         // Desktop : statique, rounded, bordure complète
-        'sticky top-0 z-30 -mx-6 -mt-6 mb-2 flex items-center gap-3 border-b border-encre/10 bg-creme/95 px-6 py-3 backdrop-blur',
+        '-mx-6 -mt-6 mb-2 flex items-center gap-3 border-b border-encre/10 bg-creme/95 px-6 py-3 backdrop-blur',
+        pinned && 'sticky top-0 z-30',
         'sm:static sm:mx-0 sm:mt-0 sm:rounded sm:border sm:py-4',
         className,
       )}

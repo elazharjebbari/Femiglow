@@ -76,6 +76,18 @@ export interface WizardDictionary {
     shippingDynamicPaidBody: (price: number, eta: string) => string;
     ctaSubmit: string;
     processingOrder: string;
+    /** Messages de validation de l'étape. */
+    errors: {
+      cityRequired: string;
+      cityTooLong: string;
+      addressRequired: string;
+      addressTooLong: string;
+      noteTooLong: string;
+    };
+    /** Lien qui ouvre la saisie d'un code. */
+    couponToggle: string;
+    /** Code de campagne déjà appliqué (montant déjà formaté avec devise). */
+    couponApplied: (code: string, amount: string) => string;
   };
   thankYou: {
     title: string;
@@ -117,7 +129,6 @@ export interface WizardDictionary {
     /** Durée step lead (unité latine conservée). */
     timeEstimateLead: string;
     /** Durée step address. */
-    timeEstimateAddress: string;
     /** Durée step thank-you. */
     timeEstimateThankYou: string;
     /** Fallback étape indisponible. */
@@ -169,6 +180,13 @@ export interface WizardDictionary {
     shippingAmount: (amount: string) => string;
     /** Libellé devise affiché (MAD en fr/en, درهم en ar). Phase 9. */
     currency: string;
+    /** Ligne de remise (montants déjà formatés avec devise). */
+    creditPromo: (code: string, amount: string) => string;
+    creditLoyalty: (amount: string) => string;
+    welcome: string;
+    welcomeShort: string;
+    economy: (amount: string) => string;
+    forwardCredit: (amount: string) => string;
   };
   /** CHA-232 — Vignette pack mobile (alt par défaut). */
   packThumb: {

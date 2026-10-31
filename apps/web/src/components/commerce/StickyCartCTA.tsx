@@ -7,7 +7,7 @@ import {
   type StickyPromoFlagStrings,
 } from '@/components/commerce/StickyPromoFlag';
 import { useChatStore } from '@/components/chat/chat-store';
-import { useCommanderLauncherStore } from '@/lib/checkout/commander-launcher';
+import { COMMANDER_ANCHOR_ID, useCommanderLauncherStore } from '@/lib/checkout/commander-launcher';
 import { useWizardStore } from '@/lib/checkout/state/wizard-store';
 import type { Currency } from '@/lib/products/currency';
 
@@ -62,6 +62,31 @@ export function StickyCartCTA({
   // Kit CRO v2 §2 — même retrait pendant que le panneau de commande est
   // ouvert : le formulaire est déjà à l'écran, la barre ferait doublon.
   const sheetOpen = useCommanderLauncherStore((s) => s.isSheetOpen);
+  // Formulaire engagé et à l'écran : « Je commande » ne ferait que déplacer la
+  // page, et son prix sans livraison contredirait le récapitulatif. Plus haut
+  // dans la page, la barre reste : elle ramène une cliente revenue en cours de
+  // parcours (le store est persisté).
+  const orderStarted = useWizardStore(
+    (s) => s.currentStep !== 'lead' || s.addressDraft.city.trim() !== '',
+  );
+  const [formOnScreen, setFormOnScreen] = useState(false);
+  useEffect(() => {
+    if (!orderStarted) {
+      setFormOnScreen(false);
+      return;
+    }
+    const form = document.getElementById(COMMANDER_ANCHOR_ID);
+    if (!form) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry) setFormOnScreen(entry.isIntersecting);
+      },
+      { threshold: 0 },
+    );
+    observer.observe(form);
+    return () => observer.disconnect();
+  }, [orderStarted]);
 
   useEffect(() => {
     const sentinel = document.getElementById(observeId);
@@ -82,7 +107,8 @@ export function StickyCartCTA({
   // déclencher l'animation `translate-y-full` même si la CTA était
   // visible. À la fermeture du chat, l'IntersectionObserver remettra
   // `visible` à sa vraie valeur.
-  const dataVisible = chatOpen || sheetOpen ? false : visible;
+  const hiddenByForm = orderStarted && formOnScreen;
+  const dataVisible = chatOpen || sheetOpen || hiddenByForm ? false : visible;
 
   return (
     <div
@@ -92,7 +118,7 @@ export function StickyCartCTA({
       data-visible={dataVisible}
       data-chat-open={chatOpen ? 'true' : 'false'}
       data-commander-sheet-open={sheetOpen ? 'true' : 'false'}
-      aria-hidden={chatOpen || sheetOpen}
+      aria-hidden={chatOpen || sheetOpen || hiddenByForm}
       style={{ zIndex: 'var(--z-sticky)' }}
       className="group/sticky fixed inset-x-0 bottom-0 border-t border-encre/10 bg-creme/95 px-4 py-3 backdrop-blur transition-[transform,opacity] duration-base ease-out-soft data-[visible=false]:translate-y-full data-[chat-open=true]:opacity-0 data-[chat-open=true]:pointer-events-none data-[commander-sheet-open=true]:opacity-0 data-[commander-sheet-open=true]:pointer-events-none motion-reduce:transition-none motion-reduce:data-[visible=false]:opacity-0 motion-reduce:data-[visible=false]:translate-y-0 lg:bottom-6 lg:start-auto lg:end-6 lg:w-[340px] lg:rounded-md lg:border"
     >

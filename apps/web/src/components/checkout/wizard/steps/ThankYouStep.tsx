@@ -225,6 +225,7 @@ export function ThankYouStep({ title, subtitle }: ThankYouStepProps) {
               variant="secondary"
               size="sm"
               loading={optIn.status === 'loading'}
+              loadingLabel={t.common.processing}
               disabled={!canSubmit}
               data-testid="wizard-email-confirmation-submit"
             >

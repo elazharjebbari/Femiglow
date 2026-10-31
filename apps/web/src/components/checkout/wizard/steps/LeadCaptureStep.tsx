@@ -452,6 +452,7 @@ export function LeadCaptureStep({ cta, title }: LeadCaptureStepProps) {
             variant="primary"
             size="lg"
             loading={submitting}
+            loadingLabel={t.common.processing}
             disabled={!isValid || submitting}
             data-testid="wizard-lead-submit"
             fullWidth

@@ -85,6 +85,13 @@ export interface CityAutocompleteProps {
   /** Valeur courante (texte libre). */
   value: string;
   /**
+   * Texte montré à la place de `value` (ville reconnue, en arabe sur `/ar`).
+   * `value` reste le nom canonique, celui qu'on envoie au serveur.
+   */
+  displayValue?: string;
+  /** Langue des noms de villes : le nom de l'autre langue passe en second. */
+  language?: 'fr' | 'ar' | 'en';
+  /**
    * Onchange textuel — déclenché à chaque frappe ET à chaque sélection
    * via clavier/souris. Le composant ne fait jamais de transformation
    * du texte saisi (autre que `trim()` au commit final).
@@ -174,6 +181,8 @@ export function CityAutocomplete(props: CityAutocompleteProps) {
     matchedHint,
     placeholder,
     value,
+    displayValue,
+    language = 'fr',
     onChange,
     onCitySelected,
     onExactMatch,
@@ -237,8 +246,10 @@ export function CityAutocomplete(props: CityAutocompleteProps) {
     if (exactMatch) onExactMatch?.(exactMatch);
   }, [exactMatch, value, onExactMatch]);
 
+  const cityName = (city: PublicCity) =>
+    language === 'ar' && city.nameAr ? city.nameAr : city.nameFr;
   const effectiveHint =
-    exactMatch && matchedHint ? matchedHint(exactMatch.nameFr) : hint;
+    exactMatch && matchedHint ? matchedHint(cityName(exactMatch)) : hint;
 
   // Clamp activeIndex quand les items changent (ex: query qui se rétrécit).
   useEffect(() => {
@@ -432,7 +443,7 @@ export function CityAutocomplete(props: CityAutocompleteProps) {
           required={required}
           disabled={disabled}
           placeholder={placeholder}
-          value={value}
+          value={displayValue ?? value}
           onChange={handleInputChange}
           onFocus={handleInputFocus}
           onBlur={handleInputBlur}
@@ -487,15 +498,21 @@ export function CityAutocomplete(props: CityAutocompleteProps) {
                 data-testid={testId ? `${testId}-option-${city.slug}` : undefined}
               >
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-encre">{city.nameFr}</div>
-                  {city.nameAr && (
-                    <div
-                      dir="rtl"
-                      className="truncate text-xs text-encre/55"
-                      lang="ar"
-                    >
-                      {city.nameAr}
+                  <div className="truncate text-encre">{cityName(city)}</div>
+                  {language === 'ar' ? (
+                    <div dir="ltr" className="truncate text-xs text-encre/55" lang="fr">
+                      {city.nameFr}
                     </div>
+                  ) : (
+                    city.nameAr && (
+                      <div
+                        dir="rtl"
+                        className="truncate text-xs text-encre/55"
+                        lang="ar"
+                      >
+                        {city.nameAr}
+                      </div>
+                    )
                   )}
                 </div>
                 <div className="shrink-0 whitespace-nowrap text-xs text-encre/60">

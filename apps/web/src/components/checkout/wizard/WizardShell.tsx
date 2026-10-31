@@ -42,6 +42,7 @@ import { TimeEstimateBadge } from './TimeEstimateBadge';
 import { WizardSyncIndicator } from './WizardSyncIndicator';
 import { WizardStepAnnouncer } from './WizardStepAnnouncer';
 import { WizardCartRecap } from './WizardCartRecap';
+import { useIsWizardInPanel } from './wizard-scroll-container';
 import { LeadCaptureStep } from './steps/LeadCaptureStep';
 import { DEFAULT_WIZARD_FEATURES } from '@/lib/checkout/copy/wizard-copy';
 import { formatCartCompareAt } from '@/lib/checkout/helpers/cart-compare-at-format';
@@ -172,6 +173,7 @@ export function WizardShell({
   footer,
 }: WizardShellProps) {
   const { t, dir } = useWizardTranslation();
+  const inPanel = useIsWizardInPanel();
   const hydrated = useWizardHydrated();
   const currentStep = useWizardStore((s) => s.currentStep);
   const storedFormContext = useWizardStore((s) => s.formContext);
@@ -303,7 +305,6 @@ export function WizardShell({
   const stepTimes = features.timeEstimate
     ? {
         lead: t.shell.timeEstimateLead,
-        address: t.shell.timeEstimateAddress,
         thank_you: t.shell.timeEstimateThankYou,
       }
     : undefined;
@@ -332,13 +333,14 @@ export function WizardShell({
   return (
     <div className="space-y-6" data-testid="wizard-shell" dir={dir}>
       {/* Kolenda §5 W3 P1 — récap panier permanent en premier enfant.
-          Sticky mobile pour rester visible pendant le scroll.
+          Épinglé dans le panneau, dans le flux en page.
           Le `priceCompareAt` est calculé dynamiquement depuis le snapshot
           (cf. KitCommanderSectionBound qui projette `compareAtTotalCents`
           uniquement quand une promo est active). Plus aucun hardcode UI. */}
       {features.cartRecap && cartForRecap && (
         <WizardCartRecap
           cart={cartForRecap}
+          pinned={inPanel}
           thumbnailSrc={cartRecapThumbnailSrc}
           priceCompareAt={formatCartCompareAt(cartForRecap)}
           ariaLabel={t.cartRecap.ariaLabel}
@@ -351,28 +353,14 @@ export function WizardShell({
           appliedCreditCents={appliedCreditCents}
           creditLabel={(amount) =>
             appliedCouponKind === 'promo' && appliedCouponCode
-              ? dir === 'rtl'
-                ? `الرمز ${appliedCouponCode} −${amount}`
-                : `Code ${appliedCouponCode} −${amount}`
-              : dir === 'rtl'
-                ? `رصيد الوفاء −${amount}`
-                : `Crédit fidélité −${amount}`
+              ? t.cartRecap.creditPromo(appliedCouponCode, amount)
+              : t.cartRecap.creditLoyalty(amount)
           }
           welcomeCoupon={welcomeCoupon}
-          welcomeLabel={
-            dir === 'rtl'
-              ? 'طُبّقت هدية الترحيب على طلبكِ'
-              : 'Votre geste d’accueil est appliqué'
-          }
-          welcomeLabelShort={dir === 'rtl' ? 'هدية الترحيب' : 'Geste d’accueil'}
-          economyLabel={(amount) =>
-            dir === 'rtl' ? `توفير ${amount}` : `Économie ${amount}`
-          }
-          forwardCreditLabel={(amount) =>
-            dir === 'rtl'
-              ? `ورصيد بقيمة ${amount} ينتظرك بعد هذا الطلب.`
-              : `Et un crédit de ${amount} vous attend après cette commande.`
-          }
+          welcomeLabel={t.cartRecap.welcome}
+          welcomeLabelShort={t.cartRecap.welcomeShort}
+          economyLabel={t.cartRecap.economy}
+          forwardCreditLabel={t.cartRecap.forwardCredit}
         />
       )}
       {header}

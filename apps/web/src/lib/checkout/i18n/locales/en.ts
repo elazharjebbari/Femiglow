@@ -52,6 +52,15 @@ export const dictionaryEn: WizardDictionary = {
       `Delivery ${price} MAD in ${eta} — pay on delivery.`,
     ctaSubmit: 'Confirm the order',
     processingOrder: 'We are saving your order…',
+    errors: {
+      cityRequired: 'Choose your city to see the delivery time.',
+      cityTooLong: 'This city name is too long.',
+      addressRequired: 'Enter your area or street.',
+      addressTooLong: 'This address is too long.',
+      noteTooLong: 'This note is too long.',
+    },
+    couponToggle: 'I have a loyalty code',
+    couponApplied: (code, amount) => `Code ${code} applied — ${amount} off your total.`,
   },
   thankYou: {
     title: 'Order received, we will call you back.',
@@ -95,7 +104,6 @@ export const dictionaryEn: WizardDictionary = {
   shell: {
     timeEstimateTotal: '≈ 90 s to confirm',
     timeEstimateLead: '60 s',
-    timeEstimateAddress: '30 s',
     timeEstimateThankYou: '5 s',
     stepUnavailable: (name) => `The “${name}” step is not available yet.`,
     hydrating: 'One moment…',
@@ -135,6 +143,12 @@ export const dictionaryEn: WizardDictionary = {
     shippingPending: '+ delivery by city',
     shippingAmount: (amount) => `incl. delivery ${amount}`,
     currency: 'MAD',
+    creditPromo: (code, amount) => `Code ${code} −${amount}`,
+    creditLoyalty: (amount) => `Loyalty credit −${amount}`,
+    welcome: 'Your welcome gift is applied',
+    welcomeShort: 'Welcome gift',
+    economy: (amount) => `You save ${amount}`,
+    forwardCredit: (amount) => `And a ${amount} credit awaits you after this order.`,
   },
   packThumb: {
     alt: 'FemiGlow Pack',

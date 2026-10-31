@@ -9,6 +9,8 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   size?: ButtonSize;
   fullWidth?: boolean;
   loading?: boolean;
+  /** Texte pendant `loading`, à fournir hors du français. */
+  loadingLabel?: string;
   iconLeading?: ReactNode;
   iconTrailing?: ReactNode;
 }
@@ -62,6 +64,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       size = 'md',
       fullWidth,
       loading,
+      loadingLabel = 'Un instant…',
       iconLeading,
       iconTrailing,
       children,
@@ -82,7 +85,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {...rest}
       >
         {loading ? <Spinner /> : iconLeading && <span aria-hidden="true">{iconLeading}</span>}
-        <span>{loading ? 'Un instant…' : children}</span>
+        <span>{loading ? loadingLabel : children}</span>
         {iconTrailing && !loading && <span aria-hidden="true">{iconTrailing}</span>}
       </button>
     );

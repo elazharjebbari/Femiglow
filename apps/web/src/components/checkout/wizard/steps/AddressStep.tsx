@@ -24,8 +24,8 @@
  *
  * Banner livraison
  * ────────────────
- * - **Vide / pas reconnu**  : message générique "Livraison gratuite en
- *   24-48 h partout au Maroc."
+ * - **Vide / pas reconnu**  : message générique "Frais de livraison selon
+ *   votre ville, réglés à la livraison avec votre commande."
  * - **Ville reconnue**      : prix dynamique + ETA réel ("Livraison 19 MAD
  *   en 24h — paiement à la livraison.").
  *
@@ -46,12 +46,15 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { z } from 'zod';
 
 import { Button } from '@/components/ui/Button';
 import { Heading } from '@/components/ui/Heading';
 import { Text } from '@/components/ui/Text';
 import { TextField, TextAreaField } from '@/components/forms/Field';
+import {
+  buildAddressFormSchema,
+  type AddressFormValues,
+} from '@/lib/checkout/address/address-form-schema';
 import {
   deriveAddressPhase,
   isAddressCityValid,
@@ -72,26 +75,6 @@ import { cn } from '@/lib/utils/cn';
 import { useShippingConfig } from '@/lib/checkout/use-shipping-config';
 import { ShippingPriceDisplay } from '@/components/checkout/ShippingPriceDisplay';
 import { DEFAULT_WIZARD_FEATURES } from '@/lib/checkout/copy/wizard-copy';
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Schema validation client (miroir simplifié de `patchLeadAddressInputSchema`)
-// ─────────────────────────────────────────────────────────────────────────────
-
-const addressFormSchema = z.object({
-  city: z
-    .string()
-    .trim()
-    .min(2, 'Indiquez votre ville.')
-    .max(80, 'Nom de ville trop long.'),
-  addressLine1: z
-    .string()
-    .trim()
-    .min(4, 'Adresse trop courte (numéro + rue).')
-    .max(160, 'Adresse trop longue.'),
-  notes: z.string().trim().max(500, 'Note trop longue (max 500 caractères).').optional(),
-});
-
-type AddressFormValues = z.input<typeof addressFormSchema>;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Sub-component : bloc de réassurance livraison (dynamique selon ville)
@@ -189,7 +172,7 @@ export function AddressStep({ cta }: AddressStepProps) {
   const line1Id = useId();
   const notesId = useId();
 
-  const { t } = useWizardTranslation();
+  const { t, language } = useWizardTranslation();
 
   const addressDraft = useWizardStore((s) => s.addressDraft);
   const mergeAddressDraft = useWizardStore((s) => s.mergeAddressDraft);
@@ -205,7 +188,7 @@ export function AddressStep({ cta }: AddressStepProps) {
   const couponKind = appliedCoupon.kind;
   const setCoupon = useWizardStore((s) => s.setCoupon);
   const clearCoupon = useWizardStore((s) => s.clearCoupon);
-  const isArabic = useWizardStore((s) => s.formContext?.language === 'ar');
+  const isArabic = language === 'ar';
   // Disclosure crédit : ouverte d'office si un code a déjà été saisi (reprise).
   const [couponDisclosureOpen, setCouponDisclosureOpen] = useState<boolean>(!!couponCode);
   // Code de CAMPAGNE (arrivé par l'URL publicitaire) déjà appliqué et chiffré.
@@ -224,6 +207,11 @@ export function AddressStep({ cta }: AddressStepProps) {
       hasCity: isAddressCityValid(city),
     };
   });
+
+  const addressFormSchema = useMemo(
+    () => buildAddressFormSchema(t.address.errors),
+    [t.address.errors],
+  );
 
   const {
     register,
@@ -442,6 +430,12 @@ export function AddressStep({ cta }: AddressStepProps) {
               required
               error={errors.city?.message}
               value={field.value ?? ''}
+              displayValue={
+                isArabic && addressDraft.citySlug && field.value === addressDraft.city
+                  ? (addressDraft.cityNameAr ?? undefined)
+                  : undefined
+              }
+              language={language}
               onChange={field.onChange}
               onBlur={() => {
                 field.onBlur();
@@ -507,9 +501,10 @@ export function AddressStep({ cta }: AddressStepProps) {
                 strokeLinejoin="round"
               />
             </svg>
-            {isArabic
-              ? `تم تطبيق الرمز ${couponCode} — خصم ${(creditCents / 100).toFixed(0)} درهم من مجموعك.`
-              : `Code ${couponCode} appliqué — ${(creditCents / 100).toFixed(0)} MAD déduits de votre total.`}
+            {t.address.couponApplied(
+              couponCode ?? '',
+              `${(creditCents / 100).toFixed(0)} ${t.cartRecap.currency}`,
+            )}
           </p>
         ) : (
         <>
@@ -540,12 +535,13 @@ export function AddressStep({ cta }: AddressStepProps) {
               <path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             <span className="underline decoration-encre/20 underline-offset-4">
-              {isArabic ? 'لدي رمز وفاء' : 'J’ai un code de fidélité'}
+              {t.address.couponToggle}
             </span>
           </summary>
           <div className="mt-2 max-w-[18rem]">
             <InvitationCodeField
               isArabic={isArabic}
+              isEnglish={language === 'en'}
               initialCode={couponCode ?? ''}
               initialValueCents={creditCents}
               initialKind={couponKind ?? 'credit'}
@@ -613,6 +609,7 @@ export function AddressStep({ cta }: AddressStepProps) {
               variant="primary"
               size="lg"
               loading={submitting}
+              loadingLabel={t.common.processing}
               disabled={!isValid || submitting}
               data-testid="wizard-address-submit"
             >

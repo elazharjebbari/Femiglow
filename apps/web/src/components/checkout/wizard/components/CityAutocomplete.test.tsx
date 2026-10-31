@@ -344,3 +344,42 @@ describe('CityAutocomplete — dans le panneau de commande (BottomSheet)', () =>
     backSpy.mockRestore();
   });
 });
+
+describe('CityAutocomplete — langue des villes', () => {
+  beforeEach(() => {
+    mockedCities = [CASA];
+    mockedLoading = false;
+  });
+
+  it('displayValue remplace le texte affiché, pas la valeur', () => {
+    const onChange = vi.fn();
+    render(
+      <CityAutocomplete
+        label="المدينة"
+        value="Casablanca"
+        displayValue="الدار البيضاء"
+        language="ar"
+        onChange={onChange}
+      />,
+    );
+    expect(screen.getByRole('combobox')).toHaveValue('الدار البيضاء');
+  });
+
+  it('sur /ar, le nom arabe passe en premier dans la liste', async () => {
+    const user = userEvent.setup();
+    render(<CityAutocomplete label="المدينة" value="" language="ar" onChange={vi.fn()} />);
+    await user.click(screen.getByRole('combobox'));
+    const [first, second] = screen.getByRole('option').querySelectorAll('.truncate');
+    expect(first).toHaveTextContent(CASA.nameAr as string);
+    expect(second).toHaveTextContent(CASA.nameFr);
+  });
+
+  it('sur /ar, le nom canonique reste celui qui est transmis', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<CityAutocomplete label="المدينة" value="" language="ar" onChange={onChange} />);
+    await user.click(screen.getByRole('combobox'));
+    await user.click(screen.getByRole('option'));
+    expect(onChange).toHaveBeenCalledWith(CASA.nameFr);
+  });
+});
