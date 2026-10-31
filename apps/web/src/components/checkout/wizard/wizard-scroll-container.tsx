@@ -30,6 +30,11 @@ export function WizardScrollContainerProvider({
   );
 }
 
+/** `true` quand le wizard vit dans le panneau, et non dans la page. */
+export function useIsWizardInPanel(): boolean {
+  return useContext(WizardScrollContainerContext) !== null;
+}
+
 /** Remonte en haut du conteneur du wizard (panneau) ou de la fenêtre. */
 export function useScrollWizardToTop(): () => void {
   const getContainer = useContext(WizardScrollContainerContext);

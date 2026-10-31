@@ -140,8 +140,7 @@ describe('AddressStep — événements address_*', () => {
       ms_on_step: expect.any(Number),
     });
     expect(flush).toHaveBeenCalledTimes(1);
-    const order = [emit.mock.invocationCallOrder.at(-1)!, flush.mock.invocationCallOrder[0]!];
-    expect(order[0]).toBeLessThan(order[1]);
+    expect(emit.mock.invocationCallOrder.at(-1)!).toBeLessThan(flush.mock.invocationCallOrder[0]!);
   });
 
   it('page cachée (navigateur intégré) : abandon émis aussi', () => {

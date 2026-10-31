@@ -73,13 +73,16 @@ describe('WizardCartRecap', () => {
     expect(img?.getAttribute('src')).toBe('/custom-thumb.png');
   });
 
-  it('sticky top-0 z-30 sur mobile, statique desktop', () => {
+  it('dans la page, défile avec le contenu : en-tête et barre promo le recouvriraient', () => {
     render(<WizardCartRecap cart={baseCart} />);
     const recap = screen.getByTestId('wizard-cart-recap');
-    expect(recap.className).toContain('sticky');
-    expect(recap.className).toContain('top-0');
-    expect(recap.className).toContain('z-30');
+    expect(recap.className).not.toContain('sticky');
     expect(recap.className).toContain('sm:static');
+  });
+
+  it('dans le panneau, reste épinglé en haut', () => {
+    render(<WizardCartRecap cart={baseCart} pinned />);
+    expect(screen.getByTestId('wizard-cart-recap').className).toContain('sticky top-0 z-30');
   });
 
   it('role="region" + aria-label', () => {

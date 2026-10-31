@@ -27,6 +27,8 @@ function formatMad(cents: number, isArabic = false): string {
 
 export interface InvitationCodeFieldProps {
   isArabic?: boolean;
+  /** Textes en anglais (`/en`). `isArabic` reste prioritaire. */
+  isEnglish?: boolean;
   /** Notifie le parent du code validé (pour transmission à la commande). */
   onValid?: (code: string, valueCents: number, kind: InvitationCodeKind) => void;
   /**
@@ -48,6 +50,7 @@ export interface InvitationCodeFieldProps {
 
 export function InvitationCodeField({
   isArabic = false,
+  isEnglish = false,
   onValid,
   onClear,
   initialCode = '',
@@ -121,6 +124,16 @@ export function InvitationCodeField({
         ok: (v: string) => `رصيد ${v} صالح — يُطبَّق عند الدفع.`,
         okPromo: (c: string, v: string) => `تم تطبيق الرمز ${c} — خصم ${v}.`,
         ko: 'الرمز غير صالح أو منتهي.',
+      }
+    : isEnglish
+    ? {
+        ph: 'Your code',
+        hint: 'FG-XXXXXX',
+        btn: 'Apply',
+        checking: '…',
+        ok: (v: string) => `${v} credit applied — deducted at payment.`,
+        okPromo: (c: string, v: string) => `Code ${c} applied — ${v} off.`,
+        ko: 'Code not found or expired.',
       }
     : {
         ph: 'Votre code',

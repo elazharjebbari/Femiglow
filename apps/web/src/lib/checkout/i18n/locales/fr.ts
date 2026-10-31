@@ -53,6 +53,15 @@ export const dictionaryFr: WizardDictionary = {
       `Livraison ${price} MAD en ${eta} — paiement à la livraison.`,
     ctaSubmit: 'Confirmer la commande',
     processingOrder: 'Nous enregistrons votre commande…',
+    errors: {
+      cityRequired: 'Choisissez votre ville pour voir le délai.',
+      cityTooLong: 'Ce nom de ville est trop long.',
+      addressRequired: 'Indiquez votre quartier ou votre rue.',
+      addressTooLong: 'Cette adresse est trop longue.',
+      noteTooLong: 'Cette note est trop longue.',
+    },
+    couponToggle: 'J’ai un code de fidélité',
+    couponApplied: (code, amount) => `Code ${code} appliqué — ${amount} déduits de votre total.`,
   },
   thankYou: {
     title: 'Commande reçue, on vous rappelle.',
@@ -97,7 +106,6 @@ export const dictionaryFr: WizardDictionary = {
   shell: {
     timeEstimateTotal: '≈ 90 secondes pour confirmer',
     timeEstimateLead: '60 s',
-    timeEstimateAddress: '30 s',
     timeEstimateThankYou: '5 s',
     stepUnavailable: (name) =>
       `L'étape « ${name} » n'est pas encore disponible.`,
@@ -139,6 +147,12 @@ export const dictionaryFr: WizardDictionary = {
     shippingPending: '+ livraison selon la ville',
     shippingAmount: (amount) => `dont livraison ${amount}`,
     currency: 'MAD',
+    creditPromo: (code, amount) => `Code ${code} −${amount}`,
+    creditLoyalty: (amount) => `Crédit fidélité −${amount}`,
+    welcome: 'Votre geste d’accueil est appliqué',
+    welcomeShort: 'Geste d’accueil',
+    economy: (amount) => `Économie ${amount}`,
+    forwardCredit: (amount) => `Et un crédit de ${amount} vous attend après cette commande.`,
   },
   packThumb: {
     alt: 'Pack FemiGlow',

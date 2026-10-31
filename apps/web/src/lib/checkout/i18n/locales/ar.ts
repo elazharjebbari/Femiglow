@@ -55,6 +55,15 @@ export const dictionaryAr: WizardDictionary = {
       `التوصيل بـ ${price} درهم خلال ${eta} — الدفع عند الاستلام.`,
     ctaSubmit: 'تأكيد الطلب',
     processingOrder: 'جاري تسجيل طلبك…',
+    errors: {
+      cityRequired: 'اختاري مدينتكِ لمعرفة مدة التوصيل.',
+      cityTooLong: 'اسم المدينة طويل جدًا.',
+      addressRequired: 'أدخلي الحي أو الشارع.',
+      addressTooLong: 'هذا العنوان طويل جدًا.',
+      noteTooLong: 'هذه الملاحظة طويلة جدًا.',
+    },
+    couponToggle: 'لدي رمز وفاء',
+    couponApplied: (code, amount) => `تم تطبيق الرمز ${code} — خصم ${amount} من مجموعك.`,
   },
   thankYou: {
     title: 'تم استلام طلبك، سنتصل بك.',
@@ -97,7 +106,6 @@ export const dictionaryAr: WizardDictionary = {
   shell: {
     timeEstimateTotal: '≈ 90 s لتأكيد طلبك',
     timeEstimateLead: '60 s',
-    timeEstimateAddress: '30 s',
     timeEstimateThankYou: '5 s',
     stepUnavailable: (name) => `المرحلة « ${name} » غير متاحة بعد.`,
     hydrating: 'لحظة من فضلك…',
@@ -141,6 +149,12 @@ export const dictionaryAr: WizardDictionary = {
     shippingPending: '+ التوصيل حسب المدينة',
     shippingAmount: (amount) => `منها التوصيل ${amount}`,
     currency: 'درهم',
+    creditPromo: (code, amount) => `الرمز ${code} −${amount}`,
+    creditLoyalty: (amount) => `رصيد الوفاء −${amount}`,
+    welcome: 'طُبّقت هدية الترحيب على طلبكِ',
+    welcomeShort: 'هدية الترحيب',
+    economy: (amount) => `توفير ${amount}`,
+    forwardCredit: (amount) => `ورصيد بقيمة ${amount} ينتظرك بعد هذا الطلب.`,
   },
   packThumb: {
     alt: 'مجموعة FemiGlow',

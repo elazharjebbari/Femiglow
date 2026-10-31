@@ -213,6 +213,7 @@ function StockNotifyForm({ variantId }: StockNotifyFormProps) {
         variant="secondary"
         size="sm"
         loading={submitState === 'loading'}
+        loadingLabel={t.common.processing}
         disabled={!canSubmit}
         data-testid="stock-notify-submit"
       >
@@ -285,20 +286,8 @@ function OutOfStockBlock({ variantId }: { variantId: string }) {
 export function StockIndicator({ variantId, className }: StockIndicatorProps) {
   const state = useStockSnapshot(variantId);
 
-  // Loading & error : volontairement silencieux (placeholder mince pour
-  // éviter le CLS).
-  if (state.status === 'loading') {
-    return (
-      <div
-        className={className}
-        aria-hidden="true"
-        data-testid="stock-indicator-loading"
-      >
-        <div className="h-6 w-32 animate-pulse rounded bg-encre/5" />
-      </div>
-    );
-  }
-  if (state.status === 'error') return null;
+  // Loading & error : volontairement silencieux.
+  if (state.status !== 'success') return null;
 
   const status: StockStatus = state.data.status;
   return (
