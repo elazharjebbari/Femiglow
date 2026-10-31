@@ -21,6 +21,7 @@ export function shouldSyncFormContext(
     stored.formId !== incoming.formId ||
     stored.formMode !== incoming.formMode ||
     stored.variantKey !== incoming.variantKey ||
-    stored.language !== incoming.language
+    stored.language !== incoming.language ||
+    stored.step2Variant !== incoming.step2Variant
   );
 }

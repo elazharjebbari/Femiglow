@@ -2,6 +2,11 @@ import { z } from 'zod';
 import type { TrackingEventCategory } from '@/lib/db/types';
 import { KIT_ANGLES } from '@/lib/kit/angle';
 import {
+  ADDRESS_STEP_FIELDS,
+  ADDRESS_STEP_PHASES,
+  STEP2_VARIANTS,
+} from '@/lib/tracking/address-step-events';
+import {
   HERO_MEDIA_LEVEL_MAX,
   HERO_MEDIA_LEVEL_MIN,
   HERO_MEDIA_VARIANT_MAX_LENGTH,
@@ -19,6 +24,9 @@ const heroMediaVariantSchema = z
   .max(HERO_MEDIA_VARIANT_MAX_LENGTH)
   .regex(HERO_MEDIA_VARIANT_PATTERN);
 const heroMediaLevelSchema = z.number().int().min(HERO_MEDIA_LEVEL_MIN).max(HERO_MEDIA_LEVEL_MAX);
+
+const step2VariantSchema = z.enum(STEP2_VARIANTS);
+const addressStepFieldSchema = z.enum(ADDRESS_STEP_FIELDS);
 
 const itemSchema = z
   .object({
@@ -385,6 +393,7 @@ export const eventSchemas: Record<string, z.ZodTypeAny> = {
       currency: z.string().length(3),
       items: z.array(itemSchema).max(50).optional(),
       value: z.number().nonnegative().optional(),
+      step2_variant: step2VariantSchema.optional(),
     })
     .strict(),
   wizard_error: z
@@ -529,6 +538,51 @@ export const eventSchemas: Record<string, z.ZodTypeAny> = {
       hero_media_level: heroMediaLevelSchema.optional(),
     })
     .strict(),
+  // Étape 2 du wizard, cf. lib/tracking/address-step-events.ts. Schémas stricts :
+  // aucun texte saisi ne doit pouvoir passer. First-party uniquement.
+  address_step_view: z
+    .object({
+      step2_variant: step2VariantSchema,
+      viewport_h: z.number().int().nonnegative().max(10000),
+      kit_angle: z.union([z.enum(KIT_ANGLES), z.literal('none')]).optional(),
+    })
+    .strict(),
+  address_city_focus: z.object({ step2_variant: step2VariantSchema }).strict(),
+  address_city_selected: z
+    .object({
+      step2_variant: step2VariantSchema,
+      matched: z.boolean(),
+      city_slug: z.string().regex(/^[a-z0-9-]{1,80}$/).optional(),
+      delivery_price_mad: z.number().int().nonnegative().max(1000).optional(),
+      eta: z.string().max(40).optional(),
+    })
+    .strict(),
+  address_line_focus: z.object({ step2_variant: step2VariantSchema }).strict(),
+  address_validation_error: z
+    .object({
+      step2_variant: step2VariantSchema,
+      field: addressStepFieldSchema,
+      code: z.string().min(1).max(40),
+    })
+    .strict(),
+  address_cta_tap_incomplete: z
+    .object({ step2_variant: step2VariantSchema, missing_field: addressStepFieldSchema })
+    .strict(),
+  address_cta_visible: z
+    .object({
+      step2_variant: step2VariantSchema,
+      ms_since_view: z.number().int().nonnegative(),
+    })
+    .strict(),
+  address_step_abandon: z
+    .object({
+      step2_variant: step2VariantSchema,
+      phase: z.enum(ADDRESS_STEP_PHASES),
+      has_city: z.boolean(),
+      ms_on_step: z.number().int().nonnegative(),
+    })
+    .strict(),
+  address_note_opened: z.object({ step2_variant: step2VariantSchema }).strict(),
 };
 
 export type KnownEventName = keyof typeof eventSchemas;
@@ -613,6 +667,16 @@ const eventCategoryByName: Record<string, TrackingEventCategory> = {
   web_vitals: 'custom',
   // Kit CRO v2 §2 — exposition A/B du formulaire « Commander ».
   kit_checkout_exposure: 'custom',
+  // Étape 2 du wizard — micro-événements de friction.
+  address_step_view: 'engagement',
+  address_city_focus: 'engagement',
+  address_city_selected: 'engagement',
+  address_line_focus: 'engagement',
+  address_validation_error: 'engagement',
+  address_cta_tap_incomplete: 'engagement',
+  address_cta_visible: 'engagement',
+  address_step_abandon: 'engagement',
+  address_note_opened: 'engagement',
 };
 
 export function getEventCategory(name: string): TrackingEventCategory {

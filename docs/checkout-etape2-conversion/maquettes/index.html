@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Étape 2 — maquettes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,500&family=Inter:wght@400;500;600&family=Noto+Sans+Arabic:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--creme:#FBF8F1;--creme-warm:#F5EFE3;--encre:#2C2A28;--encre-soft:#4A4744;--sauge-soft:#E0EDE0;--sauge-dark:#4F6D52;--petale-soft:#FAE6E5;--action:#8E3F3B;--action-clair:#A34A45;--avis:#2F5D8A;--avis-soft:#E6EEF5}
+*{box-sizing:border-box}
+body{margin:0;background:#E9E5DC;color:var(--encre);font:400 15px/1.5 Inter,system-ui,sans-serif;padding:32px 24px}
+h1{font:italic 500 34px/1.2 'Cormorant Garamond',serif;margin:0 0 6px}
+.intro{max-width:760px;margin:0 0 28px;color:var(--encre-soft)}
+h2{font:600 14px/1.4 Inter,sans-serif;letter-spacing:.02em;margin:34px 0 14px}
+.rang{display:flex;flex-wrap:wrap;gap:26px;align-items:flex-start}
+figure{margin:0;width:300px}
+figcaption{font-size:13px;color:var(--encre-soft);margin-top:9px;line-height:1.45}
+figcaption b{color:var(--encre);display:block;margin-bottom:1px}
+.tel{position:relative;width:300px;height:650px;background:var(--creme);border-radius:30px;box-shadow:0 0 0 7px #23211F,0 16px 34px rgba(0,0,0,.2);overflow:hidden;display:flex;flex-direction:column}
+.tel.court{height:578px}
+.actuel{width:300px;height:650px;object-fit:cover;object-position:top;border-radius:30px;box-shadow:0 0 0 7px #23211F,0 16px 34px rgba(0,0,0,.2);display:block}
+.barre-site{height:50px;flex:none;display:flex;align-items:center;padding:0 18px;border-bottom:1px solid rgba(44,42,40,.08);font-size:18px}
+.corps{flex:1;padding:12px 18px 0;overflow:hidden}
+.prog{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--encre-soft);margin-bottom:12px}
+.prog .ok{width:16px;height:16px;flex:none;border-radius:50%;background:var(--sauge-dark);display:grid;place-items:center}
+.prog i{flex:1;height:3px;border-radius:2px;background:rgba(44,42,40,.1);overflow:hidden;display:block}
+.prog i::after{content:"";display:block;height:100%;width:66%;background:var(--sauge-dark)}
+[dir=rtl] .prog i::after{margin-inline-start:0}
+.prog.fin i::after{width:90%}
+h3{font:italic 500 25px/1.15 'Cormorant Garamond',serif;margin:0 0 3px}
+[dir=rtl] h3,[dir=rtl] .tel{font-family:'Noto Sans Arabic',Inter,sans-serif}
+[dir=rtl] h3{font-style:normal;font-weight:600;font-size:21px;line-height:1.35}
+.sous{font-size:13px;color:var(--encre-soft);margin:0 0 14px}
+.champ{margin-bottom:12px}
+label{display:block;font-size:13px;font-weight:500;margin-bottom:5px}
+.saisie{height:48px;background:var(--creme-warm);border-bottom:1.5px solid rgba(44,42,40,.22);display:flex;align-items:center;padding:0 12px;font-size:16px;color:var(--encre);gap:8px}
+.saisie.vide{color:#6B675F}
+.saisie.focus{border-bottom-color:var(--encre);box-shadow:0 0 0 2px rgba(44,42,40,.12)}
+.saisie.err{border-bottom-color:var(--avis);background:var(--avis-soft)}
+.valide{margin-inline-start:auto;width:16px;height:16px;border-radius:50%;background:var(--sauge-dark);display:grid;place-items:center;flex:none}
+.frais{display:flex;justify-content:space-between;gap:10px;font-size:13px;margin-top:6px;color:var(--encre-soft)}
+.frais b{font-weight:500;color:var(--encre)}
+.lien{font-size:13px;color:var(--encre-soft);text-decoration:underline;text-underline-offset:3px;text-decoration-color:rgba(44,42,40,.3)}
+.liste{border:1px solid rgba(44,42,40,.12);border-radius:6px;background:#fff;box-shadow:0 8px 20px rgba(44,42,40,.08);margin-top:4px}
+.liste p{margin:0;padding:8px 12px 3px;font-size:11px;color:var(--encre-soft)}
+.opt{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:44px;padding:6px 12px;font-size:15px;border-top:1px solid rgba(44,42,40,.06)}
+.opt span{font-size:13px;color:var(--encre-soft)}
+.aide{font-size:12.5px;color:var(--avis);margin:6px 0 0;display:flex;gap:6px;align-items:flex-start}
+.action{flex:none;padding:10px 14px calc(12px);background:rgba(251,248,241,.96);border-top:1px solid rgba(44,42,40,.09);box-shadow:0 -6px 16px rgba(44,42,40,.05)}
+.total{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;margin-bottom:8px;color:var(--encre-soft)}
+.total b{font-size:18px;font-weight:600;color:var(--encre)}
+.total b small{font-size:11px;font-weight:500;margin-inline-start:2px}
+.cta{position:relative;width:100%;height:56px;border:0;border-radius:14px;overflow:hidden;color:#FFFDF8;font:500 16px/1 Inter,sans-serif;display:flex;align-items:center;justify-content:center;gap:10px;background:linear-gradient(180deg,var(--action-clair),var(--action));box-shadow:0 1px 0 rgba(255,255,255,.2) inset,0 8px 18px rgba(142,63,59,.3)}
+[dir=rtl] .cta{font-family:'Noto Sans Arabic',Inter,sans-serif;font-weight:600}
+.cta .picto{width:32px;height:32px;flex:none;border-radius:50%;background:rgba(255,253,248,.16);display:grid;place-items:center}
+.cta.pret::after{content:"";position:absolute;inset:0;width:45%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.28),transparent);transform:translateX(-120%);animation:reflet 5s ease-in-out 1s infinite}
+[dir=rtl] .cta.pret::after{animation-name:refletrtl}
+@keyframes reflet{0%,74%{transform:translateX(-120%)}100%{transform:translateX(320%)}}
+@keyframes refletrtl{0%,74%{transform:translateX(320%)}100%{transform:translateX(-120%)}}
+.cta.pret .picto svg{animation:pose 5s ease-in-out 1s infinite}
+@keyframes pose{0%,70%,100%{transform:translateY(0)}78%{transform:translateY(-2px)}86%{transform:translateY(0)}}
+.cta.guide{background:var(--encre-soft);box-shadow:none}
+.cta.envoi{background:var(--action)}
+.tourne{width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,253,248,.35);border-top-color:#FFFDF8;animation:tour 900ms linear infinite}
+@keyframes tour{to{transform:rotate(360deg)}}
+.rassure{display:flex;justify-content:center;align-items:center;gap:5px;font-size:12px;color:var(--encre-soft);margin-top:7px}
+.clavier{height:236px;flex:none;background:#CFD3DA;display:grid;grid-template-columns:repeat(10,1fr);gap:5px;padding:9px 5px;align-content:start}
+.clavier b{height:37px;background:#fff;border-radius:5px;box-shadow:0 1px 0 #8f949c}
+.variantes{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px;max-width:960px}
+.carte{background:var(--creme);border-radius:12px;padding:16px}
+.carte p{font-size:13px;margin:10px 0 0;color:var(--encre-soft)}
+.cta.encre{background:linear-gradient(180deg,#3A3735,#2C2A28);box-shadow:0 1px 0 rgba(255,255,255,.12) inset,0 8px 18px rgba(44,42,40,.28)}
+.cta.sauge{background:linear-gradient(180deg,#5A7A5D,#4F6D52);box-shadow:0 8px 18px rgba(79,109,82,.28)}
+@media (prefers-reduced-motion:reduce){.cta.pret::after,.cta.pret .picto svg{animation:none}.tourne{animation-duration:2s}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="colis" viewBox="0 0 20 20"><path d="M10 2.2 3.2 5.8v8.4L10 17.8l6.8-3.6V5.8L10 2.2Zm0 0v0M3.2 5.8 10 9.4l6.8-3.6M10 9.4v8.4M6.6 4l6.8 3.6" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round" stroke-linecap="round"/></symbol>
+  <symbol id="coche" viewBox="0 0 12 12"><path d="M2.6 6.3 5 8.6l4.4-5" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="main" viewBox="0 0 16 16"><path d="M3 6.5h10v6.2H3zM3 6.5 5 3.2h6l2 3.3M8 9.4v1.2" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round" stroke-linecap="round"/></symbol>
+</svg>
+
+<h1>Étape 2 — maquettes de la refonte</h1>
+<p class="intro">Maquettes statiques à la largeur d'un iPhone récent, avec les couleurs réelles du site. Le reflet et le léger mouvement du colis sur le bouton prêt sont animés dans cette page. Les textes arabes sont à faire relire avant toute mise en ligne.</p>
+
+<h2>Avant / après</h2>
+<div class="rang">
+  <figure><img class="actuel" src="actuel/fr-iphone14-arrivee.jpg" alt="Étape 2 actuelle à l'arrivée"><figcaption><b>Aujourd'hui</b>Le vrai bouton est hors écran. « Je commande » reste affiché mais ne valide rien.</figcaption></figure>
+
+  <figure><div class="tel"><div class="barre-site">FemiGlow</div>
+    <div class="corps">
+      <div class="prog"><span class="ok"><svg width="10" height="10"><use href="#coche"/></svg></span>Salma, plus que la livraison<i></i></div>
+      <h3>Où livrer votre kit ?</h3><p class="sous">Vous payez à la réception.</p>
+      <div class="champ"><label>Votre ville</label><div class="saisie vide">Casablanca, Rabat, Agadir…</div></div>
+    </div>
+    <div class="action"><button class="cta guide">Choisir ma ville</button><div class="rassure"><svg width="14" height="14"><use href="#main"/></svg>Rien à payer maintenant</div></div>
+  </div><figcaption><b>1. Arrivée</b>Un seul champ visible. Le bouton est déjà à l'écran et guide vers l'action suivante.</figcaption></figure>
+
+  <figure><div class="tel"><div class="barre-site">FemiGlow</div>
+    <div class="corps" style="padding-bottom:0">
+      <div class="champ" style="margin-bottom:0"><label>Votre ville</label><div class="saisie focus">Ca</div>
+      <div class="liste"><div class="opt">Casablanca<span>19 MAD · 24h</span></div><div class="opt">Salé<span>35 MAD · 24h-48h</span></div><div class="opt">Fès<span>35 MAD · 24h-48h</span></div></div></div>
+    </div>
+    <div class="clavier"><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b></div>
+  </div><figcaption><b>2. Ville, clavier ouvert</b>Trois suggestions lisibles au-dessus du clavier, avec frais et délai sur une ligne.</figcaption></figure>
+
+  <figure><div class="tel"><div class="barre-site">FemiGlow</div>
+    <div class="corps">
+      <div class="prog"><span class="ok"><svg width="10" height="10"><use href="#coche"/></svg></span>Salma, plus que la livraison<i></i></div>
+      <div class="champ"><label>Votre ville</label><div class="saisie">Casablanca<span class="valide"><svg width="10" height="10"><use href="#coche"/></svg></span></div><div class="frais"><span>Livraison en 24h</span><b>19 MAD</b></div></div>
+      <div class="champ"><label>Quartier, rue et numéro</label><div class="saisie focus">Maârif, rue Ibn</div></div>
+    </div>
+    <div class="action" style="padding-bottom:8px"><button class="cta guide" style="height:48px">Ajouter mon adresse</button></div>
+    <div class="clavier" style="height:210px"><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b></div>
+  </div><figcaption><b>3. Adresse révélée</b>Elle apparaît après la ville, avec le curseur dedans. Le bouton reste au-dessus du clavier.</figcaption></figure>
+
+  <figure><div class="tel"><div class="barre-site">FemiGlow</div>
+    <div class="corps">
+      <div class="prog fin"><span class="ok"><svg width="10" height="10"><use href="#coche"/></svg></span>Salma, c'est presque fini<i></i></div>
+      <div class="champ"><label>Votre ville</label><div class="saisie">Casablanca<span class="valide"><svg width="10" height="10"><use href="#coche"/></svg></span></div><div class="frais"><span>Livraison en 24h</span><b>19 MAD</b></div></div>
+      <div class="champ"><label>Quartier, rue et numéro</label><div class="saisie">Maârif, rue Ibn Nafiss, n° 12<span class="valide"><svg width="10" height="10"><use href="#coche"/></svg></span></div></div>
+      <span class="lien">Ajouter une note pour le livreur</span>
+    </div>
+    <div class="action"><div class="total"><span>Total à la réception</span><b>218<small>MAD</small></b></div><button class="cta pret"><span class="picto"><svg width="19" height="19"><use href="#colis"/></svg></span>Confirmer ma commande</button><div class="rassure"><svg width="14" height="14"><use href="#main"/></svg>Rien à payer maintenant</div></div>
+  </div><figcaption><b>4. Prêt</b>Total réel, bouton pleine largeur, seul élément saturé de l'écran. Tout tient sans défiler.</figcaption></figure>
+
+  <figure><div class="tel" dir="rtl"><div class="barre-site">FemiGlow</div>
+    <div class="corps">
+      <div class="prog fin"><span class="ok"><svg width="10" height="10"><use href="#coche"/></svg></span>سلمى، أوشكتِ على الانتهاء<i></i></div>
+      <div class="champ"><label>مدينتكِ</label><div class="saisie">الدار البيضاء<span class="valide"><svg width="10" height="10"><use href="#coche"/></svg></span></div><div class="frais"><span>التوصيل خلال 24 ساعة</span><b>19 درهم</b></div></div>
+      <div class="champ"><label>الحي والشارع والرقم</label><div class="saisie">المعاريف، زنقة ابن نفيس، رقم 12<span class="valide"><svg width="10" height="10"><use href="#coche"/></svg></span></div></div>
+      <span class="lien">إضافة ملاحظة لعامل التوصيل</span>
+    </div>
+    <div class="action"><div class="total"><span>المجموع عند الاستلام</span><b>218 <small>درهم</small></b></div><button class="cta pret"><span class="picto"><svg width="19" height="19"><use href="#colis"/></svg></span>تأكيد طلبي</button><div class="rassure"><svg width="14" height="14"><use href="#main"/></svg>لا شيء للدفع الآن</div></div>
+  </div><figcaption><b>5. Arabe (RTL)</b>Miroir complet, ville en arabe, pas d'interlettrage, police arabe dédiée, chiffres conservés.</figcaption></figure>
+</div>
+
+<h2>États du bouton et cas limites</h2>
+<div class="rang">
+  <figure><div class="tel court"><div class="barre-site">FemiGlow</div>
+    <div class="corps">
+      <div class="champ"><label>Votre ville</label><div class="saisie">Casablanca<span class="valide"><svg width="10" height="10"><use href="#coche"/></svg></span></div></div>
+      <div class="champ"><label>Quartier, rue et numéro</label><div class="saisie err">Ma</div><p class="aide">Indiquez votre quartier ou votre rue.</p></div>
+    </div>
+    <div class="action"><div class="total"><span>Total à la réception</span><b>218<small>MAD</small></b></div><button class="cta guide">Ajouter mon adresse</button></div>
+  </div><figcaption><b>Adresse trop courte</b>Message précis, en bleu : pas de rouge, pour ne pas alarmer ni se confondre avec le bouton.</figcaption></figure>
+
+  <figure><div class="tel court"><div class="barre-site">FemiGlow</div>
+    <div class="corps">
+      <div class="champ"><label>Votre ville</label><div class="saisie">Ain Taoujdate<span class="valide"><svg width="10" height="10"><use href="#coche"/></svg></span></div><div class="frais"><span>Délai confirmé par téléphone</span><b>45 MAD</b></div></div>
+      <div class="champ"><label>Quartier, rue et numéro</label><div class="saisie vide">Ex. : Hay Salam, rue 4, n° 12</div></div>
+    </div>
+    <div class="action"><button class="cta guide">Ajouter mon adresse</button></div>
+  </div><figcaption><b>Ville hors liste</b>Elle reste acceptée : l'adresse s'ouvre quand même. Aucune cliente n'est bloquée par notre catalogue.</figcaption></figure>
+
+  <figure><div class="tel court"><div class="barre-site">FemiGlow</div>
+    <div class="corps">
+      <div class="champ"><label>Votre ville</label><div class="saisie">Casablanca<span class="valide"><svg width="10" height="10"><use href="#coche"/></svg></span></div></div>
+      <div class="champ"><label>Quartier, rue et numéro</label><div class="saisie">Maârif, rue Ibn Nafiss, n° 12<span class="valide"><svg width="10" height="10"><use href="#coche"/></svg></span></div></div>
+    </div>
+    <div class="action"><div class="total"><span>Total à la réception</span><b>218<small>MAD</small></b></div><button class="cta envoi"><span class="tourne"></span>Enregistrement…</button></div>
+  </div><figcaption><b>Envoi</b>Pas de double envoi. Le texte est traduit dans les 3 langues (aujourd'hui « Un instant… » reste en français partout).</figcaption></figure>
+</div>
+
+<h2>Comparaison de la couleur du bouton</h2>
+<div class="variantes">
+  <div class="carte"><button class="cta pret"><span class="picto"><svg width="19" height="19"><use href="#colis"/></svg></span>Confirmer ma commande</button><p><b>Grenat, recommandé.</b> Contraste de 5,8 à 7:1 selon le dégradé. Chaud, peu saturé, proche du pétale de la marque. C'est le seul élément de ce ton à l'écran.</p></div>
+  <div class="carte"><button class="cta pret encre"><span class="picto"><svg width="19" height="19"><use href="#colis"/></svg></span>Confirmer ma commande</button><p><b>Encre, version actuelle améliorée.</b> Contraste 13,48:1. Très premium, mais identique à tous les autres boutons du site.</p></div>
+  <div class="carte"><button class="cta pret sauge"><span class="picto"><svg width="19" height="19"><use href="#colis"/></svg></span>Confirmer ma commande</button><p><b>Sauge foncé.</b> Contraste 5,44:1. Évoque le positif, mais moins l'action immédiate. À garder pour les validations.</p></div>
+</div>
+</body>
+</html>

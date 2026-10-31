@@ -36,6 +36,8 @@
  *    (currency = 'MAD') sont constantes et explicitement overridable.
  */
 
+import type { Step2Variant } from '@/lib/tracking/address-step-events';
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Schema version constant
 // ─────────────────────────────────────────────────────────────────────────────
@@ -215,6 +217,8 @@ export interface AddressCompletedInput {
   items?: EcommerceItem[];
   /** Total panier (currency). */
   value?: number;
+  /** Variante de l'étape 2 (cf. `address-step-events.ts`). */
+  step2_variant?: Step2Variant;
 }
 
 export interface AddressCompletedEvent extends WizardContext {
@@ -224,6 +228,7 @@ export interface AddressCompletedEvent extends WizardContext {
   currency: string;
   items?: EcommerceItem[];
   value?: number;
+  step2_variant?: Step2Variant;
 }
 
 /**
@@ -239,6 +244,7 @@ export function buildAddressCompletedEvent(
     currency: input.currency ?? DEFAULT_CURRENCY,
     items: input.items,
     value: input.value,
+    step2_variant: input.step2_variant,
   }) as AddressCompletedEvent;
 }
 
@@ -401,6 +407,7 @@ export interface AddPaymentInfoInput {
   currency?: string;
   value?: number;
   items?: EcommerceItem[];
+  step2_variant?: Step2Variant;
 }
 
 export interface AddPaymentInfoEvent extends WizardContext {
@@ -409,6 +416,7 @@ export interface AddPaymentInfoEvent extends WizardContext {
   currency: string;
   value?: number;
   items?: EcommerceItem[];
+  step2_variant?: Step2Variant;
 }
 
 export function buildAddPaymentInfoEvent(input: AddPaymentInfoInput): AddPaymentInfoEvent {
@@ -417,6 +425,7 @@ export function buildAddPaymentInfoEvent(input: AddPaymentInfoInput): AddPayment
     currency: input.currency ?? DEFAULT_CURRENCY,
     value: input.value,
     items: input.items,
+    step2_variant: input.step2_variant,
   }) as AddPaymentInfoEvent;
 }
 
@@ -443,6 +452,7 @@ export interface PurchaseInput {
    * `CheckoutFlow` legacy. Cf. `lib/tracking/lead-purchase-cookie.ts`.
    */
   meta_purchase_eid?: string;
+  step2_variant?: Step2Variant;
 }
 
 export interface PurchaseEvent extends WizardContext {
@@ -456,6 +466,7 @@ export interface PurchaseEvent extends WizardContext {
   coupon?: string;
   payment_type?: PaymentType;
   meta_purchase_eid?: string;
+  step2_variant?: Step2Variant;
 }
 
 export function buildPurchaseEvent(input: PurchaseInput): PurchaseEvent {
@@ -469,6 +480,7 @@ export function buildPurchaseEvent(input: PurchaseInput): PurchaseEvent {
     coupon: input.coupon,
     payment_type: input.payment_type,
     meta_purchase_eid: input.meta_purchase_eid,
+    step2_variant: input.step2_variant,
   }) as PurchaseEvent;
 }
 

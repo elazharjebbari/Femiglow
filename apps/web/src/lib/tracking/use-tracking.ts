@@ -22,6 +22,8 @@ export type EmitFn = (
  */
 export function useTracking(): {
   emit: EmitFn;
+  /** Envoi immédiat de la file (sortie de page). */
+  flush: () => void;
   consent: TrackingConsentState;
   isReady: boolean;
 } {
@@ -33,5 +35,8 @@ export function useTracking(): {
     },
     [ctx],
   );
-  return { emit, consent: ctx?.consent ?? DENIED_CONSENT, isReady: ctx?.isReady ?? false };
+  const flush = useCallback(() => {
+    ctx?.client.flushSync();
+  }, [ctx]);
+  return { emit, flush, consent: ctx?.consent ?? DENIED_CONSENT, isReady: ctx?.isReady ?? false };
 }

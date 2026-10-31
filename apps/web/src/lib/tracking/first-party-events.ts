@@ -1,3 +1,5 @@
+import { ADDRESS_STEP_EVENTS } from '@/lib/tracking/address-step-events';
+
 /**
  * Événements strictement first-party : ingérés par `/api/track` et stockés
  * dans `tracking_events_log`, mais JAMAIS relayés aux plateformes publicitaires
@@ -13,10 +15,13 @@
  * client normal (`TrackingClient.emit` → lot `/api/track`), qui NE le pousse
  * PAS dans le `dataLayer` pour un événement de cette liste (aucun tag GTM ni
  * pixel client ne le voit) ; côté serveur, le dispatch providers l'ignore.
+ *
+ * `address_*` : diagnostic de l'étape 2 du wizard, sans valeur publicitaire.
  */
 export const FIRST_PARTY_ONLY_EVENTS: ReadonlySet<string> = new Set([
   'web_vitals',
   'kit_checkout_exposure',
+  ...Object.values(ADDRESS_STEP_EVENTS),
 ]);
 
 export function isFirstPartyOnlyEvent(eventName: string): boolean {
