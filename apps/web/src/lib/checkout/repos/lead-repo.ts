@@ -14,7 +14,7 @@
  * `optInEmail` permet d'ajouter l'opt-in marketing après le thank-you
  * (step 4). Ne crée jamais un nouveau lead → mutation pure.
  */
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, isNull, ne } from 'drizzle-orm';
 
 import { requireChatDb } from '@/lib/chat/db/client';
 import {
@@ -143,7 +143,22 @@ export const wizardLeadRepo = {
 
     const db = requireChatDb();
     const now = new Date();
-    const identityHash = computeIdentityHash(phoneE164, input.firstName.trim());
+    let identityHash = computeIdentityHash(phoneE164, input.firstName.trim());
+    // Seconde commande de la même personne dans la session : l'index unique
+    // (session, identité) refuserait cette nouvelle fiche, et le client, qui a
+    // déjà avancé avec son `id`, ne pourrait plus commander.
+    const [twin] = await db
+      .select({ id: chatLead.id })
+      .from(chatLead)
+      .where(
+        and(
+          eq(chatLead.sessionId, input.sessionId),
+          eq(chatLead.identityHash, identityHash),
+          ne(chatLead.id, id),
+        ),
+      )
+      .limit(1);
+    if (twin) identityHash = computeIdentityHash(phoneE164, `${input.firstName.trim()}:${id}`);
     const insert: ChatLeadInsert = {
       id,
       sessionId: input.sessionId,

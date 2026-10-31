@@ -8,7 +8,7 @@
  *   - `phone_e164` IS NOT NULL              ← phone-gate matériel
  *   - `purchased_at` IS NULL                ← pas converti
  *   - `abandon_webhook_at` IS NULL          ← anti-doublon strict
- *   - `created_at` < NOW() - 30 minutes     ← seuil d'inaction
+ *   - `created_at` < NOW() - 15 minutes     ← seuil d'inaction
  *   - `created_at` > NOW() - 7 jours        ← anti-replay vieux leads
  *
  * Pour chaque lead traité, on stamp `abandon_webhook_at = NOW()` après
@@ -29,7 +29,7 @@ import { dispatchCartAbandonWebhook } from './sources/from-cart-abandon';
 export interface ScanCartAbandonOptions {
   /** Limite max de leads scannés par tick. Défaut 50. */
   limit?: number;
-  /** Délai d'inactivité requis avant tentative (ms). Défaut 30 min. */
+  /** Délai d'inactivité requis avant tentative (ms). Défaut 15 min. */
   idleThresholdMs?: number;
   /** TTL anti-replay : on ignore les leads plus vieux que ça. Défaut 7j. */
   maxAgeMs?: number;
@@ -44,7 +44,7 @@ export interface ScanCartAbandonResult {
   durationMs: number;
 }
 
-const DEFAULT_IDLE_MS = 30 * 60 * 1000;
+const DEFAULT_IDLE_MS = 15 * 60 * 1000;
 const DEFAULT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 const DEFAULT_LIMIT = 50;
 

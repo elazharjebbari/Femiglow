@@ -36,7 +36,10 @@ import {
   ensureVisitorId,
 } from '@/lib/checkout/client/visitor-id';
 import { newLeadId } from '@/lib/checkout/client/lead-id';
-import { getOrCreateIdempotencyKey } from '@/lib/checkout/client/idempotency-key';
+import {
+  consumeIdempotencyKey,
+  getOrCreateIdempotencyKey,
+} from '@/lib/checkout/client/idempotency-key';
 import { isOptimisticWizardClientEnabled } from '@/lib/checkout/flags';
 import { getLeadSyncQueue } from '@/lib/checkout/state/lead-sync-singleton';
 import { useWizardStore } from '@/lib/checkout/state/wizard-store';
@@ -246,7 +249,11 @@ export function useLeadCaptureMutation(): {
         // cf. docs/checkout-leads-background-2026-06-01 (ADR-0001/0002/0003).
         let leadId: string;
         if (isOptimisticWizardClientEnabled()) {
-          leadId = newLeadId();
+          // Retour à l'étape 1 : même fiche, mise à jour. Une clé neuve, car le
+          // contenu a pu changer et le serveur rejouerait l'ancienne réponse.
+          const currentLeadId = useWizardStore.getState().leadId;
+          if (currentLeadId) consumeIdempotencyKey('lead_create', currentLeadId);
+          leadId = currentLeadId ?? newLeadId();
           getLeadSyncQueue().enqueue({
             leadId,
             scope: 'lead_create',
