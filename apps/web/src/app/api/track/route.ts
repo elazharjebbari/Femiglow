@@ -75,6 +75,7 @@ const userDataSchema = z
   .object({
     sha256_email_address: z.string().min(32).max(128).optional(),
     sha256_phone_number: z.string().min(32).max(128).optional(),
+    sha256_phone_e164: z.string().min(32).max(128).optional(),
     address: z
       .object({
         sha256_first_name: z.string().min(32).max(128).optional(),

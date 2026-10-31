@@ -31,6 +31,8 @@ export interface IdentityInput {
 export interface HashedUserData {
   sha256_email_address?: string;
   sha256_phone_number?: string;
+  /** SHA-256 du format E.164 AVEC `+`, seul format accepté par Google Ads. */
+  sha256_phone_e164?: string;
   address?: {
     sha256_first_name?: string;
     sha256_last_name?: string;
@@ -96,6 +98,11 @@ export async function hashIdentityBrowser(input: IdentityInput): Promise<HashedU
     tasks.push(
       sha256Hex(normalizePhone(input.phone)).then((h) => {
         out.sha256_phone_number = h;
+      }),
+    );
+    tasks.push(
+      sha256Hex(`+${normalizePhone(input.phone)}`).then((h) => {
+        out.sha256_phone_e164 = h;
       }),
     );
   }
