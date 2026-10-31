@@ -41,7 +41,7 @@ function clientIp(req: NextRequest): string {
 const batchEnvelopeSchema = z.object({
   mutationId: z.string().min(1).max(64),
   leadId: z.string().regex(/^cl_[0-9a-z]{20,}$/),
-  scope: z.enum(['lead_create', 'address_update', 'payment_select']),
+  scope: z.enum(['lead_create', 'address_draft', 'address_update', 'payment_select']),
   idempotencyKey: z.string().optional(),
   payload: z.unknown(),
 });

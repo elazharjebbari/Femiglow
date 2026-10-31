@@ -41,16 +41,16 @@ export function FieldShell({
           </span>
         )}
       </label>
-      {inputAdornment ? (
-        <div className="relative">
-          {children}
+      {/* Toujours présent : l'ajouter à l'apparition de la coche recréerait
+          le champ, qui perdrait le focus et fermerait le clavier. */}
+      <div className="relative">
+        {children}
+        {inputAdornment && (
           <span className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2">
             {inputAdornment}
           </span>
-        </div>
-      ) : (
-        children
-      )}
+        )}
+      </div>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           {hint && !error && (

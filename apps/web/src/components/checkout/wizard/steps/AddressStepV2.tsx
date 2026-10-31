@@ -34,6 +34,7 @@ import {
 } from '@/lib/checkout/address/address-phase';
 import { ADDRESS_NOTES_MAX_LENGTH } from '@/lib/checkout/address/address-form-schema';
 import { useAddressReveal } from '@/lib/checkout/address/use-address-reveal';
+import { useKeyboardFieldSpace } from '@/lib/checkout/address/use-keyboard-field-space';
 import type { PublicCity } from '@/lib/checkout/delivery/use-delivery-cities';
 import { useWizardTranslation } from '@/lib/checkout/i18n/use-wizard-translation';
 import {
@@ -44,7 +45,7 @@ import {
 import { useAppliedCoupon } from '@/lib/checkout/state/use-applied-coupon';
 import { useWizardStore } from '@/lib/checkout/state/wizard-store';
 import { useShippingConfig } from '@/lib/checkout/use-shipping-config';
-import { alignWizardStep } from '@/lib/checkout/wizard-arrival';
+import { arriveAtWizardStep, highlightWizardField } from '@/lib/checkout/wizard-arrival';
 import { cn } from '@/lib/utils/cn';
 
 import { ActionBarTotal } from '../ActionBarTotal';
@@ -134,6 +135,8 @@ export function AddressStepV2() {
     onCitySelected,
     onCityMatched,
     onCityBlur,
+    onLineBlur,
+    onNotesBlur,
     onSubmit,
     submitting,
     networkBanner,
@@ -144,9 +147,17 @@ export function AddressStepV2() {
     isAddressRevealed: () => revealed,
   });
 
+  // Arrivée sur l'étape : le champ à remplir au centre, avec l'accueil qui
+  // l'indique. Une image plus tard : la barre d'action doit être mesurable.
+  const formRef = useRef<HTMLFormElement>(null);
   useEffect(() => {
-    if (!inPanel) alignWizardStep();
+    const frame = window.requestAnimationFrame(() => {
+      if (inPanel) highlightWizardField(formRef.current, null);
+      else arriveAtWizardStep('form');
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [inPanel]);
+  useKeyboardFieldSpace(formRef, { inPanel });
 
   const phase = deriveAddressPhase({
     city: watchedCity,
@@ -232,7 +243,7 @@ export function AddressStepV2() {
       : copy.progress(firstName)
     : copy.progressNoName;
 
-  const lineField = register('addressLine1');
+  const lineField = register('addressLine1', { onBlur: onLineBlur });
   const primaryVariantId = cart?.items[0]?.variantId;
 
   return (
@@ -263,7 +274,7 @@ export function AddressStepV2() {
 
       {primaryVariantId && <StockIndicator variantId={primaryVariantId} hideInStock />}
 
-      <form id={formId} onSubmit={onSubmit} noValidate className="space-y-3">
+      <form ref={formRef} id={formId} onSubmit={onSubmit} noValidate className="space-y-3">
         <Controller
           control={control}
           name="city"
@@ -360,7 +371,7 @@ export function AddressStepV2() {
                 placeholder={copy.notePlaceholder}
                 error={errors.notes?.message}
                 className={cn('!bg-creme-warm !px-3 placeholder:!text-placeholder', 'scroll-mb-64')}
-                {...register('notes')}
+                {...register('notes', { onBlur: onNotesBlur })}
               />
             ) : (
               <button

@@ -23,6 +23,7 @@ import { useAddressStepTracking } from '@/lib/checkout/address/use-address-step-
 import type { PublicCity } from '@/lib/checkout/delivery/use-delivery-cities';
 import { useWizardTranslation } from '@/lib/checkout/i18n/use-wizard-translation';
 import { DEFAULT_DELIVERY_PRICE_MAD } from '@/lib/checkout/shipping-fee';
+import { enqueueAddressDraft } from '@/lib/checkout/state/address-draft-sync';
 import { useAddressMutation } from '@/lib/checkout/state/use-wizard-mutations';
 import { useWizardStore } from '@/lib/checkout/state/wizard-store';
 
@@ -88,6 +89,7 @@ export function useAddressForm({
   const {
     watch,
     setValue,
+    getValues,
     handleSubmit,
     formState: { errors },
   } = form;
@@ -107,6 +109,40 @@ export function useAddressForm({
     });
   }, [watchedCity, watchedLine1, watchedNotes, mergeAddressDraft]);
 
+  // Fiche client à jour champ par champ : le panier abandonné porte ainsi la
+  // ville et l'adresse déjà saisies. N'envoie que ce qui a changé.
+  const leadId = useWizardStore((s) => s.leadId);
+  const sentDraftRef = useRef({ city: '', addressLine1: '', notes: '' });
+  const saveDraftField = useCallback(
+    (field: 'city' | 'addressLine1' | 'notes', raw: string | undefined) => {
+      const value = (raw ?? '').trim();
+      if (!leadId || value === sentDraftRef.current[field]) return;
+      if (field === 'city' && !isAddressCityValid(value)) return;
+      sentDraftRef.current[field] = value;
+      enqueueAddressDraft(leadId, { [field]: value });
+    },
+    [leadId],
+  );
+  const onLineBlur = () => saveDraftField('addressLine1', getValues('addressLine1'));
+  const onNotesBlur = () => saveDraftField('notes', getValues('notes'));
+
+  // Page quittée en pleine saisie : aucun `blur` n'arrive.
+  useEffect(() => {
+    const saveAll = () => {
+      saveDraftField('addressLine1', getValues('addressLine1'));
+      saveDraftField('notes', getValues('notes'));
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') saveAll();
+    };
+    window.addEventListener('pagehide', saveAll);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('pagehide', saveAll);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [getValues, saveDraftField]);
+
   // Callback de commit : appelé quand l'utilisateur sélectionne une ville
   // depuis le listbox du combobox. On met à jour le formulaire ET le store
   // pour persister les champs cached (citySlug + cityNameAr + prix + ETA).
@@ -118,6 +154,7 @@ export function useAddressForm({
       eta: city.deliveryEta,
     });
     setValue('city', city.nameFr, { shouldValidate: true, shouldDirty: true });
+    saveDraftField('city', city.nameFr);
     mergeAddressDraft({
       city: city.nameFr,
       citySlug: city.slug,
@@ -137,6 +174,7 @@ export function useAddressForm({
         priceMad: city.deliveryPriceMad,
         eta: city.deliveryEta,
       });
+      saveDraftField('city', city.nameFr);
       if (useWizardStore.getState().addressDraft.citySlug === city.slug) return;
       mergeAddressDraft({
         citySlug: city.slug,
@@ -145,13 +183,14 @@ export function useAddressForm({
         cityDeliveryEta: city.deliveryEta,
       });
     },
-    [mergeAddressDraft, trackCitySelected],
+    [mergeAddressDraft, saveDraftField, trackCitySelected],
   );
 
   // Ville hors catalogue : le serveur applique le tarif par défaut.
   const onCityBlur = () => {
     const { city, citySlug } = useWizardStore.getState().addressDraft;
     if (citySlug || !isAddressCityValid(city)) return;
+    saveDraftField('city', city);
     trackCitySelected({ matched: false, priceMad: DEFAULT_DELIVERY_PRICE_MAD });
   };
 
@@ -234,6 +273,8 @@ export function useAddressForm({
     onCitySelected,
     onCityMatched,
     onCityBlur,
+    onLineBlur,
+    onNotesBlur,
     onSubmit,
     submitting,
     networkBanner,

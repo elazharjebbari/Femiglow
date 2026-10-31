@@ -31,6 +31,9 @@ export async function dispatchLeadStep1AbandonWebhook(
       phone: phone.value,
       source: lead.source ?? 'wizard_kit',
       email: lead.email ?? undefined,
+      // Déjà saisies à l'étape 2, sans l'avoir terminée.
+      address: lead.shippingAddressLine1?.trim() || undefined,
+      city: lead.shippingCity ?? undefined,
       currency: (lead.cartCurrency ?? lead.cartSnapshot?.currency ?? 'MAD').toUpperCase(),
       quantity: 1,
       note: ['step1-abandoned', lead.formId ? `form:${lead.formId}` : null]

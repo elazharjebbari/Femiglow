@@ -189,6 +189,8 @@ export function AddressStep({ cta }: AddressStepProps) {
     onCitySelected,
     onCityMatched,
     onCityBlur,
+    onLineBlur,
+    onNotesBlur,
     onSubmit,
     submitting,
     networkBanner,
@@ -296,7 +298,7 @@ export function AddressStep({ cta }: AddressStepProps) {
           error={errors.addressLine1?.message}
           data-testid="wizard-address-line1"
           onFocus={tracking.trackLineFocus}
-          {...register('addressLine1')}
+          {...register('addressLine1', { onBlur: onLineBlur })}
         />
 
         {/* Mode de livraison — bloc dynamique (prix réel si ville reconnue) */}
@@ -317,7 +319,7 @@ export function AddressStep({ cta }: AddressStepProps) {
           showCounter
           placeholder={t.address.notesPlaceholder}
           error={errors.notes?.message}
-          {...register('notes')}
+          {...register('notes', { onBlur: onNotesBlur })}
         />
 
         {/* Code de campagne DÉJÀ appliqué (arrivée par une publicité) :

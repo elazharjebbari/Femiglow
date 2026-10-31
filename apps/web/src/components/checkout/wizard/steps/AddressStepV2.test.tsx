@@ -190,6 +190,31 @@ describe('AddressStepV2 — révélation', () => {
   });
 });
 
+describe('AddressStepV2 — saisie', () => {
+  it('la coche de validation ne recrée pas le champ : focus et clavier restent', async () => {
+    render(<AddressStepV2 />);
+    await pickCasablanca();
+    const before = line();
+    before.focus();
+    fireEvent.change(before, { target: { value: 'Hay Salam' } });
+    await waitFor(() => expect(before.value).toBe('Hay Salam'));
+    expect(line()).toBe(before);
+    expect(document.activeElement).toBe(before);
+  });
+
+  it('ville reconnue à la frappe : même chose pour le champ ville', async () => {
+    render(<AddressStepV2 />);
+    const before = city();
+    before.focus();
+    fireEvent.change(before, { target: { value: 'Casablanca' } });
+    await waitFor(() =>
+      expect(useWizardStore.getState().addressDraft.citySlug).toBe('casablanca'),
+    );
+    expect(city()).toBe(before);
+    expect(document.activeElement).toBe(before);
+  });
+});
+
 describe('AddressStepV2 — bouton', () => {
   it('tap ville vide : curseur dans la ville, aucun appel, tap mesuré', () => {
     render(<AddressStepV2 />);

@@ -100,6 +100,10 @@ function measureTopInset(shell: Element): number {
 
 /** Hauteur couverte en bas par la sticky d'achat (+ son flag) en mobile. */
 function measureBottomInset(): number {
+  const actionBar = document.querySelector('[data-testid="wizard-action-bar"]');
+  if (actionBar instanceof HTMLElement && getComputedStyle(actionBar).position === 'fixed') {
+    return actionBar.getBoundingClientRect().height;
+  }
   const sticky = document.querySelector('[data-testid="sticky-cart-cta"]');
   if (!(sticky instanceof HTMLElement)) return 0;
   const r = sticky.getBoundingClientRect();
@@ -171,24 +175,6 @@ function whenScrollSettles(targetTop: number, token: number, done: () => void): 
 }
 
 /**
- * Changement d'étape dans la page : l'étape commence juste sous les barres
- * collées. Sans effet si le formulaire n'est pas à l'écran : une cliente qui
- * reprend sa commande en haut de page n'est pas déplacée d'autorité.
- */
-export function alignWizardStep(anchorId = 'commander-femiglow'): void {
-  const target = document.getElementById(anchorId);
-  const shell = target?.querySelector('[data-testid="wizard-shell"]');
-  if (!target || !shell) return;
-  const anchor = target.getBoundingClientRect();
-  if (anchor.bottom <= 0 || anchor.top >= window.innerHeight) return;
-  const zone = shell.querySelector('section[data-testid^="wizard-step-"]') ?? shell;
-  const top = zone.getBoundingClientRect().top + window.scrollY - measureTopInset(shell) - BAND_GAP_PX;
-  const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
-  arrivalToken += 1;
-  window.scrollTo({ top: Math.max(0, Math.round(top)), behavior: reduceMotion ? 'auto' : 'smooth' });
-}
-
-/**
  * Défile jusqu'au formulaire, centré, puis joue l'accueil. Sans wizard dans
  * l'ancre (ex. page sans funnel), retombe sur l'ancien `scrollIntoView`.
  */
@@ -199,11 +185,13 @@ export interface ArriveOptions {
    * masquerait le bouton du formulaire pendant 4 s).
    */
   extraBottomInset?: number;
+  /** Zone à centrer dans l'étape, à la place de l'étape entière. */
+  zoneSelector?: string;
 }
 
 export function arriveAtCommander(
   anchorId = 'commander-femiglow',
-  { extraBottomInset = 0 }: ArriveOptions = {},
+  { extraBottomInset = 0, zoneSelector }: ArriveOptions = {},
 ): void {
   const target = document.getElementById(anchorId);
   if (!target) return;
@@ -217,7 +205,8 @@ export function arriveAtCommander(
     return;
   }
 
-  const zone = shell.querySelector('section[data-testid^="wizard-step-"]') ?? shell;
+  const step = shell.querySelector('section[data-testid^="wizard-step-"]') ?? shell;
+  const zone = (zoneSelector ? step.querySelector(zoneSelector) : null) ?? step;
   const form = zone.querySelector('form');
   const zoneRect = zone.getBoundingClientRect();
   const formRect = form?.getBoundingClientRect();
@@ -263,4 +252,28 @@ export function arriveAtCommander(
     }
   }, SMOOTH_START_GUARD_MS);
   whenScrollSettles(top, token, onArrived);
+}
+
+/**
+ * Passage d'une étape à l'autre dans la page : `zoneSelector` est centré entre
+ * les barres, puis l'accueil indique où saisir. Sans effet si le formulaire
+ * n'est pas à l'écran : une cliente qui reprend sa commande en haut de page
+ * n'est pas déplacée d'autorité.
+ */
+export function arriveAtWizardStep(zoneSelector: string, anchorId = 'commander-femiglow'): void {
+  const anchor = document.getElementById(anchorId)?.getBoundingClientRect();
+  if (!anchor || anchor.bottom <= 0 || anchor.top >= window.innerHeight) return;
+  arriveAtCommander(anchorId, { zoneSelector });
+}
+
+/** Panneau de commande : le défilement est le sien, seul l'accueil est joué. */
+export function highlightWizardField(zone: Element | null, card: HTMLElement | null): void {
+  const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+  if (zone && !reduceMotion) playArrival(card, firstEmptyField(zone));
+}
+
+/** Hauteur des barres collées en haut de page au-dessus du wizard. */
+export function measureWizardTopInset(): number {
+  const shell = document.querySelector('[data-testid="wizard-shell"]');
+  return shell ? measureTopInset(shell) : 0;
 }

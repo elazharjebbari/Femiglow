@@ -31,6 +31,8 @@
 
 **Prix promotionnel de la barre (31/10/2026) :** prix final grand, barré petit sur la même ligne, écart égal à la remise, couleur grenat à partir de 30 % de remise (`Pricing.pdf` p. 5, 10, 13, 15, 17, 23, 75). Le grenat n'est donc plus réservé au seul bouton. Le bandeau cookies passe au-dessus des barres fixes.
 
+**Fiche client progressive (31/10/2026) :** la ville, l'adresse et la note sont enregistrées champ par champ (`PATCH /lead/[id]/address/draft`, portée `address_draft` de la file), sans poser `addressCompletedAt`, qui autorise la commande et retire le lead du scanner `lead.step1_abandoned`. Remplace la recommandation de 07 §5 de traiter ce sujet après l'A/B. À l'arrivée, le champ ville est centré avec l'accueil sauge ; clavier ouvert, le champ actif remonte sous les barres.
+
 **Limite à arbitrer :** le bouton « Commander » de la barre promo reste visible à l'étape 2. Même défaut que le faux CTA, sur une zone que le plan ne couvrait pas.
 
 ## 1. Vue d'ensemble

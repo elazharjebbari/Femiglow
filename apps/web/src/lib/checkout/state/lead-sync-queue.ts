@@ -16,7 +16,7 @@
  */
 import { createId } from '@/lib/checkout/client/random-id';
 
-export type MutationScope = 'lead_create' | 'address_update' | 'payment_select';
+export type MutationScope = 'lead_create' | 'address_draft' | 'address_update' | 'payment_select';
 
 export interface Envelope {
   /** Identité transport (dédup d'un double-flush). */
