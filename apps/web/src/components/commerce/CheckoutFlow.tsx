@@ -43,6 +43,7 @@ import {
   saveCheckoutDraft,
   readCheckoutDraft,
   clearCheckoutDraft,
+  markPurchaseFired,
   saveLastOrder,
 } from '@/lib/stores/checkout-draft';
 import { computeShippingCents } from '@/lib/utils/shipping';
@@ -526,6 +527,7 @@ export function CheckoutFlow({ onLeaveModalChange }: CheckoutFlowProps) {
           quantity: it.quantity,
         })),
       }, { userData: purchaseUserData });
+      markPurchaseFired(orderRes.orderId);
 
       // 4) Opt-in email (best-effort — l'échec n'empêche pas la conversion).
       const recapEmail = (values.recapEmail ?? '').trim();
