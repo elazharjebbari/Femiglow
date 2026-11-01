@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  googleAdsWebhookFields,
+  googleAdsWebhookNote,
   isGoogleAdsLead,
   utmFromRequestSignals,
 } from './lead-acquisition';
@@ -30,23 +30,19 @@ describe('isGoogleAdsLead', () => {
   });
 });
 
-describe('googleAdsWebhookFields', () => {
+describe('googleAdsWebhookNote', () => {
   it('avec campagne', () => {
-    expect(googleAdsWebhookFields({ gclid: 'a', utm: { utm_campaign: 'kit-maroc' } })).toEqual({
-      sourceChannel: 'google_ads',
-      note: 'source:Google Ads campagne:kit-maroc',
-    });
+    expect(googleAdsWebhookNote({ gclid: 'a', utm: { utm_campaign: 'kit-maroc' } })).toBe(
+      'source:Google Ads campagne:kit-maroc',
+    );
   });
 
   it('auto-tagging seul : Google Ads, sans campagne inventée', () => {
-    expect(googleAdsWebhookFields({ gclid: 'a' })).toEqual({
-      sourceChannel: 'google_ads',
-      note: 'source:Google Ads',
-    });
+    expect(googleAdsWebhookNote({ gclid: 'a' })).toBe('source:Google Ads');
   });
 
-  it('hors Google Ads : rien ne change', () => {
-    expect(googleAdsWebhookFields({ utm: { utm_source: 'tiktok' } })).toBeNull();
+  it('hors Google Ads : rien', () => {
+    expect(googleAdsWebhookNote({ utm: { utm_source: 'tiktok' } })).toBeNull();
   });
 });
 

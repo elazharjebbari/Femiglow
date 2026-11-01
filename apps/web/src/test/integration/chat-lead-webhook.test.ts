@@ -161,8 +161,8 @@ describe('dispatchLeadWebhook — succès 200 (payload PLAT)', () => {
     expect(payload.phone).toBe('0612345678');
     expect(payload.currency).toBe('MAD');
     expect(payload.quantity).toBe(1);
-    expect(payload.source).toBe('chat_widget');
-    expect(payload.source_channel).toBe('chat:inline-contact');
+    expect(payload.source).toBe('Autre');
+    expect(payload.source_channel).toBe('E-mail · Organique · chat:inline-contact');
     expect(payload.conversation).toEqual([
       {
         role: 'user',

@@ -8,9 +8,6 @@
  */
 import type { RequestSignals } from '@/lib/tracking/server/request-signals';
 
-/** Valeur de `source_channel` pour le CRM (« Canal » sur la carte Trello). */
-export const GOOGLE_ADS_CHANNEL = 'google_ads';
-
 const PAID_MEDIUM_RX = /^(cpc|ppc|paid|cpv|cpa|cpm|display|paidsearch|paid_search)$/i;
 
 export function utmFromRequestSignals(
@@ -47,14 +44,9 @@ export function isGoogleAdsLead({ gclid, utm }: LeadAttribution): boolean {
   return !medium || PAID_MEDIUM_RX.test(medium);
 }
 
-/** Canal et mention de note pour le webhook, `null` hors Google Ads. */
-export function googleAdsWebhookFields(
-  lead: LeadAttribution,
-): { sourceChannel: string; note: string } | null {
+/** Mention de note pour le webhook, `null` hors Google Ads. */
+export function googleAdsWebhookNote(lead: LeadAttribution): string | null {
   if (!isGoogleAdsLead(lead)) return null;
   const campaign = lead.utm?.utm_campaign?.trim();
-  return {
-    sourceChannel: GOOGLE_ADS_CHANNEL,
-    note: campaign ? `source:Google Ads campagne:${campaign}` : 'source:Google Ads',
-  };
+  return campaign ? `source:Google Ads campagne:${campaign}` : 'source:Google Ads';
 }

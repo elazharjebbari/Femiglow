@@ -130,7 +130,7 @@ describe('dispatchLeadStep2Webhook', () => {
       id: 'lead-step2:cl_step2',
       full_name: 'Sara',
       phone: '0612345678',
-      source: 'wizard_kit',
+      source: 'Website',
       address: '12 Rue Test',
       city: 'Marrakech',
       country: 'Maroc',

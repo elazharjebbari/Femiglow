@@ -4,13 +4,14 @@
  * Dispatch désormais vers les endpoints admin EN PRIORITÉ, puis fallback
  * outbound URL si aucun endpoint admin ne matche.
  */
-import { googleAdsWebhookFields } from '@/lib/checkout/lead-acquisition';
+import { googleAdsWebhookNote } from '@/lib/checkout/lead-acquisition';
 import type { ChatLeadRow } from '@/lib/chat/db/schema';
 
 import { logger } from '@/lib/logging/logger';
 import { leadRepo } from '@/lib/chat/repos/lead';
 import { dispatchToAllChannels, type DispatchToAllChannelsResult } from '../dispatch-to-all-channels';
 import { composeFullName, normalizePhoneForPayload } from '../payload';
+import { trafficWebhookFields } from './traffic-fields';
 
 export interface OrderWebhookContext {
   order: {
@@ -42,10 +43,10 @@ export interface OrderWebhookContext {
     | 'shippingCity'
     | 'shippingCountry'
     | 'shippingNotes'
-    | 'source'
     | 'gclid'
     | 'utm'
-    | 'formId'
+    | 'referrer'
+    | 'createdAt'
   >;
   /** Métadonnée tracking : par ex. mode paiement / livraison. */
   shippingMode?: string;
@@ -149,11 +150,9 @@ export async function dispatchOrderWebhook(
   const discountAmount = discountCents > 0 ? discountCents / 100 : undefined;
   const couponCode = ctx.order.couponCode?.trim().toUpperCase() || undefined;
 
-  const googleAds = googleAdsWebhookFields(ctx.lead);
-  const sourceChannel =
-    googleAds?.sourceChannel ?? ctx.lead.source ?? ctx.lead.formId ?? 'checkout';
+  const googleAdsNote = googleAdsWebhookNote(ctx.lead);
   const noteParts: string[] = [];
-  if (googleAds) noteParts.push(googleAds.note);
+  if (googleAdsNote) noteParts.push(googleAdsNote);
   if (ctx.lead.shippingNotes) noteParts.push(ctx.lead.shippingNotes.trim());
   if (ctx.shippingMode) noteParts.push(`shipping:${ctx.shippingMode}`);
   if (ctx.paymentMethod) noteParts.push(`payment:${ctx.paymentMethod}`);
@@ -194,7 +193,7 @@ export async function dispatchOrderWebhook(
       product_variant: productVariant ?? undefined,
       product_sku: productSkus,
       note: noteParts.length ? noteParts.join(' | ') : undefined,
-      source_channel: sourceChannel,
+      ...trafficWebhookFields(ctx.lead),
       ip: ctx.ip ?? undefined,
     },
   });

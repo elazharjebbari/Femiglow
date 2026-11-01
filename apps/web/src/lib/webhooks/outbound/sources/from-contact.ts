@@ -8,6 +8,7 @@ import { createId } from '@/lib/ids';
 
 import { dispatchToAllChannels, type DispatchToAllChannelsResult } from '../dispatch-to-all-channels';
 import { composeFullName, normalizePhoneForPayload } from '../payload';
+import { DEFAULT_CRM_SOURCE } from './traffic-fields';
 
 export interface ContactWebhookInput {
   type: 'question' | 'order' | 'professional';
@@ -65,6 +66,7 @@ export async function dispatchContactWebhook(
       phone: phone.value,
       email: input.email,
       note: noteParts.join(' | ').slice(0, 1990),
+      source: DEFAULT_CRM_SOURCE,
       source_channel: `contact-form:${input.type}`,
       quantity: 1,
       currency: 'MAD' as const,

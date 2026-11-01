@@ -136,8 +136,8 @@ describe('dispatchInlineContactWebhook', () => {
         id: 'inline-contact:cl_inline',
         full_name: 'Amina',
         phone: '0612345678',
-        source: 'chat_widget',
-        source_channel: 'chat:inline-contact',
+        source: 'Website',
+        source_channel: 'Non tracé · chat:inline-contact',
         note: expect.stringContaining('trigger:inline-contact'),
         lead_status: 'complete',
         currency: 'MAD',
@@ -268,7 +268,7 @@ describe('dispatchInlineContactWebhook', () => {
         source_id: 'cl_inline',
         full_name: 'Amina',
         phone: '0612345678',
-        source_channel: 'chat:inline-contact',
+        source_channel: 'Non tracé · chat:inline-contact',
       });
       expect(captured.idem).toBe('chat_lead.created:chat-lead:cl_inline');
     });

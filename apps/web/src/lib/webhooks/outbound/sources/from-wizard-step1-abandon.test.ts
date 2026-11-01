@@ -115,12 +115,12 @@ describe('dispatchLeadStep1AbandonWebhook', () => {
       id: 'lead-step1-abandon:cl_step1',
       full_name: 'Nadia B.',
       phone: '0612345678',
-      source: 'wizard_kit',
+      source: 'Website',
       email: 'nadia@example.com',
       currency: 'MAD',
       quantity: 1,
       note: 'step1-abandoned | form:kit',
-      source_channel: 'kit',
+      source_channel: 'Non tracé · abandon',
     });
   });
 
@@ -225,7 +225,7 @@ describe('dispatchLeadStep1AbandonWebhook', () => {
     });
   });
 
-  it('utilise formId comme source_channel quand présent', async () => {
+  it('garde formId dans la note, le canal décrit le trafic', async () => {
     const captured: { body?: Record<string, unknown> } = {};
     server.use(
       http.post('https://hook.example.com/lead-step1-abandon', async ({ request }) => {
@@ -236,6 +236,7 @@ describe('dispatchLeadStep1AbandonWebhook', () => {
 
     await dispatchLeadStep1AbandonWebhook(makeLead({ formId: 'kit_femiglow_v1' }));
 
-    expect(captured.body?.source_channel).toBe('kit_femiglow_v1');
+    expect(captured.body?.note).toContain('form:kit_femiglow_v1');
+    expect(captured.body?.source_channel).toBe('Non tracé · abandon');
   });
 });

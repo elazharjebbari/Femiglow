@@ -155,7 +155,8 @@ describe('dispatchOrderWebhook — payload PLAT complet', () => {
     expect(payload.note).toContain('Livraison urgente');
     expect(payload.note).toContain('shipping:standard');
     expect(payload.note).toContain('payment:cod');
-    expect(payload.source_channel).toBe('wizard_kit');
+    expect(payload.source).toBe('Website');
+    expect(payload.source_channel).toBe('Non tracé');
     expect(payload.ip).toBe('197.230.1.5');
   });
 

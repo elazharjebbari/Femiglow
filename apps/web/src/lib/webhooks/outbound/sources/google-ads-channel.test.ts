@@ -36,41 +36,45 @@ const order = (over: Partial<ChatLeadRow>) =>
   });
 
 describe('webhooks — source Google Ads', () => {
-  it('commande : canal et campagne', async () => {
+  it('commande : source Google et campagne', async () => {
     await order({ gclid: 'abc', utm: { utm_campaign: 'kit-maroc' } });
-    expect(payload().source_channel).toBe('google_ads');
+    expect(payload().source).toBe('Google');
+    expect(payload().source_channel).toBe('Google (autres) · Payant · kit-maroc');
     expect(payload().note).toContain('source:Google Ads campagne:kit-maroc');
   });
 
-  it('commande sans Google : canal d’origine', async () => {
+  it('commande sans trafic tracé : Website', async () => {
     await order({});
-    expect(payload().source_channel).toBe('wizard_kit');
+    expect(payload().source).toBe('Website');
+    expect(payload().source_channel).toBe('Non tracé');
     expect(payload().note).not.toContain('Google');
   });
 
-  it('panier abandonné : canal et campagne', async () => {
+  it('panier abandonné : source Google, abandon conservé', async () => {
     await dispatchCartAbandonWebhook(
       lead({ gclid: 'abc', utm: { utm_campaign: 'kit-maroc' } }),
     );
-    expect(payload().source_channel).toBe('google_ads');
+    expect(payload().source).toBe('Google');
+    expect(payload().source_channel).toBe('Google (autres) · Payant · kit-maroc · abandon');
     expect(payload().note).toContain('cart-abandoned');
     expect(payload().note).toContain('source:Google Ads campagne:kit-maroc');
   });
 
-  it('panier abandonné sans Google : inchangé', async () => {
+  it('panier abandonné Facebook', async () => {
     await dispatchCartAbandonWebhook(lead({ utm: { utm_source: 'facebook' } }));
-    expect(payload().source_channel).toBe('cart-abandon');
+    expect(payload().source).toBe('Facebook');
     expect(payload().note).not.toContain('Google');
   });
 
-  it('étape 1 abandonnée : canal Google Ads', async () => {
+  it('étape 1 abandonnée : Google', async () => {
     await dispatchLeadStep1AbandonWebhook(lead({ gclid: 'abc' }));
-    expect(payload().source_channel).toBe('google_ads');
+    expect(payload().source).toBe('Google');
     expect(payload().note).toContain('source:Google Ads');
   });
 
-  it('étape 1 abandonnée sans Google : inchangé', async () => {
+  it('étape 1 abandonnée sans source : Website', async () => {
     await dispatchLeadStep1AbandonWebhook(lead({ formId: 'wizard_kit' }));
-    expect(payload().source_channel).toBe('wizard_kit');
+    expect(payload().source).toBe('Website');
+    expect(payload().source_channel).toBe('Non tracé · abandon');
   });
 });

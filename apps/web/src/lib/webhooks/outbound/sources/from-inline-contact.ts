@@ -18,6 +18,7 @@ import { dispatchToAllChannels, type DispatchToAllChannelsResult } from '../disp
 import { composeFullName, normalizePhoneForPayload } from '../payload';
 import { snapshotMessagesToConversation } from '../helpers/conversation';
 import { getLeadWebhookSettings } from '../settings';
+import { trafficWebhookFields } from './traffic-fields';
 
 export interface InlineContactWebhookResult {
   status: DispatchToAllChannelsResult['status'];
@@ -78,10 +79,9 @@ export async function dispatchInlineContactWebhook(
       id: `inline-contact:${lead.id}`,
       full_name: composeFullName(lead.firstName),
       phone: phone.value,
-      source: lead.source ?? 'chat_widget',
+      ...trafficWebhookFields(lead, 'chat:inline-contact'),
       conversation,
       note: noteParts.join(' | '),
-      source_channel: `chat:inline-contact`,
       // Lead chat finalisé (coordonnées capturées), pas un panier abandonné.
       lead_status: 'complete' as const,
       quantity: 1,

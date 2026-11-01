@@ -23,6 +23,7 @@ import { composeFullName, normalizePhoneForPayload } from '../payload';
 import { snapshotMessagesToConversation } from '../helpers/conversation';
 import { getLeadWebhookSettings } from '../settings';
 import { getChatPromo } from '@/lib/chat/promo-offer';
+import { trafficWebhookFields } from './traffic-fields';
 
 export interface DispatchChatLeadResult {
   status: DispatchToAllChannelsResult['status'];
@@ -73,11 +74,10 @@ export async function dispatchChatLeadWebhook(
     id: `chat-lead:${lead.id}`,
     full_name: composeFullName(lead.firstName),
     phone: phone.value,
-    source: lead.source ?? 'chat_widget',
+    ...trafficWebhookFields(lead, `chat:${lead.triggerReason ?? 'manual'}`),
     conversation,
     email: lead.email ?? undefined,
     note: noteParts.length ? noteParts.join(' | ') : undefined,
-    source_channel: `chat:${lead.triggerReason ?? 'manual'}`,
     // Lead chat = lead finalisé (nom + tél + consentement + conversation),
     // pas un panier abandonné → l'opérateur le voit complet d'emblée.
     lead_status: 'complete' as const,

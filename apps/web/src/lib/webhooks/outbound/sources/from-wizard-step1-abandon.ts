@@ -1,8 +1,9 @@
 import type { ChatLeadRow } from '@/lib/chat/db/schema';
-import { googleAdsWebhookFields } from '@/lib/checkout/lead-acquisition';
+import { googleAdsWebhookNote } from '@/lib/checkout/lead-acquisition';
 
 import { dispatchToAllChannels, type DispatchToAllChannelsResult } from '../dispatch-to-all-channels';
 import { composeFullName, normalizePhoneForPayload } from '../payload';
+import { trafficWebhookFields } from './traffic-fields';
 
 export interface LeadStep1AbandonWebhookResult {
   status: DispatchToAllChannelsResult['status'];
@@ -20,7 +21,6 @@ export async function dispatchLeadStep1AbandonWebhook(
     return { status: 'skipped', attempts: 0, lastError: `invalid-phone:${phone.reason}` };
   }
 
-  const googleAds = googleAdsWebhookFields(lead);
   const result = await dispatchToAllChannels({
     source: 'lead-step1-abandon',
     sourceId: lead.id,
@@ -31,18 +31,16 @@ export async function dispatchLeadStep1AbandonWebhook(
       id: `lead-step1-abandon:${lead.id}`,
       full_name: composeFullName(lead.firstName, lead.lastName),
       phone: phone.value,
-      source: lead.source ?? 'wizard_kit',
+      ...trafficWebhookFields(lead, 'abandon'),
       email: lead.email ?? undefined,
       // Déjà saisies à l'étape 2, sans l'avoir terminée.
       address: lead.shippingAddressLine1?.trim() || undefined,
       city: lead.shippingCity ?? undefined,
       currency: (lead.cartCurrency ?? lead.cartSnapshot?.currency ?? 'MAD').toUpperCase(),
       quantity: 1,
-      note: ['step1-abandoned', googleAds?.note, lead.formId ? `form:${lead.formId}` : null]
+      note: ['step1-abandoned', googleAdsWebhookNote(lead), lead.formId ? `form:${lead.formId}` : null]
         .filter(Boolean)
         .join(' | '),
-      source_channel:
-        googleAds?.sourceChannel ?? lead.formId ?? lead.formMode ?? lead.source ?? 'wizard',
     },
   });
 

@@ -14,6 +14,7 @@ import {
   type OutboundPayload,
 } from '../payload';
 import { getLeadWebhookSettings } from '../settings';
+import { trafficWebhookFields } from './traffic-fields';
 
 const COUNTRY_LABEL: Record<string, string> = {
   MA: 'Maroc',
@@ -89,7 +90,7 @@ function buildStep2Payload(
     id: `lead-step2:${lead.id}`,
     full_name: composeFullName(lead.firstName, lead.lastName),
     phone,
-    source: lead.source ?? 'wizard_kit',
+    ...trafficWebhookFields(lead),
     conversation: conversationSettings.enabled
       ? snapshotMessagesToConversation(lead.snapshotMessages, {
           userName: lead.firstName,
@@ -107,7 +108,6 @@ function buildStep2Payload(
     product_name: products.productName,
     product_sku: products.productSku,
     note: lead.shippingNotes ?? undefined,
-    source_channel: lead.formId ?? lead.formMode ?? lead.source ?? 'wizard',
     ip: options.ip ?? undefined,
   });
 }
