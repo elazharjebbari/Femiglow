@@ -51,13 +51,13 @@ describe('googleAdsWebhookFields', () => {
 });
 
 describe('utmFromRequestSignals', () => {
-  it('garde UTM et identifiants iPhone, sans le reste', () => {
+  it('garde UTM et clics publicitaires', () => {
     expect(
       utmFromRequestSignals({
         utm: { source: 'google', campaign: 'kit' },
         clickIds: { gbraid: 'g', fbclid: 'f' },
       }),
-    ).toEqual({ utm_source: 'google', utm_campaign: 'kit', gbraid: 'g' });
+    ).toEqual({ utm_source: 'google', utm_campaign: 'kit', gbraid: 'g', fbclid: 'f' });
   });
 
   it('rien à conserver : undefined', () => {

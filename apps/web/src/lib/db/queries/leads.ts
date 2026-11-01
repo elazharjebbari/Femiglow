@@ -6,10 +6,18 @@ import type { ChatLeadRow } from '@/lib/chat/db/schema';
 import { createId } from '@/lib/ids';
 import type { Lead, LeadStatus, Order, OrderItem } from '@/lib/db/types';
 import { computeLeadJourney, type LeadOutboundWebhookStatuses } from '@/lib/admin/leads/journey';
+import {
+  classifyLeadSource,
+  type LeadSource,
+  type LeadSourceChannel,
+  type LeadSourceKind,
+} from '@/lib/leads/lead-source';
 import { listLatestOutboundLogsBySourceIds } from '@/lib/webhooks/outbound/log-queries';
 
 export interface LeadFilters {
   status?: LeadStatus;
+  channel?: LeadSourceChannel;
+  kind?: LeadSourceKind;
   search?: string;
   from?: Date;
   to?: Date;
@@ -71,6 +79,9 @@ function chatLeadToLead(
     journeyStage: journey.stage,
     dataPct: journey.dataPct,
     webhookSummary: journey.webhookSummary,
+    gclid: row.gclid ?? null,
+    utm: row.utm ?? null,
+    referrer: row.referrer ?? null,
   };
 }
 
@@ -98,16 +109,94 @@ function matchesLeadFilter(lead: Lead, filters: LeadFilters): boolean {
   return true;
 }
 
+export interface LeadSourceCount {
+  leads: number;
+  purchases: number;
+}
+
+export interface LeadSourceStats {
+  total: number;
+  kinds: Array<LeadSourceCount & { key: LeadSourceKind }>;
+  channels: Array<LeadSourceCount & { key: LeadSourceChannel }>;
+}
+
 export interface LeadListResult {
-  rows: Lead[];
+  rows: Array<Lead & { leadSource: LeadSource }>;
   total: number;
   page: number;
   pageSize: number;
+  sourceStats: LeadSourceStats;
+}
+
+export function sourceOf(lead: Lead): LeadSource {
+  return classifyLeadSource({
+    gclid: lead.gclid,
+    utm: lead.utm,
+    referrer: lead.referrer,
+    createdAt: lead.createdAt,
+  });
+}
+
+function isPurchased(lead: Lead): boolean {
+  return lead.journeyStage === 'purchased' || lead.status === 'converted';
+}
+
+/**
+ * Répartition calculée AVANT les filtres de source : cliquer un canal ne doit
+ * pas faire disparaître les autres de la synthèse.
+ */
+function summarizeSources(leads: Lead[]): LeadSourceStats {
+  const kinds = new Map<LeadSourceKind, LeadSourceCount>();
+  const channels = new Map<LeadSourceChannel, LeadSourceCount>();
+  const bump = <K,>(map: Map<K, LeadSourceCount>, key: K, purchased: boolean) => {
+    const entry = map.get(key) ?? { leads: 0, purchases: 0 };
+    entry.leads += 1;
+    if (purchased) entry.purchases += 1;
+    map.set(key, entry);
+  };
+  for (const lead of leads) {
+    const source = sourceOf(lead);
+    const purchased = isPurchased(lead);
+    bump(kinds, source.kind, purchased);
+    bump(channels, source.channel, purchased);
+  }
+  return {
+    total: leads.length,
+    kinds: [...kinds].map(([key, count]) => ({ key, ...count })),
+    channels: [...channels]
+      .map(([key, count]) => ({ key, ...count }))
+      .sort((a, b) => b.leads - a.leads),
+  };
+}
+
+/** Applique les filtres de source, puis pagine, à la fin de `listLeads`. */
+function finishList(all: Lead[], filters: LeadFilters): LeadListResult {
+  const page = filters.page ?? 1;
+  const pageSize = filters.pageSize ?? 25;
+  const sourceStats = summarizeSources(all);
+  const filtered =
+    filters.channel || filters.kind
+      ? all.filter((lead) => {
+          const source = sourceOf(lead);
+          return (
+            (!filters.channel || source.channel === filters.channel) &&
+            (!filters.kind || source.kind === filters.kind)
+          );
+        })
+      : all;
+  return {
+    rows: filtered.slice((page - 1) * pageSize, page * pageSize).map((lead) => ({
+      ...lead,
+      leadSource: sourceOf(lead),
+    })),
+    total: filtered.length,
+    page,
+    pageSize,
+    sourceStats,
+  };
 }
 
 export async function listLeads(filters: LeadFilters = {}): Promise<LeadListResult> {
-  const page = filters.page ?? 1;
-  const pageSize = filters.pageSize ?? 25;
   const drizzle = db();
   if (drizzle) {
     // 1. Leads ecommerce historiques.
@@ -191,23 +280,19 @@ export async function listLeads(filters: LeadFilters = {}): Promise<LeadListResu
         ? a.createdAt.getTime() - b.createdAt.getTime()
         : b.createdAt.getTime() - a.createdAt.getTime(),
     );
-    const total = merged.length;
-    const paged = merged.slice((page - 1) * pageSize, page * pageSize);
-    return { rows: paged, total, page, pageSize };
+    return finishList(merged, filters);
   }
   // Mode mémoire (tests). Ne fusionne pas chat_lead — les tests qui
   // veulent l'union utilisent la branche DB drizzle ci-dessus.
   const store = memoryStore();
   const all = Array.from(store.leads.values());
-  let rows = all.filter((l) => matchesLeadFilter(l, filters));
+  const rows = all.filter((l) => matchesLeadFilter(l, filters));
   rows.sort((a, b) =>
     filters.sort === 'created_asc'
       ? a.createdAt.getTime() - b.createdAt.getTime()
       : b.createdAt.getTime() - a.createdAt.getTime(),
   );
-  const total = rows.length;
-  rows = rows.slice((page - 1) * pageSize, page * pageSize);
-  return { rows, total, page, pageSize };
+  return finishList(rows, filters);
 }
 
 export async function getLeadById(id: string): Promise<{

@@ -46,6 +46,8 @@ export interface RequestSignals {
   landingPath: string | null;
   /** Timestamp first-touch (depuis `_fg_landing_qs`). */
   landingTs: number | null;
+  /** Site d'origine first-touch (depuis `_fg_landing_ref`). */
+  landingReferrer?: string | null;
 }
 
 const EMPTY_SIGNALS: RequestSignals = {
@@ -56,6 +58,7 @@ const EMPTY_SIGNALS: RequestSignals = {
   referrer: null,
   landingPath: null,
   landingTs: null,
+  landingReferrer: null,
 };
 
 interface LandingPayload {
@@ -126,6 +129,7 @@ export function extractRequestSignals(input: {
     referrer: input.referrer ?? null,
     landingPath: landing?.path ?? null,
     landingTs: landing?.ts ?? null,
+    landingReferrer: get('_fg_landing_ref') ?? null,
   };
 }
 

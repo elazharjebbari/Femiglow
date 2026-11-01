@@ -209,6 +209,6 @@ describe('extractRequestSignals — pureté & idempotence', () => {
     };
     extractRequestSignals({ cookies: trackingCookies });
     // 8 click IDs + 1 landing_qs + _fbp + _fbc = 11 get calls
-    expect(getCallCount).toBe(11);
+    expect(getCallCount).toBe(12);
   });
 });

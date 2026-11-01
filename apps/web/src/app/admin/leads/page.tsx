@@ -2,7 +2,11 @@ import Link from 'next/link';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { ConversationQuickView } from '@/components/admin/chat/ConversationQuickView';
+import { LeadSourceBadge } from '@/components/admin/leads/LeadSourceBadge';
+import { LeadSourceSummary } from '@/components/admin/leads/LeadSourceSummary';
 import { listLeads } from '@/lib/db/queries/leads';
+import { LEAD_SOURCE_CHANNEL_LABELS, LEAD_SOURCE_CHANNELS } from '@/lib/leads/lead-source';
+import { leadsHref } from '@/lib/leads/leads-url';
 import { leadFiltersSchema } from '@/lib/schemas/admin/lead-filters';
 
 export const dynamic = 'force-dynamic';
@@ -15,8 +19,14 @@ export default async function AdminLeadsPage({
   const session = await requireAdmin('/admin/leads');
   const parsed = leadFiltersSchema.safeParse(searchParams);
   const filters = parsed.success ? parsed.data : leadFiltersSchema.parse({});
-  const { rows, total, page, pageSize } = await listLeads(filters);
+  const { period, ...listFilters } = filters;
+  const { rows, total, page, pageSize, sourceStats } = await listLeads({
+    ...listFilters,
+    ...(period === 'all' ? {} : { from: new Date(Date.now() - Number(period) * 86_400_000) }),
+  });
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
+  const query = { ...filters };
+  const filtered = Boolean(filters.channel || filters.kind);
 
   return (
     <AdminShell adminEmail={session.email} active="leads">
@@ -24,11 +34,30 @@ export default async function AdminLeadsPage({
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-stone-900">Leads</h1>
           <p className="mt-1 text-sm text-stone-600">
-            {total} prospect{total === 1 ? '' : 's'} au total.
+            {total} prospect{total === 1 ? '' : 's'}
+            {filtered ? ` sur ${sourceStats.total}` : ' au total'}.
+            {filtered ? (
+              <>
+                {' '}
+                <Link
+                  href={leadsHref(query, { channel: undefined, kind: undefined })}
+                  className="text-stone-800 underline underline-offset-2"
+                >
+                  Retirer le filtre de source
+                </Link>
+              </>
+            ) : null}
           </p>
         </div>
       </header>
-      <form className="mb-6 grid gap-3 sm:grid-cols-3" role="search">
+      <LeadSourceSummary
+        stats={sourceStats}
+        query={query}
+        channel={filters.channel}
+        kind={filters.kind}
+      />
+      <form className="mb-6 grid gap-3 sm:grid-cols-3 lg:grid-cols-5" role="search">
+        {filters.kind ? <input type="hidden" name="kind" value={filters.kind} /> : null}
         <label className="block">
           <span className="block text-xs font-medium text-stone-600">Recherche</span>
           <input
@@ -56,6 +85,34 @@ export default async function AdminLeadsPage({
           </select>
         </label>
         <label className="block">
+          <span className="block text-xs font-medium text-stone-600">Période</span>
+          <select
+            name="period"
+            defaultValue={filters.period}
+            className="mt-1 block w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm"
+          >
+            <option value="7">7 derniers jours</option>
+            <option value="30">30 derniers jours</option>
+            <option value="90">90 derniers jours</option>
+            <option value="all">Tout</option>
+          </select>
+        </label>
+        <label className="block">
+          <span className="block text-xs font-medium text-stone-600">Canal</span>
+          <select
+            name="channel"
+            defaultValue={filters.channel ?? ''}
+            className="mt-1 block w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm"
+          >
+            <option value="">— Tous —</option>
+            {LEAD_SOURCE_CHANNELS.map((channel) => (
+              <option key={channel} value={channel}>
+                {LEAD_SOURCE_CHANNEL_LABELS[channel]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="block">
           <span className="block text-xs font-medium text-stone-600">Tri</span>
           <select
             name="sort"
@@ -68,7 +125,7 @@ export default async function AdminLeadsPage({
         </label>
         <button
           type="submit"
-          className="self-end rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800 sm:col-span-3 sm:w-fit"
+          className="self-end rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800 sm:col-span-3 sm:w-fit lg:col-span-5"
         >
           Appliquer
         </button>
@@ -83,6 +140,7 @@ export default async function AdminLeadsPage({
             <thead className="bg-stone-50">
               <tr>
                 <Th>Identité</Th>
+                <Th>Source</Th>
                 <Th>Contact</Th>
                 <Th>Ville</Th>
                 <Th>Parcours</Th>
@@ -96,6 +154,9 @@ export default async function AdminLeadsPage({
               {rows.map((l) => (
                 <tr key={l.id} className="hover:bg-stone-50">
                   <Td>{l.name ?? '—'}</Td>
+                  <Td>
+                    <LeadSourceBadge source={l.leadSource} />
+                  </Td>
                   <Td>
                     <div className="space-y-1">
                       <p>{l.email ?? l.phone ?? '—'}</p>
@@ -178,6 +239,26 @@ export default async function AdminLeadsPage({
         <p className="text-stone-500">
           Page {page} / {pageCount}
         </p>
+        <div className="flex items-center gap-2">
+          {page > 1 ? (
+            <Link
+              href={leadsHref(query, { page: page - 1 })}
+              rel="prev"
+              className="rounded-md border border-stone-300 bg-white px-3 py-2 text-stone-800 hover:border-stone-500"
+            >
+              Précédent
+            </Link>
+          ) : null}
+          {page < pageCount ? (
+            <Link
+              href={leadsHref(query, { page: page + 1 })}
+              rel="next"
+              className="rounded-md border border-stone-300 bg-white px-3 py-2 text-stone-800 hover:border-stone-500"
+            >
+              Suivant
+            </Link>
+          ) : null}
+        </div>
       </nav>
     </AdminShell>
   );
