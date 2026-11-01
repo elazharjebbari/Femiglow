@@ -8,6 +8,7 @@
  * outbound URL si aucun endpoint admin ne matche.
  */
 import type { ChatLeadRow } from '@/lib/chat/db/schema';
+import { googleAdsWebhookFields } from '@/lib/checkout/lead-acquisition';
 
 import { dispatchToAllChannels, type DispatchToAllChannelsResult } from '../dispatch-to-all-channels';
 import { composeFullName, normalizePhoneForPayload } from '../payload';
@@ -80,7 +81,9 @@ export async function dispatchCartAbandonWebhook(
   const countryCode = (lead.shippingCountry ?? 'MA').toUpperCase();
   const countryLabel = COUNTRY_LABEL[countryCode] ?? countryCode;
 
+  const googleAds = googleAdsWebhookFields(lead);
   const noteParts: string[] = ['cart-abandoned'];
+  if (googleAds) noteParts.push(googleAds.note);
   if (lead.shippingNotes) noteParts.push(lead.shippingNotes.trim());
   if (lead.lastTouchedStep) noteParts.push(`step:${lead.lastTouchedStep}`);
   if (couponCode) {
@@ -113,7 +116,7 @@ export async function dispatchCartAbandonWebhook(
       product_name: productName,
       product_sku: productSku,
       note: noteParts.join(' | '),
-      source_channel: 'cart-abandon',
+      source_channel: googleAds?.sourceChannel ?? 'cart-abandon',
       lead_status: 'abandoned' as const,
     },
   });

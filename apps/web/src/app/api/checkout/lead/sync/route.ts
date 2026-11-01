@@ -12,6 +12,7 @@
  *
  * @see docs/checkout-leads-background-2026-06-01/00-conception/decisions/ADR-0005-beacon-flush.md
  */
+import { extractRequestSignals } from '@/lib/tracking/server/request-signals';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -99,7 +100,10 @@ export async function POST(req: NextRequest): Promise<Response> {
       scope: e.scope,
       payload: e.payload,
     }));
-    const results = await leadService.applyBatch(envelopes);
+    const results = await leadService.applyBatch(
+      envelopes,
+      extractRequestSignals({ cookies: req.cookies }),
+    );
     logger.info('owbs.sync.batch', {
       sentVia: parsed.data.sentVia ?? 'keepalive',
       count: results.length,

@@ -1,4 +1,5 @@
 import type { ChatLeadRow } from '@/lib/chat/db/schema';
+import { googleAdsWebhookFields } from '@/lib/checkout/lead-acquisition';
 
 import { dispatchToAllChannels, type DispatchToAllChannelsResult } from '../dispatch-to-all-channels';
 import { composeFullName, normalizePhoneForPayload } from '../payload';
@@ -19,6 +20,7 @@ export async function dispatchLeadStep1AbandonWebhook(
     return { status: 'skipped', attempts: 0, lastError: `invalid-phone:${phone.reason}` };
   }
 
+  const googleAds = googleAdsWebhookFields(lead);
   const result = await dispatchToAllChannels({
     source: 'lead-step1-abandon',
     sourceId: lead.id,
@@ -36,10 +38,11 @@ export async function dispatchLeadStep1AbandonWebhook(
       city: lead.shippingCity ?? undefined,
       currency: (lead.cartCurrency ?? lead.cartSnapshot?.currency ?? 'MAD').toUpperCase(),
       quantity: 1,
-      note: ['step1-abandoned', lead.formId ? `form:${lead.formId}` : null]
+      note: ['step1-abandoned', googleAds?.note, lead.formId ? `form:${lead.formId}` : null]
         .filter(Boolean)
         .join(' | '),
-      source_channel: lead.formId ?? lead.formMode ?? lead.source ?? 'wizard',
+      source_channel:
+        googleAds?.sourceChannel ?? lead.formId ?? lead.formMode ?? lead.source ?? 'wizard',
     },
   });
 
