@@ -69,6 +69,10 @@ export interface Lead {
    */
   chatSessionId?: string | null;
   journeyStage?: 'lead' | 'address' | 'payment' | 'purchased' | 'abandoned_step1';
+  /** Origine publicitaire brute, conservée sur les leads du tunnel. */
+  gclid?: string | null;
+  utm?: Record<string, string> | null;
+  referrer?: string | null;
   dataPct?: number;
   webhookSummary?:
     | 'none'

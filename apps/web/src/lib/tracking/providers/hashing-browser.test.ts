@@ -40,6 +40,19 @@ describe('hashing-browser — hash SHA-256', () => {
     expect(out.address?.country).toBe('maroc');
   });
 
+  it('sha256_phone_e164 hache le numéro avec `+`, sans toucher au hash Meta', async () => {
+    const digest = await crypto.subtle.digest(
+      'SHA-256',
+      new TextEncoder().encode('+212612345678'),
+    );
+    const expected = [...new Uint8Array(digest)]
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+    const out = await hashIdentityBrowser({ phone: '06 12 34 56 78' });
+    expect(out.sha256_phone_e164).toBe(expected);
+    expect(out.sha256_phone_number).not.toBe(expected);
+  });
+
   it('omits empty fields', async () => {
     const out = await hashIdentityBrowser({ email: 'foo@bar.com' });
     expect(out.sha256_email_address).toBeDefined();

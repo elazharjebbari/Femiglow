@@ -60,6 +60,7 @@ function withRequestSignals(input: CreateLeadInput, signals?: RequestSignals): C
     ...input,
     utm: input.utm ?? utmFromRequestSignals(signals),
     gclid: input.gclid ?? signals.clickIds.gclid,
+    referrer: signals.landingReferrer ?? input.referrer,
     fbp: input.fbp ?? signals.fbp ?? undefined,
     fbc: input.fbc ?? signals.fbc ?? undefined,
   };

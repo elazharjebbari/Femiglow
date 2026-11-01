@@ -3,7 +3,8 @@
  *
  * Les cookies posés par le middleware sont lus à la création du lead : le
  * navigateur n'a rien à transmettre, et le beacon de secours en profite aussi.
- * `gbraid` et `wbraid` remplacent `gclid` sur iPhone : ils vivent dans `utm`.
+ * `gbraid` et `wbraid` remplacent `gclid` sur iPhone : ils vivent dans `utm`, avec
+ * les clics des autres plateformes.
  */
 import type { RequestSignals } from '@/lib/tracking/server/request-signals';
 
@@ -24,6 +25,11 @@ export function utmFromRequestSignals(
     utm_term: term,
     gbraid: signals.clickIds.gbraid,
     wbraid: signals.clickIds.wbraid,
+    fbclid: signals.clickIds.fbclid,
+    ttclid: signals.clickIds.ttclid,
+    sccid: signals.clickIds.sccid,
+    msclkid: signals.clickIds.msclkid,
+    epik: signals.clickIds.epik,
   }).filter((entry): entry is [string, string] => Boolean(entry[1]));
   return entries.length > 0 ? Object.fromEntries(entries) : undefined;
 }

@@ -110,3 +110,28 @@ export function readLastOrder(orderId: string): LastOrderPayload | null {
     return null;
   }
 }
+
+const PURCHASE_FIRED_PREFIX = 'fg_purchase_fired_';
+
+/** Vrai si `purchase` a déjà été émis pour cette commande dans cet onglet. */
+export function hasPurchaseBeenFired(orderId: string): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return window.sessionStorage.getItem(PURCHASE_FIRED_PREFIX + orderId) === '1';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Partagé entre `CheckoutFlow` et `MerciClient` : celui qui émet `purchase` le
+ * marque, sinon la page merci réémet l'achat sans identité ni `meta_purchase_eid`.
+ */
+export function markPurchaseFired(orderId: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.setItem(PURCHASE_FIRED_PREFIX + orderId, '1');
+  } catch {
+    // sessionStorage indisponible (Safari ITP) — on tombe sur l'idempotence in-memory.
+  }
+}

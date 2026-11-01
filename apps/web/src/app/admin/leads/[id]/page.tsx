@@ -1,7 +1,8 @@
 import { notFound } from 'next/navigation';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { AdminShell } from '@/components/admin/AdminShell';
-import { getLeadById, nextValidStatuses } from '@/lib/db/queries/leads';
+import { LeadSourceBadge } from '@/components/admin/leads/LeadSourceBadge';
+import { getLeadById, nextValidStatuses, sourceOf } from '@/lib/db/queries/leads';
 import { listLeadEvents } from '@/lib/db/queries/lead-events';
 import { LeadStatusMenu } from '@/components/admin/LeadStatusMenu';
 import { LeadNoteForm } from '@/components/admin/LeadNoteForm';
@@ -55,6 +56,26 @@ export default async function AdminLeadDetailPage({ params }: { params: { id: st
           />
         )}
       </header>
+      <section aria-label="Source du lead" className="mb-8 rounded-md border border-stone-200 bg-white p-4">
+        <h2 className="text-sm font-medium uppercase tracking-wide text-stone-500">Source</h2>
+        <div className="mt-3 grid gap-4 text-sm sm:grid-cols-[auto_1fr]">
+          <LeadSourceBadge source={sourceOf(data.lead)} />
+          <dl className="grid gap-x-4 gap-y-1 text-xs sm:grid-cols-[max-content_1fr]">
+            {[
+              ['Site d’origine', data.lead.referrer],
+              ['Clic Google', data.lead.gclid ? 'Enregistré' : null],
+              ...Object.entries(data.lead.utm ?? {}),
+            ]
+              .filter((entry): entry is [string, string] => Boolean(entry[1]))
+              .map(([label, value]) => (
+                <div key={label} className="contents">
+                  <dt className="text-stone-500">{label}</dt>
+                  <dd className="break-all text-stone-800">{value}</dd>
+                </div>
+              ))}
+          </dl>
+        </div>
+      </section>
       <section aria-label="Parcours lead" className="mb-8 rounded-md border border-stone-200 bg-white p-4">
         <h2 className="text-sm font-medium uppercase tracking-wide text-stone-500">Parcours</h2>
         <div className="mt-3 grid gap-3 text-sm sm:grid-cols-4">

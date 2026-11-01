@@ -272,6 +272,31 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       res.cookies.set('_fg_landing_qs', payload, COOKIE_OPTS);
     }
 
+    // 2 bis. Site d'origine, first-touch : à l'étape du lead, `document.referrer`
+    //    n'est plus le bon dès que la cliente a changé de page. Sans la requête
+    //    complète, pour ne garder ni recherche ni identifiant.
+    const referer = request.headers.get('referer');
+    const fetchDest = request.headers.get('sec-fetch-dest');
+    if (
+      referer &&
+      !request.cookies.has('_fg_landing_ref') &&
+      (fetchDest === null || fetchDest === 'document') &&
+      !request.nextUrl.pathname.startsWith('/api/')
+    ) {
+      try {
+        const url = new URL(referer);
+        if (!url.hostname.includes('femiglow')) {
+          res.cookies.set(
+            '_fg_landing_ref',
+            `${url.protocol}//${url.host}${url.pathname}`.slice(0, 300),
+            COOKIE_OPTS,
+          );
+        }
+      } catch {
+        // Référent illisible : rien à conserver.
+      }
+    }
+
     // 3. Reconstruction `_fbc` Meta depuis fbclid — débloque le matching CAPI.
     //    Format officiel Meta : `fb.1.<unix_ts_ms>.<fbclid>`
     //    Source : https://developers.facebook.com/docs/marketing-api/conversions-api/parameters/fbp-and-fbc

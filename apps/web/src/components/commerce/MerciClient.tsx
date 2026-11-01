@@ -14,6 +14,8 @@ import { EditorialLetter } from '@/components/sections/EditorialLetter';
 import { PreparationGesture } from '@/components/sections/PreparationGesture';
 import { MerciOrchestrator } from './MerciOrchestrator';
 import {
+  hasPurchaseBeenFired,
+  markPurchaseFired,
   readLastOrder,
   type LastOrderPayload,
 } from '@/lib/stores/checkout-draft';
@@ -38,26 +40,6 @@ function formatDate(date: Date): string {
  *   Idempotence renforcée : la fired-flag est persistée en sessionStorage par orderId pour empêcher
  *   un double-tracking au "back/forward" navigateur. cf. docs/analytics/03-events-funnel-audit.md §6.4.
  */
-const PURCHASE_FIRED_PREFIX = 'fg_purchase_fired_';
-
-function hasPurchaseBeenFired(orderId: string): boolean {
-  if (typeof window === 'undefined') return false;
-  try {
-    return window.sessionStorage.getItem(PURCHASE_FIRED_PREFIX + orderId) === '1';
-  } catch {
-    return false;
-  }
-}
-
-function markPurchaseFired(orderId: string): void {
-  if (typeof window === 'undefined') return;
-  try {
-    window.sessionStorage.setItem(PURCHASE_FIRED_PREFIX + orderId, '1');
-  } catch {
-    // sessionStorage indisponible (Safari ITP) — on tombe sur l'idempotence in-memory.
-  }
-}
-
 export function MerciClient({ orderId }: MerciClientProps) {
   const [order, setOrder] = useState<LastOrderPayload | null | 'loading'>(
     'loading',
