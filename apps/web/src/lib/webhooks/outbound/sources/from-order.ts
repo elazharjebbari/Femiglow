@@ -4,6 +4,7 @@
  * Dispatch désormais vers les endpoints admin EN PRIORITÉ, puis fallback
  * outbound URL si aucun endpoint admin ne matche.
  */
+import { googleAdsWebhookFields } from '@/lib/checkout/lead-acquisition';
 import type { ChatLeadRow } from '@/lib/chat/db/schema';
 
 import { logger } from '@/lib/logging/logger';
@@ -42,6 +43,8 @@ export interface OrderWebhookContext {
     | 'shippingCountry'
     | 'shippingNotes'
     | 'source'
+    | 'gclid'
+    | 'utm'
     | 'formId'
   >;
   /** Métadonnée tracking : par ex. mode paiement / livraison. */
@@ -146,8 +149,11 @@ export async function dispatchOrderWebhook(
   const discountAmount = discountCents > 0 ? discountCents / 100 : undefined;
   const couponCode = ctx.order.couponCode?.trim().toUpperCase() || undefined;
 
-  const sourceChannel = ctx.lead.source ?? ctx.lead.formId ?? 'checkout';
+  const googleAds = googleAdsWebhookFields(ctx.lead);
+  const sourceChannel =
+    googleAds?.sourceChannel ?? ctx.lead.source ?? ctx.lead.formId ?? 'checkout';
   const noteParts: string[] = [];
+  if (googleAds) noteParts.push(googleAds.note);
   if (ctx.lead.shippingNotes) noteParts.push(ctx.lead.shippingNotes.trim());
   if (ctx.shippingMode) noteParts.push(`shipping:${ctx.shippingMode}`);
   if (ctx.paymentMethod) noteParts.push(`payment:${ctx.paymentMethod}`);

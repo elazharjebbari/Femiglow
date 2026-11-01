@@ -13,6 +13,8 @@
  * @see docs/checkout-leads-background-2026-06-01/01-architecture/architecture.md §3.4
  */
 import { env } from '@/lib/env';
+import { utmFromRequestSignals } from '@/lib/checkout/lead-acquisition';
+import type { RequestSignals } from '@/lib/tracking/server/request-signals';
 import { wizardLeadRepo } from '@/lib/checkout/repos/lead-repo';
 import { wizardSessionRepo } from '@/lib/checkout/repos/session-repo';
 import {
@@ -49,6 +51,18 @@ export class LeadVisitorMismatchError extends Error {
 
 function isOptimisticServerEnabled(): boolean {
   return env.CHECKOUT_OPTIMISTIC_WIZARD_ENABLED === 'true';
+}
+
+/** Complète le lead avec les cookies d'acquisition du middleware. */
+function withRequestSignals(input: CreateLeadInput, signals?: RequestSignals): CreateLeadInput {
+  if (!signals) return input;
+  return {
+    ...input,
+    utm: input.utm ?? utmFromRequestSignals(signals),
+    gclid: input.gclid ?? signals.clickIds.gclid,
+    fbp: input.fbp ?? signals.fbp ?? undefined,
+    fbc: input.fbc ?? signals.fbc ?? undefined,
+  };
 }
 
 /** Mappe l'entrée API (Zod) vers l'entrée repo (champs aplatis du formContext). */
@@ -88,7 +102,11 @@ export const leadService = {
    * Crée (ou complète, en optimiste) un lead wizard. Garantit l'existence de la
    * session (FK), puis branche upsert vs legacy. Idempotent côté upsert.
    */
-  async applyLeadCreate(input: CreateLeadInput): Promise<ApplyLeadCreateResult> {
+  async applyLeadCreate(
+    rawInput: CreateLeadInput,
+    signals?: RequestSignals,
+  ): Promise<ApplyLeadCreateResult> {
+    const input = withRequestSignals(rawInput, signals);
     await wizardSessionRepo.ensureForWizard({
       sessionId: input.sessionId,
       visitorId: input.visitorId,
@@ -121,7 +139,10 @@ export const leadService = {
    * idempotents) ; le désordre est toléré. Une envelope invalide est `rejected`
    * sans faire échouer le reste. cf. ADR-0005 / endpoint /api/checkout/lead/sync.
    */
-  async applyBatch(envelopes: BatchEnvelope[]): Promise<BatchItemResult[]> {
+  async applyBatch(
+    envelopes: BatchEnvelope[],
+    signals?: RequestSignals,
+  ): Promise<BatchItemResult[]> {
     const results: BatchItemResult[] = [];
     for (const env of envelopes) {
       try {
@@ -131,7 +152,7 @@ export const leadService = {
             results.push({ mutationId: env.mutationId, ok: false, status: 'rejected' });
             continue;
           }
-          await leadService.applyLeadCreate(parsed.data);
+          await leadService.applyLeadCreate(parsed.data, signals);
         } else if (env.scope === 'address_draft') {
           const parsed = patchLeadAddressDraftInputSchema.safeParse(env.payload);
           if (!parsed.success) {

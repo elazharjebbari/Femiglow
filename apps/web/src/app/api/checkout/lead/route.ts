@@ -14,6 +14,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
 import { logger } from '@/lib/logging/logger';
+import { extractRequestSignals } from '@/lib/tracking/server/request-signals';
 import { withIdempotency } from '@/lib/checkout/api/idempotency-middleware';
 import { errorResponse, mapError, zodErrorResponse } from '@/lib/checkout/api/response';
 import { createLeadInputSchema } from '@/lib/checkout/schemas/lead';
@@ -42,7 +43,10 @@ export async function POST(req: NextRequest): Promise<Response> {
         // OWBS — délègue au service applicatif. Flag OFF / pas de leadId →
         // chemin legacy (createWizardLead) strictement identique ; flag ON +
         // leadId client → upsert-by-leadId idempotent. cf. lead-service.
-        const { leadId } = await leadService.applyLeadCreate(parsed.data);
+        const { leadId } = await leadService.applyLeadCreate(
+          parsed.data,
+          extractRequestSignals({ cookies: req.cookies }),
+        );
         return {
           status: 201,
           body: {
