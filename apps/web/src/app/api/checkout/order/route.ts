@@ -43,6 +43,9 @@ import { leadOutboxRepo } from '@/lib/leads/outbox/lead-outbox-repo';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+/** Délai pendant lequel le même panier du même numéro est un doublon. */
+const DUPLICATE_ORDER_WINDOW_MS = 30 * 60 * 1000;
+
 export async function POST(req: NextRequest): Promise<Response> {
   let body: unknown;
   try {
@@ -77,6 +80,38 @@ export async function POST(req: NextRequest): Promise<Response> {
         leadId: lead.id,
         paymentMethod: input.paymentMethod,
       });
+    }
+
+    // Une cliente qui repasse le même panier juste après sa commande reçoit la
+    // confirmation de la première, sans seconde commande. Une panne ici ne doit
+    // jamais empêcher de commander.
+    const duplicate = await orderRepo
+      .findRecentDuplicate({
+        phoneE164: lead.phoneE164,
+        items: input.items,
+        since: new Date(Date.now() - DUPLICATE_ORDER_WINDOW_MS),
+      })
+      .catch((err: unknown) => {
+        logger.error('checkout.order.duplicate_check_failed', { error: String(err) });
+        return null;
+      });
+    if (duplicate) {
+      await wizardLeadRepo.markPurchased(lead.id);
+      logger.warn('checkout.order.duplicate_ignored', {
+        orderId: duplicate.id,
+        leadId: lead.id,
+      });
+      return NextResponse.json(
+        {
+          orderId: duplicate.id,
+          status: input.paymentMethod === 'cod' ? 'pending_confirmation' : 'created',
+          totalCents: duplicate.totalCents,
+          currency: duplicate.currency,
+          couponCode: duplicate.couponCode ?? null,
+          discountCents: duplicate.discountCents ?? 0,
+        },
+        { status: 200 },
+      );
     }
 
     type OrderResp =

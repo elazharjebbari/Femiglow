@@ -21,6 +21,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // — Mocks du volet « logique commande » (hors périmètre) —
 const createOrderMock = vi.fn();
+const findRecentDuplicateMock = vi.fn();
 const markPurchasedMock = vi.fn();
 const getByIdMock = vi.fn();
 
@@ -28,7 +29,10 @@ vi.mock('@/lib/checkout/repos/order-repo', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/checkout/repos/order-repo')>();
   return {
     ...actual,
-    orderRepo: { createOrder: (...a: unknown[]) => createOrderMock(...a) },
+    orderRepo: {
+      findRecentDuplicate: (...a: unknown[]) => findRecentDuplicateMock(...a),
+      createOrder: (...a: unknown[]) => createOrderMock(...a),
+    },
   };
 });
 
@@ -146,6 +150,7 @@ beforeEach(() => {
   // createOrder renvoie une commande créée par défaut (totalCents alignés).
   createOrderMock.mockResolvedValue({ id: 'o_test_0001', totalCents: 19900, currency: 'MAD' });
   markPurchasedMock.mockResolvedValue(undefined);
+  findRecentDuplicateMock.mockResolvedValue(null);
   recordOrderPlacedMock.mockResolvedValue(undefined);
   dispatchOrderWebhookMock.mockResolvedValue(undefined);
   enqueueMock.mockResolvedValue(undefined);
@@ -156,6 +161,44 @@ async function flushMicrotasks() {
   await Promise.resolve();
   await Promise.resolve();
 }
+
+describe('POST /api/checkout/order — même panier, même numéro', () => {
+  it('renvoie la première commande sans en créer une autre', async () => {
+    getByIdMock.mockResolvedValue(makeLead());
+    findRecentDuplicateMock.mockResolvedValue({
+      id: 'o_first',
+      totalCents: 13400,
+      currency: 'MAD',
+      couponCode: 'GLOW99',
+      discountCents: 10000,
+    });
+
+    const res = await POST(makeReq(makeBody()));
+    await flushMicrotasks();
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({
+      orderId: 'o_first',
+      status: 'pending_confirmation',
+      totalCents: 13400,
+      couponCode: 'GLOW99',
+    });
+    expect(createOrderMock).not.toHaveBeenCalled();
+    expect(enqueueMock).not.toHaveBeenCalled();
+    expect(dispatchOrderWebhookMock).not.toHaveBeenCalled();
+    expect(sendTransactionalMock).not.toHaveBeenCalled();
+    expect(markPurchasedMock).toHaveBeenCalledWith('cl_test_0001');
+  });
+
+  it('une panne du contrôle n’empêche pas de commander', async () => {
+    getByIdMock.mockResolvedValue(makeLead());
+    findRecentDuplicateMock.mockRejectedValue(new Error('db down'));
+
+    const res = await POST(makeReq(makeBody()));
+    expect(res.status).toBe(201);
+    expect(createOrderMock).toHaveBeenCalledTimes(1);
+  });
+});
 
 describe('POST /api/checkout/order — volet confirmation email (R-018)', () => {
   // CLI-INT-CONF-PRESENT + CLI-UNIT-004 — email présent ⇒ sendTransactional

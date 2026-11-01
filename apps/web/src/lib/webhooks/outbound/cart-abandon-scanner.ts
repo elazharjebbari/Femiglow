@@ -24,6 +24,7 @@ import { chatDb } from '@/lib/chat/db/client';
 import { chatLead, type ChatLeadRow } from '@/lib/chat/db/schema';
 import { logger } from '@/lib/logging/logger';
 
+import { noRecentPurchaseForPhone } from './recent-purchase';
 import { dispatchCartAbandonWebhook } from './sources/from-cart-abandon';
 
 export interface ScanCartAbandonOptions {
@@ -125,6 +126,7 @@ export async function scanAndDispatchCartAbandon(
         sql`${chatLead.phoneE164} is not null`,
         isNull(chatLead.purchasedAt),
         isNull(chatLead.abandonWebhookAt),
+        noRecentPurchaseForPhone(new Date()),
         lt(chatLead.createdAt, cutoffIdle),
         gt(chatLead.createdAt, cutoffMaxAge),
       ),

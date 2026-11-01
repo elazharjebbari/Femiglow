@@ -13,6 +13,7 @@ import { wizardLeadRepo } from '@/lib/checkout/repos/lead-repo';
 import { logger } from '@/lib/logging/logger';
 
 import { getLeadWebhookSettings } from './settings';
+import { noRecentPurchaseForPhone } from './recent-purchase';
 import { dispatchLeadStep1AbandonWebhook } from './sources/from-wizard-step1-abandon';
 
 export interface ScanLeadStep1AbandonOptions {
@@ -82,6 +83,7 @@ export async function scanAndDispatchLeadStep1Abandon(
         isNull(chatLead.addressCompletedAt),
         isNull(chatLead.purchasedAt),
         isNull(chatLead.step1AbandonWebhookAt),
+        noRecentPurchaseForPhone(now),
         sql`COALESCE(${chatLead.leadCapturedAt}, ${chatLead.createdAt}) < ${cutoffIdle.toISOString()}::timestamptz`,
         sql`COALESCE(${chatLead.leadCapturedAt}, ${chatLead.createdAt}) > ${cutoffMaxAge.toISOString()}::timestamptz`,
       ),

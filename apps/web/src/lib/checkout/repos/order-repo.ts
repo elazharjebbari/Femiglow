@@ -17,8 +17,9 @@
  * Ne touche PAS la confirmation paiement — c'est le job de Stripe webhook
  * ou du back-office (changement de `orders.status`).
  */
-import { eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, gt, inArray } from 'drizzle-orm';
 
+import { chatLead } from '@/lib/chat/db/schema';
 import { db } from '@/lib/db/client';
 import {
   leads,
@@ -31,6 +32,10 @@ import { createId } from '@/lib/ids';
 
 type OrderRow = typeof orders.$inferSelect;
 type OrderItemRow = typeof orderItems.$inferSelect;
+type RecentOrder = Pick<
+  OrderRow,
+  'id' | 'totalCents' | 'currency' | 'couponCode' | 'discountCents'
+>;
 
 import { DbUnavailableError } from './idempotency-repo';
 import { stockRepo, type StockSnapshot } from './stock-repo';
@@ -159,7 +164,99 @@ async function resolveLegacyLeadId(
   return id;
 }
 
+/** Variante de chaque SKU ; un SKU inconnu est essayé comme slug produit (CHA-233). */
+async function resolveVariantsBySku(
+  conn: NonNullable<ReturnType<typeof db>>,
+  skus: string[],
+) {
+  const variantsBySkuRows = await conn
+    .select()
+    .from(productVariants)
+    .where(inArray(productVariants.sku, skus));
+  const bySku = new Map(variantsBySkuRows.map((v) => [v.sku, v]));
+  const unresolvedSkus = skus.filter((s) => !bySku.has(s));
+  if (unresolvedSkus.length > 0) {
+    const productRows = await conn
+      .select()
+      .from(products)
+      .where(inArray(products.slug, unresolvedSkus));
+    if (productRows.length > 0) {
+      const fallbackVariants = await conn
+        .select()
+        .from(productVariants)
+        .where(
+          inArray(
+            productVariants.productId,
+            productRows.map((p) => p.id),
+          ),
+        );
+      const variantsByProductId = new Map<string, typeof fallbackVariants>();
+      for (const v of fallbackVariants) {
+        const list = variantsByProductId.get(v.productId) ?? [];
+        list.push(v);
+        variantsByProductId.set(v.productId, list);
+      }
+      for (const p of productRows) {
+        const list = variantsByProductId.get(p.id);
+        if (!list || list.length === 0) continue;
+        const primary = list[0];
+        if (primary) bySku.set(p.slug, primary);
+      }
+    }
+  }
+  return bySku;
+}
+
+/** Empreinte d'un panier : mêmes SKU et mêmes quantités, quel que soit l'ordre. */
+function basketKey(items: Array<{ sku: string; quantity: number }>): string {
+  return items
+    .map((item) => `${item.sku}:${item.quantity}`)
+    .sort()
+    .join('|');
+}
+
 export const orderRepo = {
+  /**
+   * Commande récente du même numéro pour le même panier, ou `null`. Une cliente
+   * qui repasse commande juste après la première la confirme une seconde fois :
+   * elle ne doit pas créer une deuxième carte à traiter.
+   */
+  async findRecentDuplicate(input: {
+    phoneE164: string;
+    items: Array<{ sku: string; quantity: number }>;
+    since: Date;
+  }): Promise<RecentOrder | null> {
+    const conn = requireDb();
+    const recent = await conn
+      .select({
+        id: orders.id,
+        totalCents: orders.totalCents,
+        currency: orders.currency,
+        couponCode: orders.couponCode,
+        discountCents: orders.discountCents,
+      })
+      .from(orders)
+      .innerJoin(chatLead, eq(orders.chatLeadId, chatLead.id))
+      .where(and(eq(chatLead.phoneE164, input.phoneE164), gt(orders.createdAt, input.since)))
+      .orderBy(desc(orders.createdAt))
+      .limit(5);
+    if (recent.length === 0) return null;
+
+    const bySku = await resolveVariantsBySku(conn, input.items.map((i) => i.sku));
+    const wanted = basketKey(
+      input.items.map((i) => ({ sku: bySku.get(i.sku)?.sku ?? i.sku, quantity: i.quantity })),
+    );
+    const lines = await conn
+      .select({ orderId: orderItems.orderId, sku: orderItems.sku, quantity: orderItems.quantity })
+      .from(orderItems)
+      .where(inArray(orderItems.orderId, recent.map((order) => order.id)));
+    return (
+      recent.find(
+        (order) => basketKey(lines.filter((line) => line.orderId === order.id)) === wanted,
+      ) ?? null
+    );
+  },
+
   async createOrder(input: CreateOrderInput): Promise<OrderRowOut> {
     const conn = requireDb();
 
@@ -167,42 +264,7 @@ export const orderRepo = {
     //    CHA-233 — Fallback : si l'item porte un `sku` qui n'existe pas en
     //    DB (cart legacy avec slug produit en guise de SKU, e.g. "kit"),
     //    on tente une résolution via `products.slug` → primary variant.
-    const skus = input.items.map((i) => i.sku);
-    const variantsBySkuRows = await conn
-      .select()
-      .from(productVariants)
-      .where(inArray(productVariants.sku, skus));
-    const bySku = new Map(variantsBySkuRows.map((v) => [v.sku, v]));
-    const unresolvedSkus = skus.filter((s) => !bySku.has(s));
-    if (unresolvedSkus.length > 0) {
-      const productRows = await conn
-        .select()
-        .from(products)
-        .where(inArray(products.slug, unresolvedSkus));
-      if (productRows.length > 0) {
-        const fallbackVariants = await conn
-          .select()
-          .from(productVariants)
-          .where(
-            inArray(
-              productVariants.productId,
-              productRows.map((p) => p.id),
-            ),
-          );
-        const variantsByProductId = new Map<string, typeof fallbackVariants>();
-        for (const v of fallbackVariants) {
-          const list = variantsByProductId.get(v.productId) ?? [];
-          list.push(v);
-          variantsByProductId.set(v.productId, list);
-        }
-        for (const p of productRows) {
-          const list = variantsByProductId.get(p.id);
-          if (!list || list.length === 0) continue;
-          const primary = list[0];
-          if (primary) bySku.set(p.slug, primary);
-        }
-      }
-    }
+    const bySku = await resolveVariantsBySku(conn, input.items.map((i) => i.sku));
     // Repricing COUPON-AWARE (server-authoritative). On résout le prix via le
     // moteur de coupons avec le MÊME contexte que l'affichage → bucket
     // déterministe → prix facturé == prix affiché (anti PriceMismatchError).
