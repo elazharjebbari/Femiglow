@@ -167,6 +167,30 @@ describe('tiktok provider payload', () => {
     expect(payload.data[0].user.phone[0]).toBe(expectedPhone);
   });
 
+  it('falls back to browser-hashed userData (phone E.164) when identity is missing', () => {
+    const payload = __test__.buildPayload(provider(), ctx({
+      identity: undefined,
+      userData: {
+        sha256_email_address: 'e'.repeat(64),
+        sha256_phone_number: 'a'.repeat(64),
+        sha256_phone_e164: 'b'.repeat(64),
+      },
+    })) as any;
+    expect(payload.data[0].user.email).toEqual(['e'.repeat(64)]);
+    expect(payload.data[0].user.phone).toEqual(['b'.repeat(64)]);
+  });
+
+  it('sends raw ip/user agent and ttp when the request provides them', () => {
+    const payload = __test__.buildPayload(provider(), ctx({
+      clientIp: '197.230.12.34',
+      userAgent: 'Mozilla/5.0 (iPhone)',
+      ttp: 'ttp_cookie_1',
+    })) as any;
+    expect(payload.data[0].user.ip).toBe('197.230.12.34');
+    expect(payload.data[0].user.user_agent).toBe('Mozilla/5.0 (iPhone)');
+    expect(payload.data[0].user.ttp).toBe('ttp_cookie_1');
+  });
+
   it('omits email/phone when identity is missing', () => {
     const payload = __test__.buildPayload(provider(), ctx({ identity: undefined })) as any;
     expect(payload.data[0].user.email).toBeUndefined();

@@ -939,8 +939,7 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
       // que d'émettre `ttq.track('<fg_event_key>')` — sinon ça produit
       // un custom event qui n'optimise ni Sales ni Lead.
       //
-      // TikTok primary = Purchase (purchase) + SubmitForm (lead).
-      // Tout le reste broadcast.
+      // TikTok primary = SubmitForm (lead). Purchase et le reste broadcast.
       const tiktokName = tiktokEventNameFor(event.key);
       if (tiktokName) {
         const tiktokTriggerId =
@@ -951,6 +950,12 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
         // tolérance 5min inter-canaux). Idempotent : déjà créé par la
         // branche Meta/Snap si actives, sinon créé ici.
         ensureDlv('DLV - event_id', 'event_id');
+        // Valeur et devise pour les conversions toujours valorisées (même
+        // liste que Meta) : sans elles, TikTok n'optimise pas sur la valeur
+        // et ne calcule pas de ROAS.
+        const tiktokValue = META_VALUE_EVENTS.has(event.key)
+          ? `, value: ${ensureDlv('DLV - value', DATALAYER_PATHS.value)}, currency: '${ensureDlv('DLV - currency', DATALAYER_PATHS.currency)}', content_type: 'product'`
+          : '';
         tags.push({
           tagId: nextTag(),
           // Convention de nommage parité Snap : `<provider> Evt — <fg_key> → <VendorName>`
@@ -962,7 +967,7 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
             {
               type: 'TEMPLATE',
               key: 'html',
-              value: `<script>ttq.track('${tiktokName}', { event_id: {{DLV - event_id}} });</script>`,
+              value: `<script>ttq.track('${tiktokName}', { event_id: {{DLV - event_id}}${tiktokValue} });</script>`,
             },
             { type: 'BOOLEAN', key: 'supportDocumentWrite', value: 'false' },
           ],

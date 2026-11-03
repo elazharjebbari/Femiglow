@@ -199,6 +199,10 @@ export async function POST(request: Request): Promise<Response> {
     };
     const metaFbp = readRequestCookie('_fbp');
     const metaFbc = readRequestCookie('_fbc');
+    // TikTok : clic publicitaire (`_fg_ttclid`, posé par le middleware) et
+    // cookie du pixel (`_ttp`), pour le matching Events API.
+    const tiktokClickId = readRequestCookie('_fg_ttclid');
+    const tiktokTtp = readRequestCookie('_ttp');
 
     for (const event of parsed.data.events) {
       // AN-03 — normalise les alias de clic CTA vers `cta_click` avant tout
@@ -261,6 +265,8 @@ export async function POST(request: Request): Promise<Response> {
         params: paramsParsed.data as Record<string, unknown>,
         ...(metaFbp ? { fbp: metaFbp } : {}),
         ...(metaFbc ? { fbc: metaFbc } : {}),
+        ...(tiktokClickId ? { ttclid: tiktokClickId } : {}),
+        ...(tiktokTtp ? { ttp: tiktokTtp } : {}),
         userData: event.user_data,
         attribution: event.attribution,
       }).catch((err) => {

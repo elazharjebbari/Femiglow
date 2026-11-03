@@ -454,6 +454,13 @@ describe('exportPlan — structure GTM', () => {
     expect(purchaseHtml).toContain('event_id');
     expect(purchaseHtml).toContain('{{DLV - event_id}}');
 
+    // value/currency pour l'optimisation valeur et le ROAS TikTok (purchase
+    // seulement : add_to_cart reste sans valeur, comme côté Meta)
+    expect(purchaseHtml).toContain('value: {{DLV - value}}');
+    expect(purchaseHtml).toContain("currency: '{{DLV - currency}}'");
+    const cartHtml = cart.parameter.find((p: any) => p.key === 'html').value as string;
+    expect(cartHtml).not.toContain('value:');
+
     // setupTag → TikTok Init garantit que ttq est chargé avant track
     for (const tag of [view, cart, purchase]) {
       expect(tag.setupTag).toEqual([
@@ -765,9 +772,9 @@ describe('exportPlan — structure GTM', () => {
     const tags = (result.json as any).containerVersion.tag;
     const triggers = (result.json as any).containerVersion.trigger;
 
-    // Ads + TikTok restent attribution-gated pour purchase. Meta purchase est
-    // BROADCAST (C3) → PAS de trigger [attr / meta], le tag Meta fire sur le
-    // trigger standard.
+    // Ads reste attribution-gated pour purchase. Meta (C3) et TikTok sont
+    // BROADCAST → PAS de trigger [attr / meta] ni [attr / tiktok], leurs tags
+    // firent sur le trigger standard.
     const attrTriggers = triggers.filter(
       (t: any) => t.type === 'CUSTOM_EVENT' && t.name.includes('[attr / '),
     );
@@ -776,7 +783,7 @@ describe('exportPlan — structure GTM', () => {
     const ttAttr = attrTriggers.find((t: any) => t.name === 'CE — purchase [attr / tiktok]');
     expect(metaAttr).toBeUndefined(); // C3 — Meta purchase broadcast
     expect(adsAttr).toBeDefined();
-    expect(ttAttr).toBeDefined();
+    expect(ttAttr).toBeUndefined(); // TikTok purchase broadcast
 
     // customEventFilter doit contenir UN SEUL filtre (matching event name).
     // Le filtre d'attribution (MATCH_REGEX) va dans `filter`, pas customEventFilter.
@@ -794,11 +801,11 @@ describe('exportPlan — structure GTM', () => {
     const standardTrigger = triggers.find((t: any) => t.name === 'CE — purchase');
     const metaTag = tags.find((t: any) => t.name === 'Meta Evt — purchase (Purchase)');
     expect(metaTag.firingTriggerId).toEqual([standardTrigger.triggerId]);
-    // Ads + TikTok câblés sur leur trigger attribution.
+    // Ads câblé sur son trigger attribution ; TikTok (broadcast) sur le standard.
     const adsTag = tags.find((t: any) => t.type === 'awct');
     expect(adsTag.firingTriggerId).toEqual([adsAttr.triggerId]);
     const ttTag = tags.find((t: any) => t.name === 'TikTok Evt — purchase → Purchase');
-    expect(ttTag.firingTriggerId).toEqual([ttAttr.triggerId]);
+    expect(ttTag.firingTriggerId).toEqual([standardTrigger.triggerId]);
 
     // Le tag GA4 reste sur le trigger standard (analytics neutre)
     const ga4Tag = tags.find((t: any) => t.name === 'GA4 Evt — purchase');

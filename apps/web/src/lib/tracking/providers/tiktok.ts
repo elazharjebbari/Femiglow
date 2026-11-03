@@ -22,7 +22,13 @@ function buildPayload(provider: TrackingProvider, ctx: DispatchContext): Record<
       hint: 'Configure mapping via /admin/event-mappings to avoid pollution.',
     });
   }
+  // Identité : `ctx.identity` (en clair, hachée ici) prime ; sinon on reprend
+  // `ctx.userData`, déjà hachée dans le navigateur (téléphone du formulaire
+  // COD), comme l'adapter Meta. TikTok attend le téléphone E.164 avec `+`.
   const hashed = hashIdentity(ctx.identity ?? {});
+  const browser = ctx.userData ?? {};
+  const email = hashed.em ?? browser.sha256_email_address;
+  const phone = hashed.ph ?? browser.sha256_phone_e164 ?? browser.sha256_phone_number;
   const externalId = ctx.externalId ?? ctx.userId ?? ctx.anonymousId;
   return {
     event_source: 'web',
@@ -33,12 +39,15 @@ function buildPayload(provider: TrackingProvider, ctx: DispatchContext): Record<
         event_time: Math.floor(ctx.receivedAt.getTime() / 1000),
         event_id: ctx.eventId,
         user: {
-          email: hashed.em ? [hashed.em] : undefined,
-          phone: hashed.ph ? [hashed.ph] : undefined,
+          email: email ? [email] : undefined,
+          phone: phone ? [phone] : undefined,
           external_id: [sha256Hex(externalId)],
-          ip: ctx.ipAnonymized,
-          user_agent: ctx.uaHash,
+          // IP et UA en clair pour le matching (jamais persistés) ; repli
+          // sur les valeurs anonymisées quand la requête ne les fournit pas.
+          ip: ctx.clientIp ?? ctx.ipAnonymized,
+          user_agent: ctx.userAgent ?? ctx.uaHash,
           ttclid: ctx.ttclid,
+          ttp: ctx.ttp,
         },
         properties: {
           contents: Array.isArray(ctx.params.items)

@@ -392,10 +392,10 @@ describe('shouldDispatchByAttribution — matrice complète providers × canaux'
           providerKind: provider,
           eventName: 'purchase',
         });
-        if (provider === 'meta') {
-          // C3 — Meta `purchase` est BROADCAST : Meta reçoit TOUS les purchases,
-          // quel que soit le canal du visiteur (dedup par event_id).
-          expect(r.allowed, `${visitorChannel} → meta (broadcast)`).toBe(true);
+        if (provider === 'meta' || provider === 'tiktok') {
+          // C3 — `purchase` est BROADCAST pour Meta et TikTok : ils reçoivent
+          // TOUS les purchases, quel que soit le canal du visiteur (dedup par event_id).
+          expect(r.allowed, `${visitorChannel} → ${provider} (broadcast)`).toBe(true);
         } else if (provider === visitorChannel) {
           expect(r.allowed, `${visitorChannel} → ${provider}`).toBe(true);
         } else {
