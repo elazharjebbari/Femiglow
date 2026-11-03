@@ -393,10 +393,10 @@ describe('cross-provider payload structure', () => {
 describe('cross-provider attribution mode consistency', () => {
   const PRIMARY_EVENTS: Record<string, string[]> = {
     // C3 (audit 2026-05-31) — `purchase` est BROADCAST pour Meta (pas primary) ;
-    // il reste primary pour google_ads/tiktok/snap. Couvert par le test dédié ci-dessous.
+    // il reste primary pour google_ads/snap. TikTok suit Meta. Couvert par le test dédié ci-dessous.
     meta: ['generate_lead', 'lead_capture', 'chat_lead_form_submit'],
     google_ads: ['purchase', 'generate_lead', 'lead_capture', 'contact_submit', 'chat_message_sent', 'chat_lead_form_submit'],
-    tiktok: ['purchase', 'generate_lead'],
+    tiktok: ['generate_lead'],
     snap: ['purchase', 'sign_up', 'lead_capture', 'generate_lead', 'chat_lead_form_submit'],
   };
 
@@ -408,10 +408,10 @@ describe('cross-provider attribution mode consistency', () => {
     }
   }
 
-  it('purchase → BROADCAST pour Meta (C3) mais primary pour les autres pixels', () => {
+  it('purchase → BROADCAST pour Meta (C3) et TikTok, primary pour les autres pixels', () => {
     expect(getAttributionMode('purchase', 'meta')).toBe('broadcast');
     expect(getAttributionMode('purchase', 'google_ads')).toBe('primary');
-    expect(getAttributionMode('purchase', 'tiktok')).toBe('primary');
+    expect(getAttributionMode('purchase', 'tiktok')).toBe('broadcast');
     expect(getAttributionMode('purchase', 'snap')).toBe('primary');
   });
 

@@ -458,7 +458,7 @@ export function getEventMapping(eventName: string): EventMapping | null {
 //                    considère que seuls Purchase + Lead pilotent le
 //                    bidding Advantage+ (les autres = funnel/audience).
 //   - TikTok     : hardcoded `TIKTOK_PRIMARY_NAMES`. Idem Meta —
-//                    CompletePayment = primary, SubmitForm = primary
+//                    Purchase broadcast, SubmitForm = primary
 //                    (puisque lead campaigns optimisent là-dessus).
 //   - Snap       : hardcoded `SNAP_PRIMARY_NAMES`. Purchase + SignUp
 //                    pilotent les campagnes conversion/lead Snapchat.
@@ -474,11 +474,11 @@ export type AttributionProvider = 'meta' | 'google_ads' | 'tiktok' | 'snap';
 // on veut que le pixel + CAPI Meta reçoivent TOUS les purchases, quel que soit
 // le canal d'attribution (Meta gère sa propre attribution ; dedup par event_id).
 // Seul `Lead` reste primary (attribution-gated) côté Meta.
+// Même règle pour TikTok (campagne test nov. 2026) : un achat filtré par le
+// dernier clic payant (Meta, Google) privait TikTok de ses conversions
+// vues ou cliquées. Seul `SubmitForm` reste primary.
 const META_PRIMARY_NAMES: ReadonlySet<string> = new Set(['Lead']);
-const TIKTOK_PRIMARY_NAMES: ReadonlySet<string> = new Set([
-  'Purchase',
-  'SubmitForm',
-]);
+const TIKTOK_PRIMARY_NAMES: ReadonlySet<string> = new Set(['SubmitForm']);
 const SNAP_PRIMARY_NAMES: ReadonlySet<string> = new Set(['PURCHASE', 'SIGN_UP', 'LEAD']);
 
 /**

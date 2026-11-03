@@ -289,9 +289,9 @@ describe('event-mapping', () => {
       });
     });
 
-    describe('TikTok — primary pour Purchase et SubmitForm', () => {
-      it('purchase → primary (Purchase)', () => {
-        expect(getAttributionMode('purchase', 'tiktok')).toBe('primary');
+    describe('TikTok — Purchase broadcast, SubmitForm primary', () => {
+      it('purchase → broadcast (Purchase), comme Meta', () => {
+        expect(getAttributionMode('purchase', 'tiktok')).toBe('broadcast');
       });
       it('generate_lead → primary (SubmitForm)', () => {
         expect(getAttributionMode('generate_lead', 'tiktok')).toBe('primary');

@@ -64,6 +64,8 @@ export interface DispatchContext {
   fbp?: string;
   fbc?: string;
   ttclid?: string;
+  /** Cookie navigateur TikTok `_ttp`, pour le matching Events API. */
+  ttp?: string;
   gclid?: string;
   /**
    * Mappings event_name → vendor_name résolus depuis la version active
