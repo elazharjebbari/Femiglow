@@ -13,14 +13,19 @@
  *
  * Ne jamais bypasser ce repo : c'est la source de vérité stock.
  */
-import { and, eq, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 
 import { db } from '@/lib/db/client';
-import { productStock, type ProductStockRow } from '@/lib/db/schema';
-
-import { type StockStatus } from '../schemas/stock';
+import {
+  products,
+  productStock,
+  productVariants,
+  type ProductStockRow,
+} from '@/lib/db/schema';
 
 import { DbUnavailableError } from './idempotency-repo';
+
+export { computeStockStatus } from '../stock-status';
 
 function requireDb(): NonNullable<ReturnType<typeof db>> {
   const conn = db();
@@ -34,18 +39,6 @@ export interface StockSnapshot {
   available: number;
   reserved: number;
   thresholdLow: number;
-}
-
-/** Calcule le `StockStatus` UI à partir de l'effectif (available - reserved). */
-export function computeStockStatus(snapshot: {
-  available: number;
-  reserved: number;
-  thresholdLow: number;
-}): StockStatus {
-  const effective = snapshot.available - snapshot.reserved;
-  if (effective <= 0) return 'out_of_stock';
-  if (effective <= snapshot.thresholdLow) return 'low_stock';
-  return 'in_stock';
 }
 
 /** Calcule la valeur exposable côté UI (masque le stock total). */
@@ -70,6 +63,15 @@ function toSnapshot(row: ProductStockRow): StockSnapshot {
   };
 }
 
+/** Variante d'un produit publié, avec son compteur s'il existe. */
+export interface PublishedVariantStock {
+  productSlug: string;
+  productTitle: string;
+  sku: string;
+  label: string;
+  stock: StockSnapshot | null;
+}
+
 export const stockRepo = {
   async getByVariantId(variantId: string): Promise<StockSnapshot | null> {
     const conn = requireDb();
@@ -89,6 +91,54 @@ export const stockRepo = {
       .where(eq(productStock.sku, sku))
       .limit(1);
     return rows[0] ? toSnapshot(rows[0]) : null;
+  },
+
+  /** Lecture admin : les variantes sans compteur sont absentes du résultat. */
+  async listByVariantIds(variantIds: string[]): Promise<StockSnapshot[]> {
+    if (variantIds.length === 0) return [];
+    const conn = requireDb();
+    const rows = await conn
+      .select()
+      .from(productStock)
+      .where(inArray(productStock.variantId, variantIds));
+    return rows.map(toSnapshot);
+  },
+
+  /** Lecture admin : LEFT JOIN pour faire remonter les variantes sans compteur. */
+  async listPublishedVariants(): Promise<PublishedVariantStock[]> {
+    const conn = requireDb();
+    const rows = await conn
+      .select({
+        productSlug: products.slug,
+        productTitle: products.title,
+        variantId: productVariants.id,
+        sku: productVariants.sku,
+        label: productVariants.label,
+        available: productStock.available,
+        reserved: productStock.reserved,
+        thresholdLow: productStock.thresholdLow,
+      })
+      .from(productVariants)
+      .innerJoin(products, eq(productVariants.productId, products.id))
+      .leftJoin(productStock, eq(productStock.variantId, productVariants.id))
+      .where(eq(products.status, 'published'))
+      .orderBy(asc(products.position), asc(productVariants.position));
+    return rows.map((row) => ({
+      productSlug: row.productSlug,
+      productTitle: row.productTitle,
+      sku: row.sku,
+      label: row.label,
+      stock:
+        row.available === null || row.reserved === null || row.thresholdLow === null
+          ? null
+          : {
+              variantId: row.variantId,
+              sku: row.sku,
+              available: row.available,
+              reserved: row.reserved,
+              thresholdLow: row.thresholdLow,
+            },
+    }));
   },
 
   /**
