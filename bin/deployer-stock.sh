@@ -2,6 +2,7 @@
 # Mise en production de l'écran de stock (migration 0088), lancée depuis le Mac.
 #   bash bin/deployer-stock.sh verifier   prépare et montre le plan, ne modifie rien
 #   bash bin/deployer-stock.sh go         sauvegarde, migration, build sans coupure
+#   bash bin/deployer-stock.sh reprendre  build seul, si la migration est déjà passée
 # Sur le serveur le script tourne détaché : une coupure SSH ne l'interrompt pas.
 set -euo pipefail
 MODE="${1:-verifier}"
@@ -26,6 +27,12 @@ if [ "$MODE" = verifier ]; then
   log "fichiers de migration ajoutés :"; git diff --name-only HEAD FETCH_HEAD -- apps/web/drizzle/migrations | grep sql
   log "VERIFICATION TERMINEE : rien n'a été modifié"; exit 0
 fi
+if [ "$MODE" = reprendre ]; then
+  # Migration déjà appliquée : seule reste la compilation.
+  bash bin/deploy-prod.sh $BRANCH
+  sudo -u postgres psql -d femiglow -XAt -F ' | ' -c "SELECT 'stock', available, reserved, sell_when_out FROM product_stock" 2>/dev/null
+  log "FIN"; exit 0
+fi
 PREV=\$(git branch --show-current)
 git fetch -q origin $BRANCH
 git checkout -q -B $BRANCH FETCH_HEAD
@@ -38,11 +45,11 @@ node --env-file=.env scripts/_migrate-safe.mjs --plan 2>&1 | grep -vE "severity|
 PENDING=\$(node --env-file=.env scripts/_migrate-safe.mjs --plan 2>/dev/null | grep -cE '^ +→ ' || true)
 if [ "\$PENDING" != 1 ]; then
   log "REFUS : \$PENDING migrations en attente au lieu de 1. Retour sur \$PREV."
-  cd ../ ; git checkout -q "\$PREV"; exit 3
+  cd ../.. ; git checkout -q "\$PREV"; exit 3
 fi
 node --env-file=.env scripts/_migrate-safe.mjs 2>&1 | grep -E "Applying|✓|Error|error"
 log "migration appliquée"
-cd ../
+cd ../..
 bash bin/deploy-prod.sh $BRANCH
 sudo -u postgres psql -d femiglow -XAt -F ' | ' -c "SELECT 'stock', available, reserved, sell_when_out FROM product_stock" 2>/dev/null
 log "FIN"
