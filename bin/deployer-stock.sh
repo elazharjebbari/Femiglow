@@ -29,7 +29,9 @@ if [ "$MODE" = verifier ]; then
 fi
 if [ "$MODE" = reprendre ]; then
   # Migration déjà appliquée : seule reste la compilation.
-  bash bin/deploy-prod.sh $BRANCH
+  # Serveur partagé (≈ 2,6 Go libres) : tas réduit. Un manque de mémoire fait
+  # échouer le build seul ; le site en ligne n'est pas touché.
+  BUILD_HEAP_MB=2400 bash bin/deploy-prod.sh $BRANCH
   sudo -u postgres psql -d femiglow -XAt -F ' | ' -c "SELECT 'stock', available, reserved, sell_when_out FROM product_stock" 2>/dev/null
   log "FIN"; exit 0
 fi
