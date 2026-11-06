@@ -23,9 +23,6 @@ import { VariantStockPanel } from './VariantStockPanel';
 interface VariantsEditorProps {
   slug: string;
   initialVariants: ProductVariant[];
-  /** Compteurs `product_stock` par id de variante, lus côté serveur. */
-  stockByVariantId: Record<string, AdminStockView>;
-  stockReadable: boolean;
   /**
    * Quand le produit est exposé sur une page publique (ex. /kit), on
    * affiche un bandeau « Vitrine » au-dessus des variantes avec un lien
@@ -81,8 +78,6 @@ function formatPrice(cents: number, currency: string) {
 export function VariantsEditor({
   slug,
   initialVariants,
-  stockByVariantId,
-  stockReadable,
   publicShowcaseHref,
 }: VariantsEditorProps) {
   const router = useRouter();
@@ -479,10 +474,6 @@ export function VariantsEditor({
                 </div>
               </div>
             )}
-            <VariantStockPanel
-              initialStock={stockByVariantId[v.id] ?? null}
-              readable={stockReadable}
-            />
           </li>
         ))}
         {editingId === '__new__' && draft ? (
@@ -626,8 +617,8 @@ function VariantForm({
             ))}
           </select>
           <span className="text-stone-500">
-            Ne change pas la quantité vendable : celle-ci se règle dans le bloc
-            « Stock réel » de la variante.
+            Pilote la page publique et le flux produit, pas la quantité vendable : celle-ci se règle dans le bloc
+            « Stock » en haut de la fiche.
           </span>
         </label>
         <label className="flex flex-col gap-1 text-xs">

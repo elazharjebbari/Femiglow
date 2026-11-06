@@ -109,7 +109,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
         {total} produit{total === 1 ? '' : 's'}
       </p>
 
-      <ProductsBulkPanel items={items} />
+      <ProductsBulkPanel items={items} stockBySlug={stockAlerts.summaryBySlug} />
     </AdminShell>
   );
 }

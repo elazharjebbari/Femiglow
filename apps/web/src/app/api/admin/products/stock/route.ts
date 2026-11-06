@@ -2,7 +2,8 @@
  * CHA-230 — PATCH /api/admin/products/stock
  *
  * Mutation admin sur `product_stock`. Actions :
- *   - `set` : remplace `available` par la valeur.
+ *   - `restock` : ajoute une réception au compteur.
+ *   - `count` : remplace le compteur après un inventaire.
  *   - `increment` : ajoute (peut être négatif).
  *   - `set_threshold` : modifie `threshold_low`.
  *
@@ -13,7 +14,7 @@ import { NextResponse } from 'next/server';
 import { getAdminSession } from '@/lib/auth/require-admin';
 import { logAuditEvent } from '@/lib/audit/log-event';
 import { errorResponse, mapError, zodErrorResponse } from '@/lib/checkout/api/response';
-import { stockRepo } from '@/lib/checkout/repos/stock-repo';
+import { stockRepo, type StockChange } from '@/lib/checkout/repos/stock-repo';
 import { patchAdminStockInputSchema } from '@/lib/checkout/schemas/stock';
 import { logger } from '@/lib/logging/logger';
 
@@ -36,51 +37,67 @@ export async function PATCH(req: Request): Promise<Response> {
   const input = parsed.data;
 
   try {
-    let snapshot:
-      | Awaited<ReturnType<typeof stockRepo.setAvailable>>
-      | null = null;
-    switch (input.action) {
-      case 'set':
-        snapshot = await stockRepo.setAvailable(
-          input.variantId,
-          input.value,
-          session.adminId,
-        );
-        break;
-      case 'increment':
-        snapshot = await stockRepo.incrementAvailable(
-          input.variantId,
-          input.value,
-          session.adminId,
-        );
-        break;
-      case 'set_threshold':
-        snapshot = await stockRepo.setThreshold(
-          input.variantId,
-          input.value,
-          session.adminId,
-        );
-        break;
-    }
-    if (!snapshot) return errorResponse('not_found', 'Variant introuvable.');
+    const { variantId, note, idempotencyKey } = input;
+    const change: StockChange =
+      input.action === 'count'
+        ? { action: 'count', value: input.value, expectedAvailable: input.expectedAvailable }
+        : input.action === 'restock'
+          ? { action: 'restock', value: input.value }
+          : input.action === 'set_threshold'
+            ? { action: 'set_threshold', value: input.value }
+            : { action: 'set_sell_when_out', value: input.value };
 
-    await logAuditEvent({
+    const result = await stockRepo.applyChange({
+      variantId,
+      change,
       actorId: session.adminId,
-      action: 'product_stock.patch',
-      resourceType: 'product_variant',
-      resourceId: input.variantId,
-      meta: {
-        actorEmail: session.email,
-        action: input.action,
-        value: input.value,
-        note: input.note,
-        result: snapshot,
-      },
+      note,
+      idempotencyKey,
     });
+    if (result.outcome === 'not_found') {
+      return errorResponse('not_found', 'Variant introuvable.');
+    }
+    if (result.outcome === 'conflict') {
+      return NextResponse.json(
+        {
+          error: {
+            code: 'stock_changed',
+            message: 'Le stock a changé depuis l’ouverture de la page.',
+            details: { available: result.snapshot.available },
+          },
+        },
+        { status: 409 },
+      );
+    }
+
+    const { snapshot } = result;
+    const replayed = result.outcome === 'replayed';
+    if (!replayed) {
+      // Le compteur est déjà écrit avec son historique : un échec du journal
+      // d'audit ne doit pas faire croire que la saisie a échoué.
+      try {
+        await logAuditEvent({
+          actorId: session.adminId,
+          action: 'product_stock.patch',
+          resourceType: 'product_variant',
+          resourceId: variantId,
+          meta: {
+            actorEmail: session.email,
+            action: input.action,
+            value: input.value,
+            note,
+            result: snapshot,
+          },
+        });
+      } catch (err) {
+        logger.error('admin.product.stock.audit_failed', { variantId, error: String(err) });
+      }
+    }
     logger.info('admin.product.stock.patched', {
-      variantId: input.variantId,
+      variantId,
       action: input.action,
       actorId: session.adminId,
+      replayed,
     });
 
     return NextResponse.json(
@@ -89,6 +106,8 @@ export async function PATCH(req: Request): Promise<Response> {
         available: snapshot.available,
         reserved: snapshot.reserved,
         thresholdLow: snapshot.thresholdLow,
+        sellWhenOut: snapshot.sellWhenOut,
+        replayed,
       },
       { status: 200 },
     );

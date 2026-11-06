@@ -16,7 +16,7 @@ import { SEEDERS_REGISTRY } from '../seeders/registry';
 /** Tables groupées par domaine pour TRUNCATE custom/medium. */
 const DOMAIN_TABLES: Record<string, string[]> = {
   commerce: [
-    'products', 'product_variants', 'product_snapshots', 'product_stock',
+    'products', 'product_variants', 'product_snapshots', 'product_stock', 'product_stock_movements',
     'form_config', 'form_config_history', 'form_variant_assignment',
     'checkout_idempotency', 'delivery_cities', 'coupons', 'coupon_events', 'coupon_grants',
   ],

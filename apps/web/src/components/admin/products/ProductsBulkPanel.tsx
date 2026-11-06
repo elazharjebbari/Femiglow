@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ProductListItem, ProductStatus } from '@/lib/products/types';
+import type { ProductStockSummary } from '@/lib/products/stock-summary';
 import { formatPrice as formatPriceUtil } from '@/lib/utils/format-price';
 import { SelectAllCheckbox } from '../components/SelectAllCheckbox';
 import {
@@ -13,6 +14,8 @@ import {
 
 export interface ProductsBulkPanelProps {
   items: ProductListItem[];
+  /** Stock restant par slug ; absent pour un brouillon ou si la lecture échoue. */
+  stockBySlug?: Record<string, ProductStockSummary>;
 }
 
 interface BulkResponse {
@@ -46,7 +49,27 @@ function StatusBadge({ status }: { status: ProductStatus }) {
   );
 }
 
-export function ProductsBulkPanel({ items }: ProductsBulkPanelProps) {
+function StockCell({ summary }: { summary: ProductStockSummary | undefined }) {
+  if (!summary) return <span className="text-stone-400">—</span>;
+  const { effective, daysLeft } = summary;
+  const tone =
+    effective <= 0
+      ? 'bg-red-100 text-red-800'
+      : daysLeft !== null && daysLeft <= 7
+        ? 'bg-amber-100 text-amber-800'
+        : 'bg-emerald-100 text-emerald-800';
+  const text = effective < 0 ? 'à couvrir' : effective === 0 ? 'épuisé' : daysLeft !== null ? `≈ ${daysLeft} j` : 'en stock';
+  return (
+    <span className="inline-flex items-center gap-2 tabular-nums">
+      <span className="font-medium text-stone-900">
+        {effective < 0 ? `−${-effective}` : effective}
+      </span>
+      <span className={`rounded-full px-2 py-0.5 text-xs ${tone}`}>{text}</span>
+    </span>
+  );
+}
+
+export function ProductsBulkPanel({ items, stockBySlug = {} }: ProductsBulkPanelProps) {
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
@@ -183,6 +206,7 @@ export function ProductsBulkPanel({ items }: ProductsBulkPanelProps) {
               <th className="px-3 py-2 text-left">Catégorie</th>
               <th className="px-3 py-2 text-right">Prix</th>
               <th className="px-3 py-2 text-center">Variantes</th>
+              <th className="px-3 py-2 text-right">Stock restant</th>
               <th className="px-3 py-2 text-left">Statut</th>
               <th className="px-3 py-2 text-right">Maj</th>
             </tr>
@@ -190,7 +214,7 @@ export function ProductsBulkPanel({ items }: ProductsBulkPanelProps) {
           <tbody className="divide-y divide-stone-200">
             {items.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-3 py-6 text-center text-stone-500">
+                <td colSpan={9} className="px-3 py-6 text-center text-stone-500">
                   Aucun produit.
                 </td>
               </tr>
@@ -230,6 +254,9 @@ export function ProductsBulkPanel({ items }: ProductsBulkPanelProps) {
                     </td>
                     <td className="px-3 py-2 text-center text-stone-700">
                       {it.variantCount}
+                    </td>
+                    <td className="px-3 py-2 text-right">
+                      <StockCell summary={stockBySlug[it.slug]} />
                     </td>
                     <td className="px-3 py-2">
                       <StatusBadge status={it.status} />

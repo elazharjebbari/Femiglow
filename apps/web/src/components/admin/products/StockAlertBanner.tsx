@@ -33,8 +33,9 @@ function AlertIdentity({ alert }: { alert: StockAlert }) {
 
 export function StockAlertBanner({ alerts, unreadable = false }: StockAlertBannerProps) {
   const refused = alerts.filter((a) => a.level === 'refused');
+  const oversold = alerts.filter((a) => a.level === 'oversold');
   const low = alerts.filter((a) => a.level === 'low');
-  if (refused.length === 0 && low.length === 0 && !unreadable) return null;
+  if (refused.length === 0 && oversold.length === 0 && low.length === 0 && !unreadable) return null;
 
   return (
     <div className="mb-6 space-y-2" data-testid="stock-alert-banner">
@@ -45,8 +46,8 @@ export function StockAlertBanner({ alerts, unreadable = false }: StockAlertBanne
         >
           <p className="font-semibold">Commandes refusées</p>
           <p className="mt-1">
-            Le formulaire affiche « Rupture momentanée » et rejette toute commande
-            de ces variantes.
+            Ces variantes sont bloquées à 0 : le formulaire affiche « Rupture
+            momentanée » et rejette leurs commandes.
           </p>
           <ul className="mt-2 list-disc space-y-0.5 pl-5">
             {refused.map((a) => (
@@ -55,6 +56,24 @@ export function StockAlertBanner({ alerts, unreadable = false }: StockAlertBanne
                 {a.effective === null
                   ? 'aucun compteur de stock'
                   : `stock effectif ${a.effective}`}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {oversold.length > 0 ? (
+        <div
+          role="status"
+          className="rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-900"
+        >
+          <p className="font-semibold">Stock épuisé, les ventes continuent</p>
+          <ul className="mt-1 list-disc space-y-0.5 pl-5">
+            {oversold.map((a) => (
+              <li key={`${a.productSlug ?? ''}:${a.sku}`}>
+                <AlertIdentity alert={a} /> :{' '}
+                {(a.effective ?? 0) < 0
+                  ? `${-(a.effective ?? 0)} commandes à couvrir`
+                  : 'plus aucune unité au compteur'}
               </li>
             ))}
           </ul>
@@ -69,8 +88,8 @@ export function StockAlertBanner({ alerts, unreadable = false }: StockAlertBanne
           <ul className="mt-1 list-disc space-y-0.5 pl-5">
             {low.map((a) => (
               <li key={`${a.productSlug ?? ''}:${a.sku}`}>
-                <AlertIdentity alert={a} /> : stock effectif {a.effective}, seuil{' '}
-                {a.thresholdLow}
+                <AlertIdentity alert={a} /> : {a.effective} restants
+                {a.daysLeft !== null ? `, environ ${a.daysLeft} jours au rythme actuel` : ''}
               </li>
             ))}
           </ul>
@@ -83,8 +102,8 @@ export function StockAlertBanner({ alerts, unreadable = false }: StockAlertBanne
         >
           <p className="font-semibold">Stock illisible</p>
           <p className="mt-1">
-            Les compteurs n&apos;ont pas pu être lus. Des commandes peuvent être
-            refusées sans que cette page le signale.
+            Les compteurs n&apos;ont pas pu être lus : les chiffres de cette page
+            ne sont pas fiables pour le moment.
           </p>
         </div>
       ) : null}

@@ -11,6 +11,7 @@ const refused: StockAlert = {
   level: 'refused',
   effective: 0,
   thresholdLow: 5,
+  daysLeft: null,
 };
 const low: StockAlert = { ...refused, sku: 'FEMI-KIT-200', level: 'low', effective: 3 };
 
@@ -37,7 +38,7 @@ describe('<StockAlertBanner/>', () => {
     expect(screen.getByRole('status')).toHaveTextContent(
       'Stock bas',
     );
-    expect(screen.getByRole('status')).toHaveTextContent('stock effectif 3, seuil 5');
+    expect(screen.getByRole('status')).toHaveTextContent('3 restants');
     expect(screen.queryByText('Commandes refusées')).not.toBeInTheDocument();
   });
 
@@ -50,6 +51,15 @@ describe('<StockAlertBanner/>', () => {
     expect(
       within(screen.getByRole('alert')).getByRole('link', { name: 'Le Kit' }),
     ).toHaveAttribute('href', '/admin/products/le-kit');
+  });
+
+  it('sépare « épuisé, ventes continuées » du refus', () => {
+    render(
+      <StockAlertBanner alerts={[{ ...refused, level: 'oversold', effective: -12 }]} />,
+    );
+    expect(screen.getByRole('status')).toHaveTextContent('Stock épuisé, les ventes continuent');
+    expect(screen.getByRole('status')).toHaveTextContent('12 commandes à couvrir');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
   it('signale un stock illisible', () => {

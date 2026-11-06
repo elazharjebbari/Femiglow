@@ -1,179 +1,159 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { toAdminStockView } from '@/lib/checkout/stock-status';
 
+import { VariantStockPanel } from './VariantStockPanel';
+
 const refresh = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh }) }));
 
-import { VariantStockPanel } from './VariantStockPanel';
+const base = { variantId: 'pvar_kit', sku: 'FEMI-KIT-100', available: 500, reserved: 0, thresholdLow: 5 };
 
-const stock = (available: number, reserved = 0, thresholdLow = 5) =>
-  toAdminStockView({ variantId: 'pvar_kit', sku: 'FEMI-KIT-100', available, reserved, thresholdLow });
-
-const fetchMock = vi.fn();
-const confirmMock = vi.fn();
-
-function respondWith(status: number, body: unknown) {
-  fetchMock.mockResolvedValue(new Response(JSON.stringify(body), { status }));
+function view(over: Partial<typeof base> & { sellWhenOut?: boolean } = {}, soldLast7Days: number | null = 875) {
+  return toAdminStockView({ sellWhenOut: true, ...base, ...over }, { soldLast7Days });
 }
 
-function respondWithStock(available: number, reserved = 0, thresholdLow = 5) {
-  respondWith(200, { variantId: 'pvar_kit', available, reserved, thresholdLow });
+function renderPanel(stock = view() as ReturnType<typeof view> | null) {
+  return render(
+    <VariantStockPanel variantId="pvar_kit" sku="FEMI-KIT-100" label="Le kit" initialStock={stock} readable />,
+  );
 }
 
-function type(label: string, value: string) {
-  fireEvent.change(screen.getByLabelText(label), { target: { value } });
+function reply(status: number, body: unknown) {
+  return vi.fn().mockImplementation(async () => new Response(JSON.stringify(body), { status }));
 }
 
-function click(name: string) {
-  fireEvent.click(screen.getByRole('button', { name }));
-}
-
-function sentBody() {
-  const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
-  return JSON.parse(String(init.body));
-}
-
-function figure(label: string) {
-  return within(screen.getByText(label).parentElement as HTMLElement).getByRole('definition');
-}
+const ok = (available: number) =>
+  reply(200, { variantId: 'pvar_kit', available, reserved: 0, thresholdLow: 5, sellWhenOut: true, replayed: false });
 
 beforeEach(() => {
-  fetchMock.mockReset();
-  confirmMock.mockReset().mockReturnValue(true);
-  refresh.mockReset();
-  vi.stubGlobal('fetch', fetchMock);
-  vi.stubGlobal('confirm', confirmMock);
+  refresh.mockClear();
 });
-
 afterEach(() => {
   vi.unstubAllGlobals();
 });
 
 describe('<VariantStockPanel/>', () => {
-  it('affiche disponible, réservé, effectif, seuil et statut', () => {
-    render(<VariantStockPanel initialStock={stock(12, 3, 4)} readable />);
-    expect(figure('Disponible')).toHaveTextContent('12');
-    expect(figure('Réservé')).toHaveTextContent('3');
-    expect(figure('Effectif')).toHaveTextContent('9');
-    expect(figure('Seuil')).toHaveTextContent('4');
-    expect(screen.getByText('in_stock')).toBeInTheDocument();
+  it('montre le stock restant, le rythme et l’autonomie', () => {
+    renderPanel();
+    expect(screen.getByTestId('stock-value')).toHaveTextContent('500');
+    expect(screen.getByText(/≈ 125 \/ jour/)).toBeInTheDocument();
+    expect(screen.getByText(/≈ 4 jours/)).toBeInTheDocument();
+    expect(screen.getByText('Bientôt épuisé')).toBeInTheDocument();
   });
 
-  it('définit le disponible après confirmation et rafraîchit l’affichage', async () => {
-    respondWithStock(50);
-    render(<VariantStockPanel initialStock={stock(0)} readable />);
-    expect(screen.getByText('out_of_stock')).toBeInTheDocument();
+  it('affiche le stock négatif et les commandes à couvrir', () => {
+    renderPanel(view({ available: -12 }));
+    expect(screen.getByTestId('stock-value')).toHaveTextContent('−12');
+    expect(screen.getByText(/12 commandes à couvrir/)).toBeInTheDocument();
+    expect(screen.getByText('Stock négatif')).toBeInTheDocument();
+  });
 
-    type('Définir le disponible', '50');
-    click('Définir');
+  it('réception : montre le résultat avant d’envoyer, puis met à jour le chiffre', async () => {
+    const fetchMock = ok(700);
+    vi.stubGlobal('fetch', fetchMock);
+    renderPanel();
+    expect(screen.getByRole('button', { name: 'Ajouter au stock' })).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('Unités reçues'), { target: { value: '200' } });
+    expect(screen.getByText(/Résultat/)).toHaveTextContent('500 → 700');
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter au stock' }));
+    await waitFor(() => expect(screen.getByTestId('stock-value')).toHaveTextContent('700'));
+    const body = JSON.parse((fetchMock.mock.calls[0] as [string, RequestInit])[1].body as string);
+    expect(body).toMatchObject({ action: 'restock', value: 200, variantId: 'pvar_kit' });
+    expect(body.idempotencyKey).toEqual(expect.any(String));
+    expect(refresh).toHaveBeenCalled();
+  });
 
-    await waitFor(() => expect(figure('Effectif')).toHaveTextContent('50'));
-    expect(confirmMock.mock.calls[0]?.[0]).toContain('FEMI-KIT-100 : 0 → 50');
-    expect(fetchMock).toHaveBeenCalledWith(
-      '/api/admin/products/stock',
-      expect.objectContaining({ method: 'PATCH' }),
+  it('une nouvelle saisie porte une nouvelle clé d’idempotence', async () => {
+    const fetchMock = ok(600);
+    vi.stubGlobal('fetch', fetchMock);
+    renderPanel();
+    for (const n of ['1', '2']) {
+      fireEvent.change(screen.getByLabelText('Unités reçues'), { target: { value: n } });
+      fireEvent.click(screen.getByRole('button', { name: 'Ajouter au stock' }));
+      await waitFor(() => expect(screen.getByLabelText('Unités reçues')).toHaveValue(''));
+    }
+    const keys = fetchMock.mock.calls.map(
+      (c) => JSON.parse((c as [string, RequestInit])[1].body as string).idempotencyKey,
     );
-    expect(sentBody()).toEqual({ variantId: 'pvar_kit', action: 'set', value: 50 });
-    expect(screen.getByText('in_stock')).toBeInTheDocument();
-    expect(screen.getByRole('status')).toHaveTextContent('disponible 50, effectif 50');
-    expect(refresh).toHaveBeenCalledTimes(1);
+    expect(new Set(keys).size).toBe(2);
   });
 
-  it('n’envoie rien si la confirmation est refusée', () => {
-    confirmMock.mockReturnValue(false);
-    render(<VariantStockPanel initialStock={stock(0)} readable />);
-    type('Définir le disponible', '50');
-    click('Définir');
-    expect(fetchMock).not.toHaveBeenCalled();
+  it('échec réseau : la même saisie garde sa clé pour un nouvel essai sans doublon', async () => {
+    const fetchMock = vi.fn().mockRejectedValueOnce(new Error('réseau')).mockResolvedValueOnce(
+      new Response(JSON.stringify({ variantId: 'pvar_kit', available: 700, reserved: 0, thresholdLow: 5, sellWhenOut: true, replayed: true })),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    renderPanel();
+    fireEvent.change(screen.getByLabelText('Unités reçues'), { target: { value: '200' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter au stock' }));
+    await screen.findByRole('alert');
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter au stock' }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    const keys = fetchMock.mock.calls.map(
+      (c) => JSON.parse((c as [string, RequestInit])[1].body as string).idempotencyKey,
+    );
+    expect(keys[0]).toBe(keys[1]);
   });
 
-  it('avertit à la confirmation si les commandes resteront refusées', () => {
-    confirmMock.mockReturnValue(false);
-    render(<VariantStockPanel initialStock={stock(10, 8)} readable />);
-    type('Définir le disponible', '5');
-    click('Définir');
-    expect(confirmMock.mock.calls[0]?.[0]).toContain('les commandes resteront refusées');
+  it('inventaire : envoie la valeur vue à l’écran', async () => {
+    const fetchMock = ok(480);
+    vi.stubGlobal('fetch', fetchMock);
+    renderPanel();
+    fireEvent.click(screen.getByRole('tab', { name: 'Inventaire' }));
+    fireEvent.change(screen.getByLabelText('Quantité comptée'), { target: { value: '480' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Remplacer par ce comptage' }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    const body = JSON.parse((fetchMock.mock.calls[0] as [string, RequestInit])[1].body as string);
+    expect(body).toMatchObject({ action: 'count', value: 480, expectedAvailable: 500 });
   });
 
-  it('ajoute et retire avec un increment signé', async () => {
-    respondWithStock(15);
-    render(<VariantStockPanel initialStock={stock(10)} readable />);
-    type('Ajouter ou retirer', '5');
-    click('Ajouter');
-    await waitFor(() => expect(figure('Disponible')).toHaveTextContent('15'));
-    expect(sentBody()).toEqual({ variantId: 'pvar_kit', action: 'increment', value: 5 });
-
-    fetchMock.mockReset();
-    respondWithStock(12);
-    type('Ajouter ou retirer', '3');
-    click('Retirer');
-    await waitFor(() => expect(figure('Disponible')).toHaveTextContent('12'));
-    expect(sentBody()).toEqual({ variantId: 'pvar_kit', action: 'increment', value: -3 });
+  it('inventaire en conflit : explique et affiche le nouveau stock', async () => {
+    vi.stubGlobal('fetch', reply(409, { error: { code: 'stock_changed', details: { available: 497 } } }));
+    renderPanel();
+    fireEvent.click(screen.getByRole('tab', { name: 'Inventaire' }));
+    fireEvent.change(screen.getByLabelText('Quantité comptée'), { target: { value: '480' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Remplacer par ce comptage' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Des commandes sont passées entre-temps');
+    expect(screen.getByTestId('stock-value')).toHaveTextContent('497');
   });
 
-  it('refuse de retirer plus que le disponible', () => {
-    render(<VariantStockPanel initialStock={stock(2)} readable />);
-    type('Ajouter ou retirer', '3');
-    click('Retirer');
-    expect(fetchMock).not.toHaveBeenCalled();
-    expect(screen.getByRole('alert')).toHaveTextContent('Impossible de retirer 3');
+  it('refuse une saisie non numérique', () => {
+    renderPanel();
+    fireEvent.change(screen.getByLabelText('Unités reçues'), { target: { value: '12a' } });
+    expect(screen.getByRole('button', { name: 'Ajouter au stock' })).toBeDisabled();
   });
 
-  it('modifie le seuil', async () => {
-    respondWithStock(10, 0, 2);
-    render(<VariantStockPanel initialStock={stock(10)} readable />);
-    type('Seuil de stock bas', '2');
-    click('Modifier');
-    await waitFor(() => expect(figure('Seuil')).toHaveTextContent('2'));
-    expect(sentBody()).toEqual({ variantId: 'pvar_kit', action: 'set_threshold', value: 2 });
+  it('prévient quand la session a expiré', async () => {
+    vi.stubGlobal('fetch', reply(404, {}));
+    renderPanel();
+    fireEvent.change(screen.getByLabelText('Unités reçues'), { target: { value: '1' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter au stock' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('session a peut-être expiré');
   });
 
-  it.each(['', '-1', '1.5', '1000001'])('rejette la saisie « %s » sans appel', (value) => {
-    render(<VariantStockPanel initialStock={stock(10)} readable />);
-    type('Définir le disponible', value);
-    click('Définir');
-    expect(fetchMock).not.toHaveBeenCalled();
-    expect(screen.getByRole('alert')).toHaveTextContent('Saisis un entier');
+  it('bascule la règle à 0', async () => {
+    const fetchMock = reply(200, { variantId: 'pvar_kit', available: 500, reserved: 0, thresholdLow: 5, sellWhenOut: false, replayed: false });
+    vi.stubGlobal('fetch', fetchMock);
+    renderPanel();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('checkbox', { name: /À 0, continuer à vendre/ }));
+    });
+    const body = JSON.parse((fetchMock.mock.calls[0] as [string, RequestInit])[1].body as string);
+    expect(body).toMatchObject({ action: 'set_sell_when_out', value: false });
+    expect(screen.getByRole('checkbox', { name: /À 0, continuer à vendre/ })).not.toBeChecked();
   });
 
-  it.each([
-    [404, 'session admin expirée'],
-    [503, 'Base de données indisponible'],
-    [500, 'Erreur interne (500)'],
-  ])('affiche une erreur claire sur HTTP %i et garde la valeur', async (status, message) => {
-    respondWith(status, { error: { code: 'x', message: 'Erreur interne' } });
-    render(<VariantStockPanel initialStock={stock(0)} readable />);
-    type('Définir le disponible', '50');
-    click('Définir');
-    expect(await screen.findByRole('alert')).toHaveTextContent(message);
-    expect(figure('Disponible')).toHaveTextContent('0');
+  it('variante sans compteur : annonce que la première réception le crée', () => {
+    renderPanel(null);
+    expect(screen.getByText(/première réception le crée/)).toBeInTheDocument();
+    expect(screen.getByTestId('stock-value')).toHaveTextContent('0');
   });
 
-  it('signale une panne réseau', async () => {
-    fetchMock.mockRejectedValue(new TypeError('network'));
-    render(<VariantStockPanel initialStock={stock(0)} readable />);
-    type('Définir le disponible', '50');
-    click('Définir');
-    expect(await screen.findByRole('alert')).toHaveTextContent('Le serveur ne répond pas');
-  });
-
-  it('adopte la valeur relue par le serveur après refresh', () => {
-    const { rerender } = render(<VariantStockPanel initialStock={stock(10)} readable />);
-    rerender(<VariantStockPanel initialStock={stock(7)} readable />);
-    expect(figure('Disponible')).toHaveTextContent('7');
-  });
-
-  it('sans compteur : annonce le refus et ne propose aucune action', () => {
-    render(<VariantStockPanel initialStock={null} readable />);
-    expect(screen.getByRole('alert')).toHaveTextContent('toute commande est refusée');
-    expect(screen.queryByRole('button')).not.toBeInTheDocument();
-  });
-
-  it('compteur illisible : ne prétend pas qu’il manque', () => {
-    render(<VariantStockPanel initialStock={null} readable={false} />);
-    expect(screen.getByRole('alert')).toHaveTextContent('illisible');
+  it('compteur illisible : aucun geste possible', () => {
+    render(<VariantStockPanel variantId="pvar_kit" sku="FEMI-KIT-100" label="Le kit" initialStock={null} readable={false} />);
+    expect(screen.getByRole('alert')).toHaveTextContent('pas pu être lu');
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 });

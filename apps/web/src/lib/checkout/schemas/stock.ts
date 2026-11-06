@@ -64,25 +64,54 @@ export const stockNotifyResponseSchema = z.object({
 // PATCH /api/admin/products/stock — mutation admin
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const patchAdminStockInputSchema = z.object({
+const patchBase = {
   variantId: z.string().min(8).max(120),
-  /**
-   * Action :
-   *   - `set`       : remplace `available` par la valeur fournie
-   *   - `increment` : ajoute la valeur (peut être négative)
-   *   - `set_threshold` : modifie threshold_low
-   */
-  action: z.enum(['set', 'increment', 'set_threshold']),
-  value: z.number().int(),
-  /** Note d'audit. */
+  /** Note portée à l'historique. */
   note: z.string().trim().max(500).optional(),
-});
+  /** Identifiant de la saisie : un double envoi n'est appliqué qu'une fois. */
+  idempotencyKey: z.string().min(8).max(120).optional(),
+};
+
+/** Plafond de saisie : au-delà, la colonne `integer` ferait échouer l'écriture. */
+const MAX_STOCK_VALUE = 1_000_000;
+
+export const patchAdminStockInputSchema = z.discriminatedUnion('action', [
+  /** Réception : ajoute à la valeur en base, jamais à celle de l'écran. */
+  z.object({
+    ...patchBase,
+    action: z.literal('restock'),
+    value: z.number().int().positive().max(MAX_STOCK_VALUE),
+  }),
+  /**
+   * Inventaire : remplace le compteur. `expectedAvailable` est la valeur vue à
+   * l'écran : si une commande est passée entre-temps, la saisie est refusée.
+   */
+  z.object({
+    ...patchBase,
+    action: z.literal('count'),
+    value: z.number().int().nonnegative().max(MAX_STOCK_VALUE),
+    expectedAvailable: z.number().int(),
+  }),
+  z.object({
+    ...patchBase,
+    action: z.literal('set_threshold'),
+    value: z.number().int().nonnegative().max(MAX_STOCK_VALUE),
+  }),
+  z.object({
+    ...patchBase,
+    action: z.literal('set_sell_when_out'),
+    value: z.boolean(),
+  }),
+]);
 export type PatchAdminStockInput = z.infer<typeof patchAdminStockInputSchema>;
 
 export const patchAdminStockResponseSchema = z.object({
   variantId: z.string(),
-  available: z.number().int().nonnegative(),
+  available: z.number().int(),
   reserved: z.number().int().nonnegative(),
   thresholdLow: z.number().int().nonnegative(),
+  sellWhenOut: z.boolean(),
+  /** Vrai si cette saisie avait déjà été appliquée (double envoi). */
+  replayed: z.boolean(),
 });
 export type PatchAdminStockResponse = z.infer<typeof patchAdminStockResponseSchema>;

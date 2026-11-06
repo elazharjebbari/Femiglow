@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildStockAlerts, toAdminStockView } from './stock-status';
+import {
+  buildStockAlerts,
+  computePublicStockStatus,
+  estimateDaysLeft,
+  toAdminStockView,
+} from './stock-status';
 
 const counter = (available: number, reserved: number, thresholdLow = 5) =>
   toAdminStockView({ variantId: 'pvar_1', sku: 'FEMI-KIT-100', available, reserved, thresholdLow });
@@ -46,5 +51,41 @@ describe('buildStockAlerts', () => {
     expect(buildStockAlerts([entry(null)])).toEqual([
       expect.objectContaining({ level: 'refused', effective: null, thresholdLow: null }),
     ]);
+  });
+});
+
+describe('statut public et autonomie', () => {
+  const counter = { available: 0, reserved: 0, thresholdLow: 5 };
+
+  it('vente continuée à 0 : ni rupture ni urgence pour la cliente', () => {
+    for (const available of [-12, 0, 3, 500]) {
+      expect(computePublicStockStatus({ ...counter, available, sellWhenOut: true })).toBe('in_stock');
+    }
+  });
+
+  it('blocage actif : la rupture reste affichée', () => {
+    expect(computePublicStockStatus({ ...counter, sellWhenOut: false })).toBe('out_of_stock');
+  });
+
+  it('estime les jours restants au rythme de la semaine', () => {
+    expect(estimateDaysLeft(500, 875)).toBe(4);
+    expect(estimateDaysLeft(-3, 875)).toBe(0);
+    expect(estimateDaysLeft(500, 0)).toBeNull();
+    expect(estimateDaysLeft(500, null)).toBeNull();
+  });
+
+  it('alerte « épuisé » sans parler de refus quand la vente continue', () => {
+    const stock = toAdminStockView({ ...counter, variantId: 'v', sku: 'S', available: -2, sellWhenOut: true });
+    const [alert] = buildStockAlerts([{ sku: 'S', label: 'L', stock }]);
+    expect(alert).toMatchObject({ level: 'oversold', effective: -2 });
+  });
+
+  it('alerte tôt quand il reste moins de 7 jours, même au-dessus du seuil', () => {
+    const stock = toAdminStockView(
+      { ...counter, variantId: 'v', sku: 'S', available: 500, sellWhenOut: true },
+      { soldLast7Days: 875 },
+    );
+    const [alert] = buildStockAlerts([{ sku: 'S', label: 'L', stock }]);
+    expect(alert).toMatchObject({ level: 'low', daysLeft: 4 });
   });
 });

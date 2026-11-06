@@ -7,12 +7,12 @@
  * Cache : `s-maxage=10, stale-while-revalidate=30` (10s frais, 30s SWR).
  */
 import { NextResponse } from 'next/server';
+import { computePublicStockStatus } from '@/lib/checkout/stock-status';
 
 import { logger } from '@/lib/logging/logger';
 import { errorResponse, mapError } from '@/lib/checkout/api/response';
 import {
   computeEffectiveDisplay,
-  computeStockStatus,
   stockRepo,
 } from '@/lib/checkout/repos/stock-repo';
 import type { GetStockResponse } from '@/lib/checkout/schemas/stock';
@@ -35,7 +35,7 @@ export async function GET(
     const payload: GetStockResponse = {
       variantId: snapshot.variantId,
       sku: snapshot.sku,
-      status: computeStockStatus(snapshot),
+      status: computePublicStockStatus(snapshot),
       effectiveDisplay: computeEffectiveDisplay(snapshot),
       thresholdLow: snapshot.thresholdLow,
     };

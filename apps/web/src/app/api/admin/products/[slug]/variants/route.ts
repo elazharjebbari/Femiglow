@@ -3,6 +3,7 @@
  * POST /api/admin/products/[slug]/variants → créer variante
  */
 import { NextResponse } from 'next/server';
+import { stockRepo } from '@/lib/checkout/repos/stock-repo';
 import { getAdminSession } from '@/lib/auth/require-admin';
 import { formatErrorResponse, HttpError } from '@/lib/errors/http-error';
 import { logAuditEvent } from '@/lib/audit/log-event';
@@ -76,6 +77,8 @@ export async function POST(
       productId: data.product.id,
       ...parsed.data,
     });
+    // Sans compteur, `reserve` ne trouve aucune ligne et la commande est refusée.
+    await stockRepo.ensureRow(created.id, created.sku);
     revalidateProduct(data.product.slug);
     await logAuditEvent({
       action: 'product.variant.create',

@@ -8,6 +8,7 @@ import { VariantsEditor } from '@/components/admin/products/VariantsEditor';
 import { ProductPublishButton } from '@/components/admin/products/ProductPublishButton';
 import { ProductHistoryPanel } from '@/components/admin/products/ProductHistoryPanel';
 import { StockAlertBanner } from '@/components/admin/products/StockAlertBanner';
+import { VariantStockPanel } from '@/components/admin/products/VariantStockPanel';
 import { buildStockAlerts } from '@/lib/checkout/stock-status';
 import { loadVariantStock } from '@/lib/products/admin-stock';
 import { getProductPublicHref } from '@/lib/products/cache';
@@ -101,7 +102,25 @@ export default async function AdminProductDetailPage({ params }: PageProps) {
         </div>
       </header>
 
-      <StockAlertBanner alerts={stockAlerts} unreadable={!stockRead.readable} />
+      <StockAlertBanner alerts={stockAlerts} />
+
+      {data.variants.length > 0 ? (
+        <section className="mb-8 space-y-3" aria-labelledby="stock-title">
+          <h2 id="stock-title" className="text-lg font-medium text-stone-900">
+            Stock
+          </h2>
+          {data.variants.map((v) => (
+            <VariantStockPanel
+              key={v.id}
+              variantId={v.id}
+              sku={v.sku}
+              label={v.label}
+              initialStock={stockRead.byVariantId[v.id] ?? null}
+              readable={stockRead.readable}
+            />
+          ))}
+        </section>
+      ) : null}
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_420px]">
         <section>
@@ -118,8 +137,6 @@ export default async function AdminProductDetailPage({ params }: PageProps) {
             <VariantsEditor
               slug={data.product.slug}
               initialVariants={data.variants}
-              stockByVariantId={stockRead.byVariantId}
-              stockReadable={stockRead.readable}
               publicShowcaseHref={publicHref}
             />
           </section>

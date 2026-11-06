@@ -268,12 +268,31 @@ describe('stock schemas', () => {
     ).toBe(true);
   });
 
-  it('patchAdminStockInputSchema — actions set/increment/set_threshold', () => {
-    for (const action of ['set', 'increment', 'set_threshold'] as const) {
-      expect(
-        patchAdminStockInputSchema.parse({ variantId: 'pvar_12345678', action, value: 100 })
-          .action,
-      ).toBe(action);
+  it('patchAdminStockInputSchema — accepte les quatre gestes', () => {
+    const variantId = 'pvar_12345678';
+    const valid = [
+      { variantId, action: 'restock', value: 10 },
+      { variantId, action: 'count', value: 0, expectedAvailable: -3 },
+      { variantId, action: 'set_threshold', value: 5 },
+      { variantId, action: 'set_sell_when_out', value: false },
+    ];
+    for (const input of valid) {
+      expect(patchAdminStockInputSchema.parse(input).action).toBe(input.action);
+    }
+  });
+
+  it('patchAdminStockInputSchema — refuse les saisies incohérentes', () => {
+    const variantId = 'pvar_12345678';
+    const invalid = [
+      { variantId, action: 'restock', value: 0 },
+      { variantId, action: 'restock', value: -5 },
+      { variantId, action: 'count', value: 10 },
+      { variantId, action: 'count', value: -1, expectedAvailable: 0 },
+      { variantId, action: 'set', value: 10 },
+      { variantId, action: 'restock', value: 2_000_000 },
+    ];
+    for (const input of invalid) {
+      expect(patchAdminStockInputSchema.safeParse(input).success).toBe(false);
     }
   });
 });

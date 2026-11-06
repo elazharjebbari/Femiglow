@@ -2044,18 +2044,41 @@ export const productStock = pgTable(
       .primaryKey()
       .references(() => productVariants.id, { onDelete: 'cascade' }),
     sku: text('sku').notNull(),
-    /** Stock physique disponible. >= 0 (CHECK SQL). */
+    /** Compteur de stock. Négatif possible : commandes à couvrir (0088). */
     available: integer('available').notNull().default(0),
     /** Stock réservé par orders in-flight. >= 0. */
     reserved: integer('reserved').notNull().default(0),
     /** Seuil "derniers exemplaires" affiché côté UI. */
     thresholdLow: integer('threshold_low').notNull().default(5),
+    /** À 0, les commandes passent et le stock devient négatif. */
+    sellWhenOut: boolean('sell_when_out').notNull().default(true),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     updatedBy: text('updated_by'),
   },
   (t) => ({
     skuUnique: uniqueIndex('product_stock_sku_unique').on(t.sku),
     availableIdx: index('product_stock_available_idx').on(t.available, t.reserved),
+  }),
+);
+
+/** Historique des gestes admin sur le stock. Les ventes restent dans `orders`. */
+export const productStockMovements = pgTable(
+  'product_stock_movements',
+  {
+    id: text('id').primaryKey(),
+    variantId: text('variant_id')
+      .notNull()
+      .references(() => productVariants.id, { onDelete: 'cascade' }),
+    kind: text('kind').notNull(),
+    delta: integer('delta').notNull(),
+    availableAfter: integer('available_after').notNull(),
+    note: text('note'),
+    actorId: text('actor_id'),
+    idempotencyKey: text('idempotency_key'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    variantIdx: index('product_stock_movements_variant_idx').on(t.variantId, t.createdAt),
   }),
 );
 
