@@ -4,6 +4,8 @@ import { AdminShell } from '@/components/admin/AdminShell';
 import { listProducts } from '@/lib/db/queries/products';
 import { PRODUCT_STATUSES, type ProductStatus } from '@/lib/products/types';
 import { ProductsBulkPanel } from '@/components/admin/products/ProductsBulkPanel';
+import { StockAlertBanner } from '@/components/admin/products/StockAlertBanner';
+import { loadPublishedStockAlerts } from '@/lib/products/admin-stock';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,6 +30,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
     q: sp.q || undefined,
     category: sp.category || undefined,
   });
+  const stockAlerts = await loadPublishedStockAlerts();
 
   return (
     <AdminShell adminEmail={session.email} active="products">
@@ -61,6 +64,8 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
           </Link>
         </div>
       </header>
+
+      <StockAlertBanner alerts={stockAlerts.alerts} unreadable={!stockAlerts.readable} />
 
       <form
         method="get"

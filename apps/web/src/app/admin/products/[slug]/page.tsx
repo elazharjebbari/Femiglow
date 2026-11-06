@@ -7,6 +7,9 @@ import { ProductDetailEditor } from '@/components/admin/products/ProductDetailEd
 import { VariantsEditor } from '@/components/admin/products/VariantsEditor';
 import { ProductPublishButton } from '@/components/admin/products/ProductPublishButton';
 import { ProductHistoryPanel } from '@/components/admin/products/ProductHistoryPanel';
+import { StockAlertBanner } from '@/components/admin/products/StockAlertBanner';
+import { buildStockAlerts } from '@/lib/checkout/stock-status';
+import { loadVariantStock } from '@/lib/products/admin-stock';
 import { getProductPublicHref } from '@/lib/products/cache';
 
 export const dynamic = 'force-dynamic';
@@ -32,6 +35,17 @@ export default async function AdminProductDetailPage({ params }: PageProps) {
   // pour matérialiser la synchronisation entre cette interface et la page
   // publique. Voir `lib/products/cache.ts` pour le mapping.
   const publicHref = getProductPublicHref(data.product.slug);
+
+  const stockRead = await loadVariantStock(data.variants.map((v) => v.id));
+  const stockAlerts = stockRead.readable
+    ? buildStockAlerts(
+        data.variants.map((v) => ({
+          sku: v.sku,
+          label: v.label,
+          stock: stockRead.byVariantId[v.id] ?? null,
+        })),
+      )
+    : [];
 
   return (
     <AdminShell adminEmail={session.email} active="products">
@@ -87,6 +101,8 @@ export default async function AdminProductDetailPage({ params }: PageProps) {
         </div>
       </header>
 
+      <StockAlertBanner alerts={stockAlerts} unreadable={!stockRead.readable} />
+
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_420px]">
         <section>
           <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-stone-500">
@@ -102,6 +118,8 @@ export default async function AdminProductDetailPage({ params }: PageProps) {
             <VariantsEditor
               slug={data.product.slug}
               initialVariants={data.variants}
+              stockByVariantId={stockRead.byVariantId}
+              stockReadable={stockRead.readable}
               publicShowcaseHref={publicHref}
             />
           </section>

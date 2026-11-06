@@ -16,11 +16,16 @@ import {
 } from '@/lib/products/currency';
 import { formatPrice as formatPriceUtil } from '@/lib/utils/format-price';
 import { PriceDisplay } from '@/components/commerce/PriceDisplay';
+import type { AdminStockView } from '@/lib/checkout/stock-status';
 import { VariantPriceInput } from './VariantPriceInput';
+import { VariantStockPanel } from './VariantStockPanel';
 
 interface VariantsEditorProps {
   slug: string;
   initialVariants: ProductVariant[];
+  /** Compteurs `product_stock` par id de variante, lus côté serveur. */
+  stockByVariantId: Record<string, AdminStockView>;
+  stockReadable: boolean;
   /**
    * Quand le produit est exposé sur une page publique (ex. /kit), on
    * affiche un bandeau « Vitrine » au-dessus des variantes avec un lien
@@ -76,6 +81,8 @@ function formatPrice(cents: number, currency: string) {
 export function VariantsEditor({
   slug,
   initialVariants,
+  stockByVariantId,
+  stockReadable,
   publicShowcaseHref,
 }: VariantsEditorProps) {
   const router = useRouter();
@@ -472,6 +479,10 @@ export function VariantsEditor({
                 </div>
               </div>
             )}
+            <VariantStockPanel
+              initialStock={stockByVariantId[v.id] ?? null}
+              readable={stockReadable}
+            />
           </li>
         ))}
         {editingId === '__new__' && draft ? (
@@ -596,7 +607,7 @@ function VariantForm({
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1 text-xs">
           <span className="font-medium uppercase tracking-wide text-stone-500">
-            Stock
+            Statut catalogue (flux produit)
           </span>
           <select
             value={draft.inventoryStatus}
@@ -614,6 +625,10 @@ function VariantForm({
               </option>
             ))}
           </select>
+          <span className="text-stone-500">
+            Ne change pas la quantité vendable : celle-ci se règle dans le bloc
+            « Stock réel » de la variante.
+          </span>
         </label>
         <label className="flex flex-col gap-1 text-xs">
           <span className="font-medium uppercase tracking-wide text-stone-500">
@@ -664,9 +679,10 @@ function InventoryBadge({ status }: { status: InventoryStatus }) {
   };
   return (
     <span
+      title="Statut catalogue (flux produit) : ne reflète pas la quantité vendable."
       className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wide ${map[status]}`}
     >
-      {status.replace('_', ' ')}
+      Catalogue : {status.replace('_', ' ')}
     </span>
   );
 }
