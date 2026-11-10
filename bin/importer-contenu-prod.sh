@@ -126,7 +126,7 @@ else
   echo "3/3 — Fichiers médias : $SERVEUR:$source_prod → apps/web/.media-storage"
   ssh "$SERVEUR" "du -sh '$source_prod' 2>/dev/null" || true
   mkdir -p "$RACINE/apps/web/.media-storage"
-  rsync -az --stats "${exclure[@]}" "$SERVEUR:$source_prod/" "$RACINE/apps/web/.media-storage/"
+  rsync -az --stats ${exclure[@]+"${exclure[@]}"} "$SERVEUR:$source_prod/" "$RACINE/apps/web/.media-storage/"
 fi
 
 echo
