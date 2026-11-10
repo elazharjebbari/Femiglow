@@ -383,3 +383,53 @@ describe('useAddressMutation — crédit de fidélité (anti-422)', () => {
     expect(createOrderMock.mock.calls[0]?.[0]).toMatchObject({ expectedTotalCents: 0 });
   });
 });
+
+describe('useAddressMutation — commande déjà passée (audit /kit du 10/11/2026)', () => {
+  const input = {
+    city: 'Rabat',
+    addressLine1: '1 rue A',
+    country: 'MA',
+    shippingMode: 'standard' as const,
+  };
+  const idemKeys = () =>
+    Object.keys(window.sessionStorage).filter((k) => k.startsWith('femiglow.wizard.idem.'));
+
+  it('409 lead_already_purchased à la commande : retour étape 1 sur une fiche neuve, saisies gardées', async () => {
+    useWizardStore.getState().mergeLeadDraft({ firstName: 'Amal', phone: '612345678' });
+    useWizardStore.getState().goToStep('address');
+    window.sessionStorage.setItem('femiglow.wizard.idem.lead_create.__new__', 'idem_ancienne_cle');
+    patchAddressMock.mockResolvedValue({ leadId: 'cl_test', status: 'address_completed' });
+    patchPaymentMock.mockResolvedValue({ leadId: 'cl_test', status: 'payment_selected' });
+    createOrderMock.mockRejectedValue(
+      new ApiError('lead_already_purchased', 'Cette commande est déjà enregistrée.', 409),
+    );
+    const { result } = renderHook(() => useAddressMutation(), { wrapper });
+    await act(async () => {
+      await result.current.execute(input).catch(() => undefined);
+    });
+    const s = useWizardStore.getState();
+    expect(s.leadId).toBeNull();
+    expect(s.currentStep).toBe('lead');
+    expect(s.leadDraft.firstName).toBe('Amal');
+    expect(idemKeys()).toHaveLength(0);
+  });
+
+  it('commande réussie : toutes les clés de cette commande sont purgées', async () => {
+    window.sessionStorage.setItem('femiglow.wizard.idem.lead_create.__new__', 'idem_cle_fiche');
+    window.sessionStorage.setItem('femiglow.wizard.idem.address_update.cl_test', 'idem_cle_adresse');
+    patchAddressMock.mockResolvedValue({ leadId: 'cl_test', status: 'address_completed' });
+    patchPaymentMock.mockResolvedValue({ leadId: 'cl_test', status: 'payment_selected' });
+    createOrderMock.mockResolvedValue({
+      orderId: 'o_ok',
+      status: 'pending_confirmation',
+      totalCents: 32000,
+      currency: 'MAD',
+    });
+    const { result } = renderHook(() => useAddressMutation(), { wrapper });
+    await act(async () => {
+      await result.current.execute(input);
+    });
+    expect(useWizardStore.getState().currentStep).toBe('thank_you');
+    expect(idemKeys()).toHaveLength(0);
+  });
+});

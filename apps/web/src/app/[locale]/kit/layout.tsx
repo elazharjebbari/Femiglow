@@ -16,7 +16,7 @@ import { StickyCartCTA } from '@/components/commerce/StickyCartCTA';
 import { PromoCodeAutoApply } from '@/components/commerce/PromoCodeAutoApply';
 import { ToastProvider } from '@/components/ui/Toast';
 import { DEFAULT_LOCALE, isLocale } from '@/i18n.config';
-import { buildKitPublicProduct } from '@/lib/products/public';
+import { resolveKitDisplayPricing } from '@/lib/products/kit-display-pricing.server';
 import { resolveKitCtaCopy } from '@/lib/kit/cta-copy.server';
 
 const MiniCartSlideOver = dynamic(
@@ -36,7 +36,9 @@ export default async function LocaleKitLayout({
 }) {
   const locale = isLocale(params.locale) ? params.locale : DEFAULT_LOCALE;
   const [product, ctaCopy, tKit] = await Promise.all([
-    buildKitPublicProduct(),
+    // Prix de la barre fixe = prix du hero et du formulaire (moteur de
+    // coupons, même contexte de requête). cf. kit-display-pricing.server.ts.
+    resolveKitDisplayPricing().then((r) => r.product),
     // Kit CRO v2 §4 — libellé du CTA sticky : CMS `kit-cta/ctaSticky` ▸ i18n
     // `marketing.kit.cta.sticky` (localisé FR/AR/EN).
     resolveKitCtaCopy(locale),

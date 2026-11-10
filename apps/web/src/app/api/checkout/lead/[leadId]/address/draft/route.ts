@@ -14,6 +14,7 @@ import { errorResponse, zodErrorResponse } from '@/lib/checkout/api/response';
 import { wizardLeadRepo } from '@/lib/checkout/repos/lead-repo';
 import { patchLeadAddressDraftInputSchema } from '@/lib/checkout/schemas/lead';
 import { logger } from '@/lib/logging/logger';
+import { checkoutRateLimit } from '@/lib/checkout/api/rate-limit-guard';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -22,6 +23,9 @@ export async function PATCH(
   req: NextRequest,
   context: { params: { leadId: string } },
 ): Promise<Response> {
+  const limited = await checkoutRateLimit(req, 'address_draft');
+  if (limited) return limited;
+
   const leadId = context.params.leadId;
   if (!leadId || leadId.length < 4) {
     return errorResponse('invalid_input', 'leadId invalide.');

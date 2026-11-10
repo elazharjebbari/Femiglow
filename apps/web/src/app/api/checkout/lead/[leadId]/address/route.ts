@@ -11,6 +11,7 @@ import { withIdempotency } from '@/lib/checkout/api/idempotency-middleware';
 import { errorResponse, mapError, zodErrorResponse } from '@/lib/checkout/api/response';
 import { patchLeadAddressInputSchema } from '@/lib/checkout/schemas/lead';
 import { wizardLeadRepo } from '@/lib/checkout/repos/lead-repo';
+import { checkoutRateLimit } from '@/lib/checkout/api/rate-limit-guard';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -19,6 +20,9 @@ export async function PATCH(
   req: NextRequest,
   context: { params: { leadId: string } },
 ): Promise<Response> {
+  const limited = await checkoutRateLimit(req, 'address_update');
+  if (limited) return limited;
+
   const leadId = context.params.leadId;
   if (!leadId || leadId.length < 4) {
     return errorResponse('invalid_input', 'leadId invalide.');
@@ -37,7 +41,17 @@ export async function PATCH(
   try {
     const lead = await wizardLeadRepo.getById(leadId);
     if (!lead) return errorResponse('not_found', 'Lead introuvable.');
-
+    // Fiche déjà convertie : on répond « adresse enregistrée » SANS rien
+    // écrire (garde SQL dans `patchAddress`). Un 409 ici renvoyait à l'étape 1
+    // la cliente dont la réponse de commande s'était perdue (réseau mobile) :
+    // c'est la route /order qui tranche (doublon → commande existante).
+    if (lead.purchasedAt) {
+      logger.info('checkout.lead.address.ignored_purchased', { leadId });
+      return NextResponse.json(
+        { leadId: lead.id, status: 'address_completed', nextStep: 'payment' },
+        { status: 200 },
+      );
+    }
     type AddressResp =
       | { leadId: string; status: 'address_completed'; nextStep: 'payment' }
       | { error: { code: 'not_found'; message: string } };

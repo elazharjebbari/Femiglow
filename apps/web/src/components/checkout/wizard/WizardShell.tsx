@@ -210,11 +210,17 @@ export function WizardShell({
   }, [hydrated, storedFormContext, formContext, setFormContext]);
 
   // Snapshot panier : si fourni en props et différent du persisted, écrase.
+  // Le prix unitaire et le devis signé font partie de la comparaison : un
+  // panier mémorisé avec un devis expiré ou un ancien prix est remplacé.
   useEffect(() => {
     if (!hydrated) return;
     if (!initialCart) return;
     const stableSign = (snap: CartSnapshot | null) =>
-      snap ? `${snap.totalCents}:${snap.items.length}:${snap.items.map((i) => i.sku).join('|')}` : '';
+      snap
+        ? `${snap.totalCents}:${snap.items.length}:${snap.items
+            .map((i) => `${i.sku}~${i.unitPriceCents}~${i.priceQuote ?? ''}`)
+            .join('|')}`
+        : '';
     if (stableSign(storedCart) !== stableSign(initialCart)) {
       setCartSnapshot(initialCart);
     }

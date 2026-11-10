@@ -22,6 +22,7 @@ import {
   getKitProductCached,
 } from '@/lib/products/public';
 import type { CartSnapshot } from '@/lib/checkout/schemas/common';
+import { resolveKitDisplayPricing } from '@/lib/products/kit-display-pricing.server';
 import { projectCartSnapshotFromVariant } from '@/lib/checkout/helpers/cart-snapshot-builder';
 import { getKitHeroGalleryImages } from '@/lib/products/kit-hero-gallery';
 import { getKitCheckoutConfig } from '@/lib/checkout/kit-checkout-config.server';
@@ -98,16 +99,30 @@ export async function KitCommanderSectionBound({
       // Délégation au helper pur — même contrat compareAt que le mock
       // fallback. Cf. `cart-snapshot-builder.test.ts` pour les 13 cas
       // testés (promo active, no-promo, EUR, multi-qty, etc.).
-      initialCart = projectCartSnapshotFromVariant(
+      // Prix = celui du hero (moteur de coupons, contexte de la requête), et
+      // devis signé que la commande facturera tel quel : plus de 422 quand un
+      // coupon automatique est actif (audit /kit du 10/11/2026).
+      const display = await resolveKitDisplayPricing();
+      const sameSku = display.product.primaryVariantSku === primary.sku;
+      const cart = projectCartSnapshotFromVariant(
         {
           sku: primary.sku,
           priceCents: primary.priceCents,
-          promoPriceCents: primary.promoPriceCents,
+          promoPriceCents: sameSku ? display.product.promoPriceCents : primary.promoPriceCents,
           currency: primary.currency,
           variantId: primary.id,
         },
         { productName: data.product.title || mockKit.name },
       );
+      initialCart =
+        sameSku && display.priceQuote
+          ? {
+              ...cart,
+              items: cart.items.map((it) =>
+                it.sku === primary.sku ? { ...it, priceQuote: display.priceQuote! } : it,
+              ),
+            }
+          : cart;
     }
   }
 

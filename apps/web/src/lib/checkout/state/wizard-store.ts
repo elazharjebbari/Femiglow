@@ -28,6 +28,8 @@ import { useEffect, useState } from 'react';
 import { create, type StateCreator } from 'zustand';
 import { createJSONStorage, persist, type PersistOptions } from 'zustand/middleware';
 
+import { purgeAllIdempotencyKeys } from '@/lib/checkout/client/idempotency-key';
+
 import type { Step2Variant } from '@/lib/tracking/address-step-events';
 import type { FormMode, VariantKey } from '@/lib/tracking/checkout-events';
 import type { DictionaryLanguage } from '@/lib/checkout/i18n/dictionary';
@@ -219,6 +221,11 @@ export interface WizardState {
   /** CHA-231 — Bascule la langue courante (FR ↔ AR). */
   setLanguage: (lang: DictionaryLanguage) => void;
   reset: () => void;
+  /**
+   * La fiche en cours a déjà commandé (409 `lead_already_purchased`) :
+   * repart à l'étape 1 sur une fiche neuve, en gardant les saisies.
+   */
+  restartAfterPurchase: () => void;
   setHydrated: () => void;
   /** wizard-kit-optim W0 — actions tracking enrichi */
   registerFieldFocus: (fieldName: string) => void;
@@ -292,6 +299,7 @@ const INITIAL: Omit<
   | 'clearSyncDegraded'
   | 'setLanguage'
   | 'reset'
+  | 'restartAfterPurchase'
   | 'setHydrated'
   | 'registerFieldFocus'
   | 'markFieldFilled'
@@ -358,7 +366,27 @@ export const wizardStoreCreator: StateCreator<WizardState> = (set) => ({
         ? { ...state.formContext, language: lang }
         : state.formContext,
     })),
-  reset: () => set({ ...INITIAL, hydrated: true }),
+  reset: () => {
+    // Clés d'idempotence de la commande précédente : sans purge, « Nouvelle
+    // commande » rejouait la création de fiche et retombait sur la fiche
+    // déjà convertie.
+    purgeAllIdempotencyKeys();
+    set({ ...INITIAL, hydrated: true });
+  },
+  restartAfterPurchase: () => {
+    purgeAllIdempotencyKeys();
+    set({
+      leadId: null,
+      orderId: null,
+      loyalty: null,
+      // Le crédit a pu être consommé par la commande passée : le garder
+      // ferait échouer la suivante en 422.
+      couponCode: null,
+      creditCents: 0,
+      couponKind: null,
+      currentStep: 'lead',
+    });
+  },
   setHydrated: () => set({ hydrated: true }),
 
   // wizard-kit-optim W0 — tracking enrichi

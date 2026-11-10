@@ -128,6 +128,12 @@ export const cartItemSnapshotSchema = z.object({
    * doit toujours l'inclure.
    */
   variantId: z.string().min(8).max(120).optional(),
+  /**
+   * Devis signé par le serveur au rendu de /kit (`lib/checkout/price-quote.ts`).
+   * La commande facture ce prix s'il est valide ; sinon elle reprice. Opaque
+   * pour le client, qui ne peut pas le forger.
+   */
+  priceQuote: z.string().min(10).max(1000).optional(),
 });
 export type CartItemSnapshot = z.infer<typeof cartItemSnapshotSchema>;
 

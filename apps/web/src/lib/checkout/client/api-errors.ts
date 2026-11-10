@@ -27,6 +27,7 @@ export type ApiErrorCode =
   | 'invalid_json'
   | 'invalid_input'
   | 'invalid_state'
+  | 'lead_already_purchased'
   | 'not_found'
   | 'price_mismatch'
   | 'stock_insufficient'

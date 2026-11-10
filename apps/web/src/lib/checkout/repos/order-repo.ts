@@ -89,7 +89,14 @@ export interface CreateOrderInput {
     email?: string | null;
     emailConsent?: boolean;
   };
-  items: Array<{ sku: string; name: string; quantity: number; unitPriceCents: number }>;
+  items: Array<{
+    sku: string;
+    name: string;
+    quantity: number;
+    unitPriceCents: number;
+    /** Devis signé à l'affichage (`price-quote.ts`) : prix facturé s'il est valide. */
+    priceQuote?: string;
+  }>;
   expectedTotalCents: number;
   currency: string;
   paymentMethod: 'cod' | 'bank_transfer' | 'card';
@@ -207,6 +214,42 @@ async function resolveVariantsBySku(
   return bySku;
 }
 
+/**
+ * Un devis valide n'est honoré que si le catalogue n'a pas bougé depuis
+ * (prix et promo de la variante) et si le coupon signé est toujours actif et
+ * dans sa fenêtre. Sinon : `null`, la commande reprice comme avant.
+ */
+async function usableQuote(
+  quote: import('@/lib/checkout/price-quote').PriceQuote | null,
+  variant: { priceCents: number; promoPriceCents: number | null },
+): Promise<import('@/lib/checkout/price-quote').PriceQuote | null> {
+  if (!quote) return null;
+  if (quote.base !== variant.priceCents) return null;
+  if ((quote.promo ?? null) !== (variant.promoPriceCents ?? null)) return null;
+  if (quote.cpn && quote.cpn.bucket === 'treatment') {
+    const { listAutoCoupons } = await import('@/lib/db/queries/coupon-repo');
+    const { isWithinWindow } = await import('@/lib/coupons/eligibility');
+    const coupon = (await listAutoCoupons()).find((c) => c.id === quote.cpn!.id);
+    if (!coupon || coupon.status !== 'active' || !isWithinWindow(coupon, new Date())) {
+      return null;
+    }
+  }
+  return quote;
+}
+
+/** Titre de chaque produit (nom affiché en commande et au CRM). */
+async function loadProductTitles(
+  conn: NonNullable<ReturnType<typeof db>>,
+  productIds: string[],
+): Promise<Map<string, string>> {
+  if (productIds.length === 0) return new Map();
+  const rows = await conn
+    .select({ id: products.id, title: products.title })
+    .from(products)
+    .where(inArray(products.id, productIds));
+  return new Map(rows.filter((r) => r.title?.trim()).map((r) => [r.id, r.title.trim()]));
+}
+
 /** Empreinte d'un panier : mêmes SKU et mêmes quantités, quel que soit l'ordre. */
 function basketKey(items: Array<{ sku: string; quantity: number }>): string {
   return items
@@ -282,18 +325,38 @@ export const orderRepo = {
       unitPriceCents: number;
       name: string;
     }> = [];
+    const { verifyPriceQuote } = await import('@/lib/checkout/price-quote');
+    // Nom affiché en commande, au CRM et sur Trello : celui du produit en
+    // base, jamais le texte envoyé par le client (forgeable).
+    const productTitles = await loadProductTitles(
+      conn,
+      [...new Set([...bySku.values()].map((v) => v.productId))],
+    );
     for (const it of input.items) {
       const v = bySku.get(it.sku);
       if (!v) throw new UnknownSkuError(it.sku);
-      const resolved = await resolveProductPricing(
-        {
-          priceCents: v.priceCents,
-          promoPriceCents: v.promoPriceCents,
-          sku: v.sku,
-          currency: v.currency,
-        },
-        couponCtx,
+      // Devis signé au rendu de /kit : le prix vu par la cliente est le prix
+      // facturé, même si le contexte de la commande (referer, session)
+      // donnerait un autre bucket ou un autre coupon (audit du 10/11/2026).
+      const quote = await usableQuote(
+        verifyPriceQuote(it.priceQuote, { sku: v.sku, currency: v.currency }),
+        v,
       );
+      const resolved = quote
+        ? {
+            effectivePriceCents: quote.unit,
+            savingsCents: quote.save,
+            coupon: quote.cpn,
+          }
+        : await resolveProductPricing(
+            {
+              priceCents: v.priceCents,
+              promoPriceCents: v.promoPriceCents,
+              sku: v.sku,
+              currency: v.currency,
+            },
+            couponCtx,
+          );
       const effectivePrice = resolved.effectivePriceCents;
       // Capte le coupon résolu (treatment uniquement = remise effectivement
       // appliquée) pour la journalisation d'incrémentalité.
@@ -309,7 +372,7 @@ export const orderRepo = {
         sku: it.sku,
         quantity: it.quantity,
         unitPriceCents: effectivePrice,
-        name: it.name || v.label,
+        name: productTitles.get(v.productId) || v.label,
       });
     }
 

@@ -19,11 +19,15 @@ import { withIdempotency } from '@/lib/checkout/api/idempotency-middleware';
 import { errorResponse, mapError, zodErrorResponse } from '@/lib/checkout/api/response';
 import { createLeadInputSchema } from '@/lib/checkout/schemas/lead';
 import { leadService, LeadVisitorMismatchError } from '@/lib/checkout/services/lead-service';
+import { checkoutRateLimit } from '@/lib/checkout/api/rate-limit-guard';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest): Promise<Response> {
+  const limited = await checkoutRateLimit(req, 'lead_create');
+  if (limited) return limited;
+
   let body: unknown;
   try {
     body = await req.json();

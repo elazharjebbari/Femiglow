@@ -1,11 +1,8 @@
 import type { Metadata } from 'next';
 import { resolveUrlCouponSeed } from '@/lib/coupons/server-url-coupon';
-import { cookies, headers } from 'next/headers';
+import { cookies } from 'next/headers';
 
 import { cms } from '@/lib/cms';
-import { computePromo } from '@/lib/utils/promo';
-import { deriveEventId } from '@/lib/tracking/event-id';
-import { serverFire } from '@/lib/tracking/server/server-fire';
 import { KitAngleCookie } from '@/components/kit/KitAngleCookie';
 import { resolveKitPageContext } from '@/lib/kit/page-context.server';
 import { DEFAULT_LOCALE } from '@/i18n.config';
@@ -23,6 +20,7 @@ import { feedToProductSchemaEnrichment } from '@/lib/products/feed/json-ld';
 import { getKitReviewStats } from '@/lib/products/reviews';
 import { KIT_COPY, KIT_FACTS } from '@/lib/products/kit-facts';
 import { KIT_LAYOUT_VERSION } from '@/lib/feature-flags/kit-layout';
+import { resolveKitDisplayPricing } from '@/lib/products/kit-display-pricing.server';
 import { KitPageLayoutV1 } from '@/components/marketing/kit-layout/KitPageLayoutV1';
 import { KitPageLayoutV2 } from '@/components/marketing/kit-layout/KitPageLayoutV2';
 
@@ -156,58 +154,18 @@ export default async function KitPage({ searchParams }: KitPageProps) {
     }),
   ]);
 
-  // Tracking ViewContent — fire CAPI server-side avec event_id déterministe
-  // partagé avec le Pixel client (via ViewItemTracker.eventIdSeed). Meta
-  // dédup transparent entre les deux canaux.
-  //
-  // Objectif Phase 2 : combler le gap CAPI signalé par Meta (7 881 events
-  // de moins côté serveur sur 7 j). Le serveur devient la source fiable.
-  // cf. docs/meta-quality-audit-2026-05/02-plan-dev-action.md step 2.6
-  const reqHeaders = headers();
+  // Prix affiché = prix facturé : moteur de coupons, contexte de la requête,
+  // calcul partagé avec le layout (barre fixe) et la section commande (devis
+  // signé). cf. `lib/products/kit-display-pricing.server.ts`.
   const { kitAngle } = kitContext;
-  const sessionId =
-    reqCookies.get('fg_session_id')?.value ?? reqCookies.get('_fbp')?.value ?? null;
-  const eventIdSeed = sessionId
-    ? deriveEventId({ eventName: 'view_item', sessionId, pageId: 'kit' })
-    : undefined;
-  // `eventIdSeed` est réservé pour le futur tracking ViewItem client (Pixel
-  // dédup serveur/client). Référencé ici pour conserver la séquence calc et
-  // documenter l'intention — sera consommé quand le ViewItemTracker landera.
-  void eventIdSeed;
-  const kitPromo = computePromo(dbProduct.priceCents, dbProduct.promoPriceCents);
-  // Aperçu brouillon admin : aucun envoi CAPI (variante non publiée).
-  // La galerie (et donc `hero_media_variant`) se résout en parallèle du
-  // rendu : l'envoi part dès qu'elle est prête, sans bloquer la page.
-  if (kitContext.shouldServerFire) {
-    void kitContext.viewItemParams
-      .then((viewItemParams) =>
-        serverFire({
-          eventName: 'view_item',
-          pageId: 'kit',
-          pageRoute: '/kit',
-          pageUrl: `https://femiglow-maroc.com/kit`,
-          params: {
-            // `kit_angle`, plus `hero_media_variant` / `hero_media_level` quand le
-            // drapeau est actif (cf. lib/kit/hero-media.ts).
-            ...viewItemParams,
-            currency: dbProduct.currency,
-            value: kitPromo.effectivePriceCents / 100,
-            items: [
-              {
-                item_id: dbProduct.id,
-                item_name: dbProduct.name,
-                price: kitPromo.effectivePriceCents / 100,
-                quantity: 1,
-              },
-            ],
-          },
-          headers: reqHeaders,
-          cookies: reqCookies,
-        }),
-      )
-      // Erreur de galerie : remontée par le hero ; ignorée ici.
-      .catch(() => undefined);
-  }
+  const { product: pricedProduct } = await resolveKitDisplayPricing();
+
+  // `view_item` : émis UNIQUEMENT par le navigateur (`ViewItemTracker`), que
+  // `/api/track` relaie à Meta et TikTok avec le même event_id que le pixel.
+  // L'ancien envoi serveur (`serverFire`) ne partait presque jamais à la
+  // première visite (ni `fg_session_id` ni `_fbp`), et quand il partait il
+  // doublait l'événement navigateur avec un autre event_id (audit /kit du
+  // 10/11/2026).
 
   // Schema.org Product :
   //  - L'admin garde l'autorité éditoriale sur name / description / offers
@@ -217,12 +175,12 @@ export default async function KitPage({ searchParams }: KitPageProps) {
   //    Google n'affiche AUCUNE étoile dans les SERP.
   //    On les injecte donc systématiquement, même quand un override existe,
   //    pour ne pas perdre les Rich Results.
-  const productFeed = buildKitProductFeed(dbProduct, content, reviewStats);
+  const productFeed = buildKitProductFeed(pricedProduct, content, reviewStats);
   const enrichment = feedToProductSchemaEnrichment(
     productFeed,
     content.handsTestimonials,
   );
-  const enrichedAuto = productSchema(dbProduct, '/kit', enrichment);
+  const enrichedAuto = productSchema(pricedProduct, '/kit', enrichment);
   const baseProductJsonLd: Record<string, unknown> = isProductSchema(
     seo.structuredData,
   )
@@ -264,7 +222,7 @@ export default async function KitPage({ searchParams }: KitPageProps) {
     initialCoupon,
     content,
     journalArticles,
-    dbProduct,
+    dbProduct: pricedProduct,
     productJsonLd,
     reviewStats,
     kitAngle: kitAngle.angle,

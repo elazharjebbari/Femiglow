@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto';
 
+import { normalizePhoneDigits } from './phone-normalize';
+
 function sha256Hex(input: string): string {
   return createHash('sha256').update(input).digest('hex');
 }
@@ -8,8 +10,9 @@ export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
+/** E.164 sans `+` (cf. `phone-normalize.ts`), identique au navigateur. */
 export function normalizePhone(phone: string): string {
-  return phone.replace(/[^0-9]/g, '');
+  return normalizePhoneDigits(phone);
 }
 
 export function normalizeName(name: string): string {

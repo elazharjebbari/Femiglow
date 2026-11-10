@@ -39,6 +39,7 @@ import { sendTransactional } from '@/lib/mail/send';
 import { recordOrderPlaced } from '@/lib/user-events/bridges/server-actions';
 import { env } from '@/lib/env';
 import { leadOutboxRepo } from '@/lib/leads/outbox/lead-outbox-repo';
+import { checkoutRateLimit } from '@/lib/checkout/api/rate-limit-guard';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -47,6 +48,9 @@ export const dynamic = 'force-dynamic';
 const DUPLICATE_ORDER_WINDOW_MS = 30 * 60 * 1000;
 
 export async function POST(req: NextRequest): Promise<Response> {
+  const limited = await checkoutRateLimit(req, 'order_create');
+  if (limited) return limited;
+
   let body: unknown;
   try {
     body = await req.json();
@@ -123,7 +127,11 @@ export async function POST(req: NextRequest): Promise<Response> {
         }
       | {
           error: {
-            code: 'price_mismatch' | 'stock_insufficient' | 'invalid_input';
+            code:
+              | 'price_mismatch'
+              | 'stock_insufficient'
+              | 'invalid_input'
+              | 'lead_already_purchased';
             message: string;
             details: unknown;
           };
@@ -140,11 +148,31 @@ export async function POST(req: NextRequest): Promise<Response> {
         req.cookies.get('fg_session_id')?.value ?? req.cookies.get('_fbp')?.value ?? null,
     });
 
+    // Lignes écrites en base (nom produit et prix serveur) : c'est elles que
+    // le CRM reçoit, pas le texte envoyé par le client.
+    let createdItems: Array<{ sku: string; name: string; quantity: number }> | null = null;
     const result = await withIdempotency<OrderResp>({
       request: req,
       scope: 'order_create',
       payload: input,
       execute: async () => {
+        // Fiche déjà convertie et pas de doublon récent (traité plus haut) :
+        // une seconde commande sur la même fiche mélangerait deux commandes.
+        // À l'intérieur d'`execute`, pour qu'un rejeu idempotent d'une
+        // commande réussie reste servi tel quel.
+        if (lead.purchasedAt) {
+          return {
+            status: 409,
+            body: {
+              error: {
+                code: 'lead_already_purchased' as const,
+                message: 'Cette commande est déjà enregistrée.',
+                details: null,
+              },
+            },
+            resourceId: null,
+          };
+        }
         try {
           const order = await orderRepo.createOrder({
             chatLeadId: lead.id,
@@ -172,6 +200,10 @@ export async function POST(req: NextRequest): Promise<Response> {
             },
           });
           await wizardLeadRepo.markPurchased(lead.id);
+          // Défensif : sans lignes renvoyées, repli sur le panier reçu.
+          createdItems = Array.isArray(order.items)
+            ? order.items.map((it) => ({ sku: it.sku, name: it.name, quantity: it.quantity }))
+            : null;
           return {
             status: 201,
             body: {
@@ -334,7 +366,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         req.headers.get('x-real-ip') ??
         null;
       const leadSnapshot = lead;
-      const webhookItems = input.items.map((it) => ({
+      const webhookItems = (createdItems ?? input.items).map((it) => ({
         sku: it.sku,
         name: it.name,
         quantity: it.quantity,

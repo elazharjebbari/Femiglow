@@ -39,6 +39,7 @@ import { newLeadId } from '@/lib/checkout/client/lead-id';
 import {
   consumeIdempotencyKey,
   getOrCreateIdempotencyKey,
+  purgeAllIdempotencyKeys,
 } from '@/lib/checkout/client/idempotency-key';
 import { isOptimisticWizardClientEnabled } from '@/lib/checkout/flags';
 import { getLeadSyncQueue } from '@/lib/checkout/state/lead-sync-singleton';
@@ -479,6 +480,11 @@ export function useAddressMutation(): {
           { userData: userDataAddress },
         );
       } catch (e) {
+        if (e instanceof ApiError && e.code === 'lead_already_purchased') {
+          // Fiche déjà convertie (onglet resté sur une commande passée) :
+          // nouvelle fiche à l'étape 1, saisies conservées.
+          useWizardStore.getState().restartAfterPurchase();
+        }
         setError(e);
         emitEvent(
           emit,
@@ -606,9 +612,15 @@ export function useAddressMutation(): {
           }),
           { userData: userDataPurchase },
         );
+        // Commande créée : plus aucune clé de cette commande ne doit servir
+        // (une nouvelle commande repartirait sinon sur la fiche convertie).
+        purgeAllIdempotencyKeys();
         goToStep('thank_you');
         setSuccess();
       } catch (e) {
+        if (e instanceof ApiError && e.code === 'lead_already_purchased') {
+          useWizardStore.getState().restartAfterPurchase();
+        }
         setError(e);
         emitEvent(
           emit,

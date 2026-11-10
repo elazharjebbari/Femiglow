@@ -11,6 +11,7 @@ import { withIdempotency } from '@/lib/checkout/api/idempotency-middleware';
 import { errorResponse, mapError, zodErrorResponse } from '@/lib/checkout/api/response';
 import { patchLeadPaymentInputSchema } from '@/lib/checkout/schemas/lead';
 import { wizardLeadRepo } from '@/lib/checkout/repos/lead-repo';
+import { checkoutRateLimit } from '@/lib/checkout/api/rate-limit-guard';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -19,6 +20,9 @@ export async function PATCH(
   req: NextRequest,
   context: { params: { leadId: string } },
 ): Promise<Response> {
+  const limited = await checkoutRateLimit(req, 'payment_select');
+  if (limited) return limited;
+
   const leadId = context.params.leadId;
   if (!leadId || leadId.length < 4) {
     return errorResponse('invalid_input', 'leadId invalide.');
