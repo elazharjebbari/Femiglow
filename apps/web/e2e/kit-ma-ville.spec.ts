@@ -125,6 +125,51 @@ test.describe('Ma ville — livraison annoncée avant le formulaire', () => {
     });
   });
 
+  test('code promo GLOW99 : 99 + livraison partout, même total et même prix barré, commande remisée', async ({ page }) => {
+    const [promo] = await sql!`SELECT value_amount FROM coupons WHERE code = 'GLOW99' AND status = 'active'`;
+    test.skip(!promo, 'GLOW99 absent de la base');
+    await page.goto('/kit');
+    await page.evaluate(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+    });
+    await page.goto('/kit?code=GLOW99&cta=scroll');
+    await page.getByRole('button', { name: /tout refuser/i }).first().click({ timeout: 3_000 }).catch(() => undefined);
+    await expect(page.locator('[aria-label^="Prix : 99 MAD"]').first()).toBeVisible();
+
+    await page.getByTestId('delivery-estimate-open').click();
+    await page.getByTestId('delivery-city-shortcut-marrakech').click();
+    await expect(page.getByTestId('delivery-city-recap')).toContainText('99 MAD');
+    await expect(page.getByTestId('delivery-city-total')).toHaveText('134 MAD');
+    await page.getByTestId('delivery-city-validate').click();
+    await expect(page.getByTestId('delivery-estimate-total')).toContainText('134 MAD');
+
+    await page.evaluate(() => window.scrollTo(0, 5000));
+    await expect(page.getByTestId('sticky-delivery-total')).toContainText('134 MAD');
+
+    await page.locator('#commander-femiglow').scrollIntoViewIfNeeded();
+    await expect(page.getByTestId('wizard-cart-recap-total')).toContainText('134 MAD');
+    await expect(page.getByTestId('wizard-cart-recap-compare-at')).toContainText('234 MAD');
+
+    const phone = randomPhone();
+    await fillLead(page, 'Promo', phone);
+    await expect(page.getByTestId('wizard-action-total-amount')).toHaveText('134 MAD');
+    await page.getByTestId('wizard-address-line1').fill('Gueliz, rue 12');
+    await expect(page.getByTestId('wizard-inline-confirm')).toContainText('134 MAD à la réception');
+
+    const order = page.waitForResponse((r) => r.url().includes('/api/checkout/order') && r.request().method() === 'POST');
+    await page.getByTestId('wizard-inline-confirm').click();
+    const body = (await (await order).json()) as { totalCents: number; discountCents: number; couponCode: string };
+    expect(body).toMatchObject({ totalCents: 13400, discountCents: 10000, couponCode: 'GLOW99' });
+    await expect(page.getByTestId('wizard-step-thankyou')).toBeVisible({ timeout: 30_000 });
+
+    const [row] = await sql!`
+      SELECT o.total_cents, o.shipping_cents, o.discount_cents, o.coupon_code
+      FROM orders o JOIN chat_lead l ON l.id = o.chat_lead_id
+      WHERE l.phone_e164 = ${`+212${phone}`} ORDER BY o.created_at DESC LIMIT 1`;
+    expect(row).toMatchObject({ total_cents: 13400, shipping_cents: 3500, discount_cents: 10000, coupon_code: 'GLOW99' });
+  });
+
   test('sans ville choisie avant : l’étape 2 demande la ville, comme avant', async ({ page }) => {
     await freshKit(page);
     await page.locator('#commander-femiglow').scrollIntoViewIfNeeded();

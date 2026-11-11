@@ -12,6 +12,7 @@
  * (déjà résolue dans `KitCommanderSection.initialCart`).
  */
 /* eslint-disable @next/next/no-img-element */
+import { checkoutReferenceCents } from '@/lib/checkout/shipping-fee';
 import type { CartSnapshot } from '@/lib/checkout/schemas/common';
 import { cn } from '@/lib/utils/cn';
 
@@ -131,12 +132,24 @@ export function WizardCartRecap({
       : null;
   // Prix barré localisé : on remplace le code devise brut dans la chaîne déjà
   // formatée (ex. « 289 MAD » → « 289 درهم »).
-  // Livraison connue : le prix barré compare un total livré à un total livré
-  // (« 324 » barré à côté de « 234 »), jamais le prix du kit seul à côté d'un
-  // total qui inclut la livraison — même règle que la barre de l'étape 2.
+  // Livraison connue : prix barré livré, calculé par la MÊME règle que la
+  // barre de l'étape 2 (`checkoutReferenceCents`) — jamais le prix du kit seul
+  // à côté d'un total qui inclut la livraison, et jamais deux références
+  // différentes pour un même total (avec un code : le total sans le code).
+  const deliveredReferenceCents =
+    shippingFee > 0
+      ? checkoutReferenceCents({
+          cartTotalCents: cart.totalCents,
+          compareAtTotalCents: cart.compareAtTotalCents,
+          creditCents: credit,
+          shippingCents: shippingFee,
+        })
+      : null;
   const compareAtLabel =
-    priceCompareAt && shippingFee > 0 && cart.compareAtTotalCents
-      ? `${((cart.compareAtTotalCents + shippingFee) / 100).toFixed(0)} ${currencyDisplay}`
+    shippingFee > 0
+      ? deliveredReferenceCents !== null
+        ? `${(deliveredReferenceCents / 100).toFixed(0)} ${currencyDisplay}`
+        : undefined
       : priceCompareAt && currencyLabel
         ? priceCompareAt.replace(cart.currency, currencyLabel)
         : priceCompareAt;
