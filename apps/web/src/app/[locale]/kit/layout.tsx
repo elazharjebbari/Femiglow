@@ -16,7 +16,9 @@ import { StickyCartCTA } from '@/components/commerce/StickyCartCTA';
 import { PromoCodeAutoApply } from '@/components/commerce/PromoCodeAutoApply';
 import { ToastProvider } from '@/components/ui/Toast';
 import { DEFAULT_LOCALE, isLocale } from '@/i18n.config';
-import { buildKitPublicProduct } from '@/lib/products/public';
+import { resolveKitDisplayPricing } from '@/lib/products/kit-display-pricing.server';
+import { getDeliveryPriceBounds } from '@/lib/db/queries/delivery-cities';
+import { DeliveryBoundsProvider } from '@/lib/checkout/delivery/delivery-estimate';
 import { resolveKitCtaCopy } from '@/lib/kit/cta-copy.server';
 
 const MiniCartSlideOver = dynamic(
@@ -35,8 +37,12 @@ export default async function LocaleKitLayout({
   params: { locale: string };
 }) {
   const locale = isLocale(params.locale) ? params.locale : DEFAULT_LOCALE;
-  const [product, ctaCopy, tKit] = await Promise.all([
-    buildKitPublicProduct(),
+  const [product, deliveryBounds, ctaCopy, tKit] = await Promise.all([
+    // Prix de la barre fixe = prix du hero et du formulaire (moteur de
+    // coupons, même contexte de requête). cf. kit-display-pricing.server.ts.
+    resolveKitDisplayPricing().then((r) => r.product),
+    // Bornes « 19 à 45 MAD » pour la ligne livraison (villes actives).
+    getDeliveryPriceBounds().catch(() => null),
     // Kit CRO v2 §4 — libellé du CTA sticky : CMS `kit-cta/ctaSticky` ▸ i18n
     // `marketing.kit.cta.sticky` (localisé FR/AR/EN).
     resolveKitCtaCopy(locale),
@@ -55,6 +61,7 @@ export default async function LocaleKitLayout({
   };
 
   return (
+    <DeliveryBoundsProvider value={deliveryBounds}>
     <ToastProvider>
       {/* Code promo de campagne (?code=GLOW99) + reprise du code mémorisé.
           useSearchParams ⇒ Suspense obligatoire (page ISR). */}
@@ -86,5 +93,6 @@ export default async function LocaleKitLayout({
       </StickyCartCTA>
       <MiniCartSlideOver />
     </ToastProvider>
+    </DeliveryBoundsProvider>
   );
 }

@@ -80,7 +80,8 @@ export const idempotencyRepo = {
    *   - `{ match: false, conflict: true }` si la clé existe mais hash différent → 409.
    *   - `null` si la clé est inconnue → fresh request.
    *
-   * Les rows expirées sont ignorées (et seront purgées).
+   * Les rows expirées sont ignorées (et seront purgées), de même que les
+   * réponses en erreur (statut ≥ 400), qui ne doivent jamais être rejouées.
    */
   async lookup(
     key: string,
@@ -100,6 +101,9 @@ export const idempotencyRepo = {
     const row = rows[0];
     if (!row) return null;
     if (row.expiresAt.getTime() <= Date.now()) return null;
+    // Erreur mémorisée avant le correctif du 10/11/2026 : ignorée, la
+    // requête est ré-exécutée (et un succès remplacera la ligne).
+    if (row.responseStatus >= 400) return null;
     if (row.requestHash !== requestHash) {
       return { match: false, conflict: true };
     }

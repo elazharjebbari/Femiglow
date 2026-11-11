@@ -22,6 +22,7 @@ import { wizardLeadRepo } from '@/lib/checkout/repos/lead-repo';
 import { DbUnavailableError } from '@/lib/checkout/repos/idempotency-repo';
 import { optInEmailInputSchema } from '@/lib/checkout/schemas/lead';
 import { insertUserEventSafe } from '@/lib/user-events/insert';
+import { checkoutRateLimit } from '@/lib/checkout/api/rate-limit-guard';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -30,6 +31,9 @@ export async function PATCH(
   req: NextRequest,
   context: { params: { orderId: string } },
 ): Promise<Response> {
+  const limited = await checkoutRateLimit(req, 'email_optin');
+  if (limited) return limited;
+
   const orderId = context.params.orderId;
   if (!orderId || orderId.length < 4) {
     return errorResponse('invalid_input', 'orderId invalide.');

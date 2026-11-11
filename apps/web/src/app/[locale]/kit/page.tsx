@@ -23,7 +23,7 @@
  */
 import type { Metadata } from 'next';
 import { resolveUrlCouponSeed } from '@/lib/coupons/server-url-coupon';
-import { cookies, headers } from 'next/headers';
+import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 
@@ -32,6 +32,7 @@ import { KitPageLayoutV2 } from '@/components/marketing/kit-layout/KitPageLayout
 import { DEFAULT_LOCALE, isLocale, type Locale } from '@/i18n.config';
 import { cms } from '@/lib/cms';
 import { KIT_LAYOUT_VERSION } from '@/lib/feature-flags/kit-layout';
+import { resolveKitDisplayPricing } from '@/lib/products/kit-display-pricing.server';
 import { buildKitProductFeed } from '@/lib/products/feed/kit-feed';
 import { feedToProductSchemaEnrichment } from '@/lib/products/feed/json-ld';
 import {
@@ -45,8 +46,6 @@ import { resolveOgImage } from '@/lib/components/og-image';
 import { resolvePageWithComponents } from '@/lib/seo/component-resolve';
 import { resolveSeoMetadata } from '@/lib/seo/resolve';
 import { productSchema } from '@/lib/seo/json-ld';
-import { deriveEventId } from '@/lib/tracking/event-id';
-import { serverFire } from '@/lib/tracking/server/server-fire';
 import { KitAngleCookie } from '@/components/kit/KitAngleCookie';
 import { resolveKitPageContext } from '@/lib/kit/page-context.server';
 
@@ -233,73 +232,14 @@ export default async function KitPage({ params, searchParams }: PageProps) {
     }),
   ]);
 
-  // Tracking ViewContent — CAPI server-side avec pageRoute localisé.
-  const reqHeaders = headers();
   const { kitAngle } = kitContext;
-  const sessionId =
-    reqCookies.get('fg_session_id')?.value ??
-    reqCookies.get('_fbp')?.value ??
-    null;
-  const eventIdSeed = sessionId
-    ? deriveEventId({ eventName: 'view_item', sessionId, pageId: 'kit' })
-    : undefined;
-  void eventIdSeed;
-  // Le COUPON pilote la promotion affichée : on résout le prix coupon-aware
-  // (même moteur que getKitLeadValue + repricing commande) → prix affiché,
-  // valeur view_item et JSON-LD cohérents et pilotables depuis /admin/coupons.
-  const { resolveProductPricing } = await import('@/lib/coupons/engine');
-  const { buildCouponContext } = await import('@/lib/coupons/context');
-  const kitPricing = await resolveProductPricing(
-    {
-      priceCents: dbProduct.priceCents,
-      promoPriceCents: dbProduct.promoPriceCents,
-      sku: dbProduct.primaryVariantSku,
-      currency: dbProduct.currency,
-    },
-    buildCouponContext({
-      referer: reqHeaders.get('referer'),
-      userAgent: reqHeaders.get('user-agent'),
-      sessionId,
-    }),
-  );
-  const pricedProduct = {
-    ...dbProduct,
-    promoPriceCents: kitPricing.active ? kitPricing.effectivePriceCents : null,
-  };
-  const kitPromo = kitPricing;
-  // Aperçu brouillon admin : aucun envoi CAPI (variante non publiée).
-  // La galerie (et donc `hero_media_variant`) se résout en parallèle du
-  // rendu : l'envoi part dès qu'elle est prête, sans bloquer la page.
-  if (kitContext.shouldServerFire) {
-    void kitContext.viewItemParams
-      .then((viewItemParams) =>
-        serverFire({
-          eventName: 'view_item',
-          pageId: 'kit',
-          pageRoute: `/${locale}/kit`,
-          pageUrl: `https://femiglow-maroc.com/${locale}/kit`,
-          params: {
-            // `kit_angle`, plus `hero_media_variant` / `hero_media_level` quand le
-            // drapeau est actif (cf. lib/kit/hero-media.ts).
-            ...viewItemParams,
-            currency: dbProduct.currency,
-            value: kitPromo.effectivePriceCents / 100,
-            items: [
-              {
-                item_id: dbProduct.id,
-                item_name: dbProduct.name,
-                price: kitPromo.effectivePriceCents / 100,
-                quantity: 1,
-              },
-            ],
-          },
-          headers: reqHeaders,
-          cookies: reqCookies,
-        }),
-      )
-      // Erreur de galerie : remontée par le hero ; ignorée ici.
-      .catch(() => undefined);
-  }
+  // Prix affiché = prix facturé : moteur de coupons, contexte de la requête,
+  // calcul partagé avec le layout et la section commande (devis signé).
+  // cf. `lib/products/kit-display-pricing.server.ts`.
+  const { product: pricedProduct } = await resolveKitDisplayPricing();
+  // `view_item` : émis uniquement par le navigateur (relayé à la CAPI par
+  // `/api/track` avec l'event_id du pixel). L'envoi serveur doublait
+  // l'événement (audit /kit du 10/11/2026).
 
   // Product JSON-LD — admin override + aggregateRating system-driven.
   const productFeed = buildKitProductFeed(pricedProduct, content, reviewStats);

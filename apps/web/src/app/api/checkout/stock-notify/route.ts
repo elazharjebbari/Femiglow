@@ -14,11 +14,15 @@ import { logger } from '@/lib/logging/logger';
 import { errorResponse, mapError, zodErrorResponse } from '@/lib/checkout/api/response';
 import { stockRepo } from '@/lib/checkout/repos/stock-repo';
 import { stockNotifyInputSchema } from '@/lib/checkout/schemas/stock';
+import { checkoutRateLimit } from '@/lib/checkout/api/rate-limit-guard';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest): Promise<Response> {
+  const limited = await checkoutRateLimit(req, 'stock_notify');
+  if (limited) return limited;
+
   let body: unknown;
   try {
     body = await req.json();

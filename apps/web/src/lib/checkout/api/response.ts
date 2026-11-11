@@ -18,6 +18,7 @@ export type CheckoutErrorCode =
   | 'idempotency_invalid_key'
   | 'not_found'
   | 'invalid_state'
+  | 'lead_already_purchased'
   | 'stock_insufficient'
   | 'price_mismatch'
   | 'db_unavailable'
@@ -30,6 +31,7 @@ const STATUS_BY_CODE: Record<CheckoutErrorCode, number> = {
   idempotency_invalid_key: 400,
   not_found: 404,
   invalid_state: 409,
+  lead_already_purchased: 409,
   stock_insufficient: 409,
   price_mismatch: 422,
   db_unavailable: 503,

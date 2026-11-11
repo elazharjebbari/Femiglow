@@ -18,6 +18,7 @@
  * perf perçue (FCP) du /kit qui doit rester sub-2s.
  */
 
+import { useDeliveryBounds } from '@/lib/checkout/delivery/delivery-estimate';
 import {
   Suspense,
   lazy,
@@ -189,6 +190,8 @@ export function WizardShell({
   const draftCity = useWizardStore((s) => s.addressDraft.city);
   const draftCityPriceMad = useWizardStore((s) => s.addressDraft.cityDeliveryPriceMad);
   const { freeShipping } = useShippingConfig();
+  // Bornes « 19 à 45 MAD » : la livraison chiffrée avant le choix de la ville.
+  const deliveryBounds = useDeliveryBounds();
   const setFormContext = useWizardStore((s) => s.setFormContext);
   const setCartSnapshot = useWizardStore((s) => s.setCartSnapshot);
   const goToStep = useWizardStore((s) => s.goToStep);
@@ -210,11 +213,17 @@ export function WizardShell({
   }, [hydrated, storedFormContext, formContext, setFormContext]);
 
   // Snapshot panier : si fourni en props et différent du persisted, écrase.
+  // Le prix unitaire et le devis signé font partie de la comparaison : un
+  // panier mémorisé avec un devis expiré ou un ancien prix est remplacé.
   useEffect(() => {
     if (!hydrated) return;
     if (!initialCart) return;
     const stableSign = (snap: CartSnapshot | null) =>
-      snap ? `${snap.totalCents}:${snap.items.length}:${snap.items.map((i) => i.sku).join('|')}` : '';
+      snap
+        ? `${snap.totalCents}:${snap.items.length}:${snap.items
+            .map((i) => `${i.sku}~${i.unitPriceCents}~${i.priceQuote ?? ''}`)
+            .join('|')}`
+        : '';
     if (stableSign(storedCart) !== stableSign(initialCart)) {
       setCartSnapshot(initialCart);
     }
@@ -356,7 +365,16 @@ export function WizardShell({
           packLabel={t.cartRecap.packLabel}
           shippingIncludedLabel={t.cartRecap.shippingIncluded}
           shippingCents={recapShippingCents}
-          shippingPendingLabel={t.cartRecap.shippingPending}
+          shippingPendingLabel={
+            deliveryBounds
+              ? deliveryBounds.minMad === deliveryBounds.maxMad
+                ? t.cartRecap.shippingAmount(`${deliveryBounds.minMad} ${t.cartRecap.currency}`)
+                : t.cartRecap.shippingRange(
+                    String(deliveryBounds.minMad),
+                    `${deliveryBounds.maxMad} ${t.cartRecap.currency}`,
+                  )
+              : t.cartRecap.shippingPending
+          }
           shippingAmountLabel={t.cartRecap.shippingAmount}
           currencyLabel={t.cartRecap.currency}
           appliedCreditCents={appliedCreditCents}

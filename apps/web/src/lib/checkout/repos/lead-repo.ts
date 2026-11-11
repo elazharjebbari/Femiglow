@@ -118,7 +118,20 @@ export const wizardLeadRepo = {
       .from(chatLead)
       .where(and(eq(chatLead.sessionId, input.sessionId), eq(chatLead.identityHash, identityHash)))
       .limit(1);
-    return existing[0]!;
+    const found = existing[0]!;
+    if (!found.purchasedAt) return found;
+    // La fiche existante a déjà commandé : la réutiliser ferait écrire la
+    // nouvelle adresse sur la commande passée. Nouvelle fiche, avec une
+    // identité salée par son id pour passer l'index unique (session,
+    // identité), comme `upsertWizardLead`.
+    const fresh = await db
+      .insert(chatLead)
+      .values({
+        ...insert,
+        identityHash: computeIdentityHash(phoneE164, `${insert.firstName}:${id}`),
+      })
+      .returning();
+    return fresh[0]!;
   },
 
   /**
@@ -216,9 +229,13 @@ export const wizardLeadRepo = {
           identityHash,
           updatedAt: now,
         },
+        // Fiche déjà convertie : figée (même règle que `patchAddress`).
+        setWhere: isNull(chatLead.purchasedAt),
       })
       .returning();
-    return rows[0]!;
+    if (rows[0]) return rows[0];
+    const [frozen] = await db.select().from(chatLead).where(eq(chatLead.id, id)).limit(1);
+    return frozen!;
   },
 
   async getById(id: string): Promise<ChatLeadRow | null> {
@@ -232,6 +249,7 @@ export const wizardLeadRepo = {
    *
    * Note : `shippingMode` est stocké côté `orders` à la création (pas
    * sur `chat_lead`). Ce repo persiste uniquement les coordonnées.
+   * Renvoie `null` si la fiche n'existe pas OU a déjà commandé.
    */
   async patchAddress(
     id: string,
@@ -259,7 +277,9 @@ export const wizardLeadRepo = {
         addressCompletedAt: now,
         updatedAt: now,
       })
-      .where(eq(chatLead.id, id))
+      // Une fiche qui a commandé est figée : l'adresse de la commande passée
+      // ne doit jamais être réécrite (`orders` ne stocke pas d'adresse).
+      .where(and(eq(chatLead.id, id), isNull(chatLead.purchasedAt)))
       .returning();
     return rows[0] ?? null;
   },

@@ -29,6 +29,7 @@
  */
 import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
 import { db, memoryStore, schema } from '@/lib/db/client';
+import { DEFAULT_DELIVERY_PRICE_MAD } from '@/lib/checkout/shipping-fee';
 import {
   normalizeArabicKey,
   normalizeCityKey,
@@ -794,6 +795,52 @@ export async function countActiveDeliveryCities(
     if (c.countryCode === countryCode && c.isActive) n++;
   }
   return n;
+}
+
+/**
+ * Tarifs de livraison extrêmes des villes actives (MAD entiers), pour annoncer
+ * « Livraison 19 à 45 MAD selon votre ville » avant que la ville soit connue.
+ * `null` si aucune ville active : l'interface retombe sur un libellé sans montant.
+ */
+export async function getDeliveryPriceBounds(
+  countryCode = 'MA',
+): Promise<{ minMad: number; maxMad: number } | null> {
+  const drizzle = db();
+  if (drizzle) {
+    const rows = await drizzle
+      .select({
+        // Les villes à 0 (livraison offerte ponctuelle) ne font pas la borne
+        // basse : « 0 à 45 MAD » laisserait croire à une livraison gratuite.
+        min: sql<number | null>`min(nullif(${schema.deliveryCities.deliveryPriceMad}, 0))::int`,
+        max: sql<number | null>`max(${schema.deliveryCities.deliveryPriceMad})::int`,
+      })
+      .from(schema.deliveryCities)
+      .where(
+        and(
+          eq(schema.deliveryCities.countryCode, countryCode),
+          eq(schema.deliveryCities.isActive, true),
+        ),
+      );
+    const row = rows[0];
+    if (!row || row.min === null || row.max === null) return null;
+    return withDefaultFee({ minMad: row.min, maxMad: row.max });
+  }
+  let min = Infinity;
+  let max = -Infinity;
+  for (const c of ext().deliveryCities.values()) {
+    if (c.countryCode !== countryCode || !c.isActive) continue;
+    if (c.deliveryPriceMad > 0) min = Math.min(min, c.deliveryPriceMad);
+    max = Math.max(max, c.deliveryPriceMad);
+  }
+  return Number.isFinite(min) ? withDefaultFee({ minMad: min, maxMad: max }) : null;
+}
+
+/**
+ * Une ville hors catalogue paie le tarif par défaut : la borne haute annoncée
+ * ne doit jamais être inférieure à ce tarif.
+ */
+function withDefaultFee(bounds: { minMad: number; maxMad: number }) {
+  return { minMad: bounds.minMad, maxMad: Math.max(bounds.maxMad, DEFAULT_DELIVERY_PRICE_MAD) };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

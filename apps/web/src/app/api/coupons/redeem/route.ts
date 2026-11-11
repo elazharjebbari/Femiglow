@@ -13,6 +13,7 @@
  */
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { checkoutRateLimit } from '@/lib/checkout/api/rate-limit-guard';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -20,6 +21,9 @@ export const dynamic = 'force-dynamic';
 const bodySchema = z.object({ code: z.string().trim().min(3).max(40) });
 
 export async function POST(req: NextRequest): Promise<Response> {
+  const limited = await checkoutRateLimit(req, 'coupon_redeem');
+  if (limited) return limited;
+
   let raw: unknown;
   try {
     raw = await req.json();

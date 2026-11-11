@@ -419,3 +419,82 @@ describe('AddressStepV2 — note, langues, erreurs', () => {
     expect(section.style.getPropertyValue('--color-petale-dark')).toBe('var(--color-notice)');
   });
 });
+
+describe('AddressStepV2 — ville choisie sur la page et bouton intégré (audit /kit du 10/11/2026)', () => {
+  const pickedOnPage = {
+    city: 'Casablanca',
+    citySlug: 'casablanca',
+    cityNameAr: 'الدار البيضاء',
+    cityDeliveryPriceMad: 35,
+    cityDeliveryEta: '24h-48h',
+  };
+  const inline = () => screen.queryByTestId('wizard-inline-confirm');
+
+  it('ville choisie avant le formulaire : reprise, cochée, adresse ouverte, rien à ressaisir', () => {
+    useWizardStore.getState().mergeAddressDraft(pickedOnPage);
+    render(<AddressStepV2 />);
+    expect(city().value).toBe('Casablanca');
+    expect(reveal()).toHaveAttribute('data-revealed', 'true');
+    expect(screen.getByTestId('wizard-shipping-notice')).toHaveTextContent('35 MAD');
+    // Pas d'adresse : pas encore de bouton dans le formulaire.
+    expect(inline()).toBeNull();
+  });
+
+  it('adresse saisie : le bouton apparaît dans le formulaire avec le total à la réception', async () => {
+    useWizardStore.getState().mergeAddressDraft(pickedOnPage);
+    render(<AddressStepV2 />);
+    fireEvent.change(line(), { target: { value: 'Hay Salam, rue 4' } });
+    await waitFor(() => expect(inline()).not.toBeNull());
+    expect(inline()).toHaveTextContent(fr.inlineCtaTitle);
+    expect(inline()).toHaveTextContent('234 MAD à la réception');
+    expect(inline()).toHaveAttribute('type', 'submit');
+  });
+
+  it('le bouton intégré passe commande, une seule fois', async () => {
+    useWizardStore.getState().mergeAddressDraft({ ...pickedOnPage, addressLine1: 'Hay Salam, rue 4' });
+    render(<AddressStepV2 />);
+    await waitFor(() => expect(inline()).not.toBeNull());
+    fireEvent.click(inline()!);
+    fireEvent.click(inline()!);
+    await waitFor(() => expect(execute).toHaveBeenCalledTimes(1));
+    expect(execute.mock.calls[0]?.[0]).toMatchObject({ city: 'Casablanca', addressLine1: 'Hay Salam, rue 4' });
+  });
+
+  it('adresse trop courte : pas de bouton intégré', async () => {
+    useWizardStore.getState().mergeAddressDraft(pickedOnPage);
+    render(<AddressStepV2 />);
+    fireEvent.change(line(), { target: { value: 'ab' } });
+    await waitFor(() => expect(line().value).toBe('ab'));
+    expect(inline()).toBeNull();
+  });
+
+  it('ville changée sur la page pendant l’étape 2 : le champ suit, tarif conservé', async () => {
+    cities = [CASA, { ...CASA, slug: 'errachidia', nameFr: 'Errachidia', nameAr: 'الرشيدية', deliveryPriceMad: 45 }];
+    useWizardStore.getState().mergeAddressDraft(pickedOnPage);
+    render(<AddressStepV2 />);
+    act(() => {
+      useWizardStore.getState().mergeAddressDraft({
+        city: 'Errachidia',
+        citySlug: 'errachidia',
+        cityNameAr: 'الرشيدية',
+        cityDeliveryPriceMad: 45,
+        cityDeliveryEta: '48h-96h',
+      });
+    });
+    await waitFor(() => expect(city().value).toBe('Errachidia'));
+    const draft = useWizardStore.getState().addressDraft;
+    expect(draft.citySlug).toBe('errachidia');
+    expect(draft.cityDeliveryPriceMad).toBe(45);
+    expect(screen.getByTestId('wizard-shipping-notice')).toHaveTextContent('45 MAD');
+    cities = [CASA];
+  });
+
+  it('arabe : bouton intégré traduit', async () => {
+    seed('ar');
+    useWizardStore.getState().mergeAddressDraft({ ...pickedOnPage, addressLine1: 'حي السلام، زنقة 4' });
+    render(<AddressStepV2 />);
+    await waitFor(() => expect(inline()).not.toBeNull());
+    expect(inline()).toHaveTextContent(getWizardDictionary('ar').addressV2.inlineCtaTitle);
+    expect(inline()).toHaveTextContent('عند الاستلام');
+  });
+});

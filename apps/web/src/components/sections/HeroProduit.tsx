@@ -21,6 +21,8 @@ import { cn } from '@/lib/utils/cn';
 import { KIT_ANGLE_DATA_ATTRIBUTE, kitAngleTrackingValue, type KitAngle } from '@/lib/kit/angle';
 import { heroMediaDataAttributes, type HeroMediaTracking } from '@/lib/kit/hero-media';
 import { DEFAULT_KIT_CTA_COPY, formatCtaLabel, formatCtaPrice } from '@/lib/kit/cta-copy';
+import { DeliveryEstimateLine } from '@/components/kit/delivery/DeliveryEstimateLine';
+import { toDictionaryLanguage } from '@/lib/checkout/delivery/delivery-estimate';
 import { computePromo } from '@/lib/utils/promo';
 import type { Product, Reassurance as ReassuranceData } from '@/lib/schemas';
 import type { HeroGalleryImage } from '@/lib/products/hero-gallery-types';
@@ -373,6 +375,14 @@ export function HeroProduit({
                   {heroPromoAutoLabel}
                 </p>
               ) : null}
+
+              {/* Livraison collée au prix, sous la forme d'un prix : chiffrée avant
+                le formulaire, total exact dès que la ville est choisie (audit /kit
+                du 10/11/2026 : frais découverts à l'étape 2). */}
+              <DeliveryEstimateLine
+                productCents={effectivePriceCents}
+                language={toDictionaryLanguage(priceLocale)}
+              />
 
               {/* Trust row AU-DESSUS du CTA — mots positifs collés à la décision */}
               <TrustRow items={fields.trustRow} className="pt-1" />

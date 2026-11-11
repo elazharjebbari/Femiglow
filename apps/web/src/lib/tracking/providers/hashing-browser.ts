@@ -19,6 +19,8 @@
  * GTM est configuré pour le propager.
  */
 
+import { normalizePhoneDigits } from './phone-normalize';
+
 export interface IdentityInput {
   email?: string;
   phone?: string;
@@ -47,17 +49,11 @@ export function normalizeEmail(email: string): string {
 
 /**
  * Normalise un numéro de téléphone au format E.164 (sans le `+`).
- * Garde uniquement les chiffres. Pour les numéros marocains, ajoute
- * le préfixe pays `212` si l'entrée commence par `0` (format local).
+ * Règles partagées avec le serveur : cf. `phone-normalize.ts` (préfixe
+ * `212` ajouté au format national, avec ou sans le 0).
  */
 export function normalizePhone(phone: string): string {
-  const digits = phone.replace(/[^0-9]/g, '');
-  if (digits.startsWith('00')) return digits.slice(2);
-  if (digits.startsWith('212')) return digits;
-  if (digits.startsWith('0') && digits.length === 10) {
-    return '212' + digits.slice(1);
-  }
-  return digits;
+  return normalizePhoneDigits(phone);
 }
 
 export function normalizeName(name: string): string {

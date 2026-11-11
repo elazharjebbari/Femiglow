@@ -464,3 +464,88 @@
     animation: fg-cta-lift 5s ease-in-out 1s 3;
   }
 }
+
+/* — Livraison annoncée sur la page (« Ma ville », audit /kit du 10/11/2026) —
+   Un montant qui change apparaît en fondu, avec un fond sauge passager :
+   jamais de compteur ni de rebond sur un coût (Kolenda Pricing n° 14). */
+@keyframes fg-amount-in {
+  0% { opacity: 0; background-color: var(--color-sauge-soft); }
+  25% { opacity: 1; background-color: var(--color-sauge-soft); }
+  100% { opacity: 1; background-color: transparent; }
+}
+.fg-amount-in {
+  border-radius: 4px;
+  animation: fg-amount-in 1.2s ease-out both;
+}
+
+/* — Bouton de confirmation dans le formulaire (étape 2, adresse saisie) —
+   Même matière que `.fg-cta` (grenat dégradé, pastille colis), sur deux
+   lignes : l'action puis le montant. Entrée douce, sans pulsation. */
+@keyframes fg-inline-cta-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fg-inline-cta {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  width: 100%;
+  grid-template-columns: 34px 1fr 14px;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px 12px 11px;
+  border-radius: 14px;
+  color: var(--color-on-action);
+  text-align: start;
+  background: linear-gradient(180deg, var(--color-action-light), var(--color-action));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.2),
+    0 10px 24px rgb(142 63 59 / 0.24);
+  animation: fg-inline-cta-in 280ms ease-out both;
+  transition: transform 120ms ease-out;
+  -webkit-tap-highlight-color: transparent;
+}
+[dir='rtl'] .fg-inline-cta {
+  padding: 12px 11px 12px 14px;
+}
+.fg-inline-cta:active:not(:disabled) {
+  transform: scale(0.985);
+}
+.fg-inline-cta:focus-visible {
+  outline: 2px solid var(--color-encre);
+  outline-offset: 3px;
+}
+.fg-inline-cta:disabled {
+  cursor: wait;
+}
+.fg-inline-cta-badge {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 50%;
+  background: rgb(255 253 248 / 0.16);
+}
+.fg-inline-cta-title {
+  display: block;
+  font-size: 15.5px;
+  letter-spacing: -0.005em;
+  font-weight: 600;
+  line-height: 1.2;
+}
+.fg-inline-cta-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  line-height: 1.35;
+  opacity: 0.88;
+}
+[dir='rtl'] .fg-inline-cta-chevron {
+  transform: scaleX(-1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .fg-amount-in,
+  .fg-inline-cta {
+    animation: none;
+  }
+}

@@ -21,6 +21,9 @@
  *   - Header présent, clé inconnue → exécute, persiste la réponse.
  *   - Header présent, clé connue, hash matche → replay sans ré-exécuter.
  *   - Header présent, clé connue, hash différent → 409 conflict.
+ *   - Réponse en erreur (statut ≥ 400) → jamais persistée : un nouvel essai
+ *     ré-exécute. Sans cela, un 409 stock ou un 422 prix était rejoué 24 h,
+ *     même après la remise en stock (rupture du 06/11/2026).
  */
 import { type NextRequest } from 'next/server';
 
@@ -69,6 +72,15 @@ export class InvalidIdempotencyKeyError extends Error {
   }
 }
 
+/**
+ * Seules les réponses réussies sont rejouables. Une erreur (validation,
+ * stock, prix, état) dépend d'un contexte qui peut changer : la rejouer
+ * bloquerait la cliente sur une cause disparue.
+ */
+export function isReplayableStatus(status: number): boolean {
+  return status >= 200 && status < 400;
+}
+
 export async function withIdempotency<TBody>(
   opts: WithIdempotencyOpts<TBody>,
 ): Promise<IdempotencyResult<TBody>> {
@@ -104,6 +116,9 @@ export async function withIdempotency<TBody>(
 
   // Fresh execution.
   const out = await opts.execute();
+  if (!isReplayableStatus(out.status)) {
+    return { ...out, replayed: false };
+  }
   await idempotencyRepo.store({
     key,
     scope: opts.scope,
