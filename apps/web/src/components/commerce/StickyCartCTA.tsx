@@ -10,6 +10,12 @@ import { useChatStore } from '@/components/chat/chat-store';
 import { useCommanderLauncherStore } from '@/lib/checkout/commander-launcher';
 import { useCommanderOnScreen } from '@/lib/checkout/use-commander-on-screen';
 import { useWizardStore } from '@/lib/checkout/state/wizard-store';
+import {
+  formatMad,
+  toDictionaryLanguage,
+  useDeliveryEstimate,
+} from '@/lib/checkout/delivery/delivery-estimate';
+import { getWizardDictionary } from '@/lib/checkout/i18n/dictionary';
 import type { Currency } from '@/lib/products/currency';
 
 interface StickyCartCTAProps {
@@ -56,6 +62,9 @@ export function StickyCartCTA({
   const adjustedActive = Math.max(0, activeCents - creditCents);
   const displayPriceCents = promoPriceCents != null ? priceCents : adjustedActive;
   const displayPromoCents = promoPriceCents != null ? adjustedActive : null;
+  const language = toDictionaryLanguage(locale);
+  const deliveryCopy = getWizardDictionary(language).deliveryEstimate;
+  const delivery = useDeliveryEstimate(adjustedActive, language);
   // CHA-244 — Le sticky CTA se cache (slide-down + fade) quand le chat
   // est ouvert pour libérer la zone composer/clavier du panel chat.
   // cf. docs/admin-config/43-chat-mobile-ux-fix-runbook.md §B.
@@ -122,14 +131,40 @@ export function StickyCartCTA({
             #11 : la zone payment doit rester serrée pour rester lisible
             sur mobile). Le contraste actif vs barré reste visible.
           */}
-          <PriceDisplay
-            priceCents={displayPriceCents}
-            promoPriceCents={displayPromoCents}
-            currency={currency}
-            size="md"
-            layout="inline"
-            showSavings={false}
-          />
+          {/* Ville connue : le total exact à payer au livreur. Sinon le prix
+            du kit et la livraison chiffrée juste dessous (audit /kit du
+            10/11/2026 : la barre affichait un prix sans livraison). */}
+          {delivery.known && delivery.totalCents !== null ? (
+            <p className="leading-tight" data-testid="sticky-delivery-total">
+              <span className="sr-only">{deliveryCopy.totalLabel} </span>
+              <span
+                dir="ltr"
+                key={delivery.totalCents}
+                className="fg-amount-in whitespace-nowrap font-display text-[22px] text-encre [font-feature-settings:'lnum','tnum']"
+              >
+                {formatMad(delivery.totalCents, language)}
+              </span>
+            </p>
+          ) : (
+            <PriceDisplay
+              priceCents={displayPriceCents}
+              promoPriceCents={displayPromoCents}
+              currency={currency}
+              size="md"
+              layout="inline"
+              showSavings={false}
+            />
+          )}
+          {!delivery.freeShipping && (
+            <p className="truncate text-[12px] text-encre/70" data-testid="sticky-delivery-line">
+              {delivery.known && delivery.cityName && delivery.shippingCents !== null
+                ? deliveryCopy.includedShipping(
+                    delivery.cityName,
+                    formatMad(delivery.shippingCents, language),
+                  )
+                : deliveryCopy.plusShipping(delivery.rangeLabel)}
+            </p>
+          )}
         </div>
         <div className="shrink-0">{children}</div>
       </div>

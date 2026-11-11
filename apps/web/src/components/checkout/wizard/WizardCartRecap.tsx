@@ -131,10 +131,15 @@ export function WizardCartRecap({
       : null;
   // Prix barré localisé : on remplace le code devise brut dans la chaîne déjà
   // formatée (ex. « 289 MAD » → « 289 درهم »).
+  // Livraison connue : le prix barré compare un total livré à un total livré
+  // (« 324 » barré à côté de « 234 »), jamais le prix du kit seul à côté d'un
+  // total qui inclut la livraison — même règle que la barre de l'étape 2.
   const compareAtLabel =
-    priceCompareAt && currencyLabel
-      ? priceCompareAt.replace(cart.currency, currencyLabel)
-      : priceCompareAt;
+    priceCompareAt && shippingFee > 0 && cart.compareAtTotalCents
+      ? `${((cart.compareAtTotalCents + shippingFee) / 100).toFixed(0)} ${currencyDisplay}`
+      : priceCompareAt && currencyLabel
+        ? priceCompareAt.replace(cart.currency, currencyLabel)
+        : priceCompareAt;
   const productDetailLabel = cart.items.map((i) => i.name).join(' + ');
   const headLabel = packLabel(totalQty);
 

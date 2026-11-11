@@ -194,11 +194,28 @@ export function useAddressForm({
     trackCitySelected({ matched: false, priceMad: DEFAULT_DELIVERY_PRICE_MAD });
   };
 
+  // Ville choisie HORS du formulaire (panneau « Ma ville » de la page, alors
+  // que l'étape 2 est déjà ouverte) : le brouillon change, le champ suit.
+  // Seul un changement du brouillon déclenche ce report, jamais la frappe.
+  const lastDraftCityRef = useRef(addressDraft.city);
+  useEffect(() => {
+    if (addressDraft.city === lastDraftCityRef.current) return;
+    lastDraftCityRef.current = addressDraft.city;
+    if (addressDraft.citySlug && addressDraft.city !== getValues('city')) {
+      setValue('city', addressDraft.city, { shouldValidate: true, shouldDirty: true });
+      saveDraftField('city', addressDraft.city);
+    }
+  }, [addressDraft.city, addressDraft.citySlug, getValues, setValue, saveDraftField]);
+
   // Si l'utilisateur modifie le champ texte SANS passer par le listbox
   // (frappe libre), on invalide les champs cached pour éviter qu'un prix
-  // stale soit affiché alors que le texte ne correspond plus.
+  // stale soit affiché alors que le texte ne correspond plus. Seulement quand
+  // le TEXTE change : un brouillon modifié de l'extérieur n'est pas une frappe.
+  const lastWatchedCityRef = useRef(watchedCity);
   useEffect(() => {
-    if (!addressDraft.citySlug) return;
+    const typed = watchedCity !== lastWatchedCityRef.current;
+    lastWatchedCityRef.current = watchedCity;
+    if (!typed || !addressDraft.citySlug) return;
     if (
       typeof watchedCity === 'string' &&
       watchedCity.trim().toLowerCase() !== addressDraft.city.trim().toLowerCase()

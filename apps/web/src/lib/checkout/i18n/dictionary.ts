@@ -117,6 +117,10 @@ export interface WizardDictionary {
     ctaConfirm: string;
     ctaSaving: string;
     reassurance: string;
+    /** Bouton de confirmation intégré au formulaire (adresse saisie). */
+    inlineCtaTitle: string;
+    /** Sous-ligne du bouton intégré (montant déjà formaté avec devise). */
+    inlineCtaSub: (amount: string) => string;
   };
   thankYou: {
     title: string;
@@ -205,6 +209,8 @@ export interface WizardDictionary {
     shippingIncluded: string;
     /** Ville pas encore saisie : frais à venir selon la ville. */
     shippingPending: string;
+    /** Ville pas encore saisie, bornes connues (montants formatés). */
+    shippingRange: (min: string, max: string) => string;
     /** Frais connus (montant déjà formaté avec devise). */
     shippingAmount: (amount: string) => string;
     /** Libellé devise affiché (MAD en fr/en, درهم en ar). Phase 9. */
@@ -228,6 +234,38 @@ export interface WizardDictionary {
     ctaContinue: string;
   };
   /** CHA-232 — Réassurance livraison offerte (srNote). */
+  /** Livraison annoncée sur la page, avant le formulaire (« Ma ville »). */
+  deliveryEstimate: {
+    /** « Livraison » (préfixe de la ligne sous le prix). */
+    label: string;
+    /** Fourchette, montants déjà formatés : « 19 à 45 MAD selon votre ville ». */
+    range: (min: string, max: string) => string;
+    /** Sans bornes connues. */
+    rangeUnknown: string;
+    /** Livraison offerte (drapeau admin). */
+    free: string;
+    /** Lien qui ouvre le panneau. */
+    chooseCity: string;
+    /** Ville connue : « Livraison à Rabat ». */
+    toCity: (city: string) => string;
+    change: string;
+    totalLabel: string;
+    /** Sous-ligne de la barre fixe : « dont livraison Rabat 35 MAD ». */
+    includedShipping: (city: string, amount: string) => string;
+    /** Sous-ligne de la barre fixe sans ville. */
+    plusShipping: (range: string) => string;
+    sheetTitle: string;
+    sheetSubtitle: string;
+    searchLabel: string;
+    searchPlaceholder: string;
+    popularLabel: string;
+    searching: string;
+    recapKit: string;
+    recapShipping: (city: string, eta: string | null) => string;
+    validate: string;
+    close: string;
+    explanation: string;
+  };
   shipping: {
     freeBadgeSrNote: (price: number) => string;
     /** Libellé visible du badge livraison offerte. */

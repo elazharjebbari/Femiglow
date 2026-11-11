@@ -54,8 +54,17 @@ async function fillAddress(page: Page, street = 'Hay Salam, rue 4'): Promise<voi
   await page.waitForTimeout(350);
 }
 
+/**
+ * Bouton de confirmation à toucher : celui du formulaire quand l'adresse est
+ * saisie (la barre fixe s'efface alors), sinon celui de la barre.
+ */
+async function confirmButton(page: Page) {
+  const inline = page.getByTestId('wizard-inline-confirm');
+  return (await inline.isVisible()) ? inline : page.getByTestId('wizard-address-submit');
+}
+
 async function expectCtaOnScreen(page: Page): Promise<void> {
-  const box = await page.getByTestId('wizard-address-submit').evaluate((button) => {
+  const box = await (await confirmButton(page)).evaluate((button) => {
     const rect = button.getBoundingClientRect();
     const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
     return {
@@ -93,11 +102,13 @@ test.describe('étape 2 progressive — parcours', () => {
     await goToStep2(page);
     await chooseCasablanca(page);
     await fillAddress(page);
-    const shown = await page.getByTestId('wizard-action-total-amount').innerText();
+    const shown = (await page.getByTestId('wizard-action-total-amount').textContent())?.trim() ?? '';
+    // Le bouton du formulaire annonce le même montant que la barre.
+    await expect(page.getByTestId('wizard-inline-confirm')).toContainText(shown);
     const order = page.waitForResponse(
       (r) => r.url().includes('/api/checkout/order') && r.request().method() === 'POST',
     );
-    await page.getByTestId('wizard-address-submit').click();
+    await (await confirmButton(page)).click();
     const body = (await (await order).json()) as { totalCents: number };
     expect(`${body.totalCents / 100} MAD`).toBe(shown);
     await expect(page.getByTestId('wizard-step-thankyou')).toBeVisible();
@@ -122,11 +133,11 @@ test.describe('étape 2 progressive — parcours', () => {
     await page.getByTestId('wizard-address-submit').click();
     await expect(page.getByTestId('wizard-address-line1')).toBeFocused();
     await fillAddress(page, 'Douar centre');
-    const shown = parseInt(await page.getByTestId('wizard-action-total-amount').innerText(), 10);
+    const shown = parseInt((await page.getByTestId('wizard-action-total-amount').textContent()) ?? '', 10);
     const order = page.waitForResponse(
       (r) => r.url().includes('/api/checkout/order') && r.request().method() === 'POST',
     );
-    await page.getByTestId('wizard-address-submit').click();
+    await (await confirmButton(page)).click();
     const body = (await (await order).json()) as { totalCents: number };
     expect(body.totalCents / 100).toBe(shown);
   });
@@ -142,10 +153,10 @@ test.describe('étape 2 progressive — parcours', () => {
       failed = true;
       return route.fulfill({ status: 500, contentType: 'application/json', body: '{"error":"internal"}' });
     });
-    await page.getByTestId('wizard-address-submit').click();
+    await (await confirmButton(page)).click();
     await expect(page.getByTestId('wizard-address-error')).toBeVisible();
     await expect(page.getByTestId('wizard-address-line1')).toHaveValue('Hay Salam, rue 4');
-    await page.getByTestId('wizard-address-submit').click();
+    await (await confirmButton(page)).click();
     await expect(page.getByTestId('wizard-step-thankyou')).toBeVisible();
   });
 
@@ -158,7 +169,7 @@ test.describe('étape 2 progressive — parcours', () => {
     page.on('request', (r) => {
       if (r.url().includes('/api/checkout/order') && r.method() === 'POST') orders += 1;
     });
-    await page.getByTestId('wizard-address-submit').evaluate((el) => {
+    await (await confirmButton(page)).evaluate((el) => {
       const button = el as HTMLElement;
       button.click();
       button.click();

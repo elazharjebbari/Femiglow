@@ -796,6 +796,42 @@ export async function countActiveDeliveryCities(
   return n;
 }
 
+/**
+ * Tarifs de livraison extrêmes des villes actives (MAD entiers), pour annoncer
+ * « Livraison 19 à 45 MAD selon votre ville » avant que la ville soit connue.
+ * `null` si aucune ville active : l'interface retombe sur un libellé sans montant.
+ */
+export async function getDeliveryPriceBounds(
+  countryCode = 'MA',
+): Promise<{ minMad: number; maxMad: number } | null> {
+  const drizzle = db();
+  if (drizzle) {
+    const rows = await drizzle
+      .select({
+        min: sql<number | null>`min(${schema.deliveryCities.deliveryPriceMad})::int`,
+        max: sql<number | null>`max(${schema.deliveryCities.deliveryPriceMad})::int`,
+      })
+      .from(schema.deliveryCities)
+      .where(
+        and(
+          eq(schema.deliveryCities.countryCode, countryCode),
+          eq(schema.deliveryCities.isActive, true),
+        ),
+      );
+    const row = rows[0];
+    if (!row || row.min === null || row.max === null) return null;
+    return { minMad: row.min, maxMad: row.max };
+  }
+  let min = Infinity;
+  let max = -Infinity;
+  for (const c of ext().deliveryCities.values()) {
+    if (c.countryCode !== countryCode || !c.isActive) continue;
+    min = Math.min(min, c.deliveryPriceMad);
+    max = Math.max(max, c.deliveryPriceMad);
+  }
+  return Number.isFinite(min) ? { minMad: min, maxMad: max } : null;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // BATCH POSITION UPDATE (admin — villes prioritaires)
 // ─────────────────────────────────────────────────────────────────────────────

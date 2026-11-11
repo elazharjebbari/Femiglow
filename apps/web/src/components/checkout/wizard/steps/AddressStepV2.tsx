@@ -51,6 +51,7 @@ import { cn } from '@/lib/utils/cn';
 import { ActionBarTotal } from '../ActionBarTotal';
 import { AddressCouponDisclosure } from '../AddressCouponDisclosure';
 import { ConfirmOrderButton } from '../ConfirmOrderButton';
+import { InlineConfirmButton } from '../InlineConfirmButton';
 import { StepActionBar } from '../StepActionBar';
 import { StepProgressLine } from '../StepProgressLine';
 import { StockIndicator } from '../StockIndicator';
@@ -110,6 +111,8 @@ export function AddressStepV2() {
 
   const [cityFocused, setCityFocused] = useState(false);
   const [noteOpen, setNoteOpen] = useState(() => draft.notes.trim().length > 0);
+  // Bouton de confirmation dans le formulaire à l'écran : la barre s'efface.
+  const [inlineCtaOnScreen, setInlineCtaOnScreen] = useState(false);
 
   const {
     revealed,
@@ -243,6 +246,11 @@ export function AddressStepV2() {
       : copy.progress(firstName)
     : copy.progressNoName;
 
+  // Adresse saisie : le bouton de confirmation apparaît dans le formulaire,
+  // à côté du champ (la barre fixe paraissait détachée du formulaire).
+  const showInlineCta =
+    revealed && phase !== 'city' && phase !== 'address' && isAddressLineValid(watchedLine1) && totalCents !== null;
+
   const lineField = register('addressLine1', { onBlur: onLineBlur });
   const primaryVariantId = cart?.items[0]?.variantId;
 
@@ -360,6 +368,18 @@ export function AddressStepV2() {
           </div>
         </div>
 
+        {showInlineCta && totalCents !== null && (
+          <div className="pt-1 lg:hidden">
+            <InlineConfirmButton
+              title={copy.inlineCtaTitle}
+              subtitle={copy.inlineCtaSub(formatAmount(totalCents))}
+              submitting={submitting}
+              savingLabel={copy.ctaSaving}
+              onVisibleChange={setInlineCtaOnScreen}
+            />
+          </div>
+        )}
+
         {revealed && (
           <div className="space-y-2 pt-1">
             {noteOpen ? (
@@ -398,7 +418,10 @@ export function AddressStepV2() {
         )}
       </form>
 
-      <StepActionBar hideWithKeyboard={phase === 'city'}>
+      <StepActionBar
+        hideWithKeyboard={phase === 'city'}
+        suppressed={showInlineCta && inlineCtaOnScreen}
+      >
         {({ keyboardOpen }) => (
           <>
             {cityKnown && totalCents !== null && (

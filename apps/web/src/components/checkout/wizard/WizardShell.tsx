@@ -18,6 +18,7 @@
  * perf perçue (FCP) du /kit qui doit rester sub-2s.
  */
 
+import { useDeliveryBounds } from '@/lib/checkout/delivery/delivery-estimate';
 import {
   Suspense,
   lazy,
@@ -335,6 +336,8 @@ export function WizardShell({
   // celui du store (hydraté). Empêche le clignotement « pas de cart »
   // pendant l'hydration.
   const cartForRecap = initialCart ?? storedCart ?? null;
+  // Bornes « 19 à 45 MAD » : la livraison chiffrée avant le choix de la ville.
+  const deliveryBounds = useDeliveryBounds();
   // Livraison payante au tarif de la ville — même règle que le serveur
   // (`shipping-fee.ts`). Avant hydratation ou sans ville : « selon la ville ».
   const recapShippingCents =
@@ -362,7 +365,16 @@ export function WizardShell({
           packLabel={t.cartRecap.packLabel}
           shippingIncludedLabel={t.cartRecap.shippingIncluded}
           shippingCents={recapShippingCents}
-          shippingPendingLabel={t.cartRecap.shippingPending}
+          shippingPendingLabel={
+            deliveryBounds
+              ? deliveryBounds.minMad === deliveryBounds.maxMad
+                ? t.cartRecap.shippingAmount(`${deliveryBounds.minMad} ${t.cartRecap.currency}`)
+                : t.cartRecap.shippingRange(
+                    String(deliveryBounds.minMad),
+                    `${deliveryBounds.maxMad} ${t.cartRecap.currency}`,
+                  )
+              : t.cartRecap.shippingPending
+          }
           shippingAmountLabel={t.cartRecap.shippingAmount}
           currencyLabel={t.cartRecap.currency}
           appliedCreditCents={appliedCreditCents}

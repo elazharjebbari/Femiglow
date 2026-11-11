@@ -17,6 +17,11 @@ export interface StepActionBarProps {
   children: (state: { keyboardOpen: boolean }) => ReactNode;
   /** Masquée clavier ouvert : rien à confirmer pendant la recherche de ville. */
   hideWithKeyboard?: boolean;
+  /**
+   * Masquée en mobile : le bouton de confirmation est déjà dans le formulaire,
+   * à l'écran. Jamais deux boutons identiques en même temps.
+   */
+  suppressed?: boolean;
 }
 
 /**
@@ -26,7 +31,7 @@ export interface StepActionBarProps {
  *
  * Pendant qu'elle est là, le bouton de chat s'efface : il recouvrirait le CTA.
  */
-export function StepActionBar({ children, hideWithKeyboard }: StepActionBarProps) {
+export function StepActionBar({ children, hideWithKeyboard, suppressed }: StepActionBarProps) {
   const inPanel = useIsWizardInPanel();
   const onScreen = useCommanderOnScreen(!inPanel);
   const keyboardInset = useVisualViewportKeyboardInset(true);
@@ -42,7 +47,10 @@ export function StepActionBar({ children, hideWithKeyboard }: StepActionBarProps
     return () => observer.disconnect();
   }, []);
 
-  const visible = (inPanel || onScreen) && !(hideWithKeyboard && keyboardOpen);
+  // Clavier ouvert, le bouton du formulaire peut être caché par le clavier :
+  // la barre, qui remonte avec lui, reste alors l'accès à la confirmation.
+  const visible =
+    (inPanel || onScreen) && !(hideWithKeyboard && keyboardOpen) && !(suppressed && !keyboardOpen);
 
   const setActionBarActive = useCommanderLauncherStore((s) => s.setActionBarActive);
   useEffect(() => {
