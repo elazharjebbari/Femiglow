@@ -109,8 +109,13 @@ essai() { # chemin code-attendu
   code=\$(curl -s -o /dev/null -m 30 -w '%{http_code}' "http://127.0.0.1:8019\$1" || echo 000)
   log "  \$1 → \$code (attendu \$2)"; [ "\$code" = "\$2" ] || OK=0
 }
+# Page lue EN ENTIER avant la recherche : avec « set -o pipefail », un
+# « curl | grep -q » échoue quand grep s'arrête au premier résultat (curl
+# reçoit SIGPIPE, code 23) — faux négatif constaté le 11/11/2026.
+page() { curl -s -m 30 "\$1" || true; }
 contient() { # chemin motif libellé
-  if curl -s -m 30 "http://127.0.0.1:8019\$1" | grep -q "\$2"; then log "  \$1 contient \$3 : oui"; else log "  \$1 contient \$3 : NON"; OK=0; fi
+  local html; html=\$(page "http://127.0.0.1:8019\$1")
+  if grep -qF "\$2" <<<"\$html"; then log "  \$1 contient \$3 : oui"; else log "  \$1 contient \$3 : NON"; OK=0; fi
 }
 essai /api/health 200
 essai /kit 200
@@ -143,7 +148,7 @@ for _ in \$(seq 1 30); do
   sleep 1
   if [ "\$(curl -s -o /dev/null -m 10 -w '%{http_code}' http://127.0.0.1:8011/kit)" = 200 ] \\
     && [ "\$(curl -s -o /dev/null -m 10 -w '%{http_code}' http://127.0.0.1:8011/ar/kit)" = 200 ] \\
-    && curl -s -m 10 http://127.0.0.1:8011/kit | grep -q 'data-testid="delivery-estimate"'; then
+    && grep -qF 'data-testid="delivery-estimate"' <<<"\$(page http://127.0.0.1:8011/kit)"; then
     log "OK : \$(cat .next/BUILD_ID) en ligne, précédent gardé dans .next-prev"
     log "retour arrière : cd /var/www/femiglow/apps/web && mv .next .next-failed && mv .next-prev .next && systemctl restart femiglow"
     log "FIN"; exit 0
