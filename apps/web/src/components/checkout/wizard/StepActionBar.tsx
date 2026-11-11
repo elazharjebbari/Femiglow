@@ -49,8 +49,13 @@ export function StepActionBar({ children, hideWithKeyboard, suppressed }: StepAc
 
   // Clavier ouvert, le bouton du formulaire peut être caché par le clavier :
   // la barre, qui remonte avec lui, reste alors l'accès à la confirmation.
+  // Focus clavier dans la barre : on ne la retire pas sous le doigt (le focus
+  // serait perdu).
+  const [focusWithin, setFocusWithin] = useState(false);
   const visible =
-    (inPanel || onScreen) && !(hideWithKeyboard && keyboardOpen) && !(suppressed && !keyboardOpen);
+    (inPanel || onScreen) &&
+    !(hideWithKeyboard && keyboardOpen) &&
+    !(suppressed && !keyboardOpen && !focusWithin);
 
   const setActionBarActive = useCommanderLauncherStore((s) => s.setActionBarActive);
   useEffect(() => {
@@ -65,6 +70,10 @@ export function StepActionBar({ children, hideWithKeyboard, suppressed }: StepAc
       {!inPanel && <div aria-hidden="true" className="lg:hidden" style={{ height: barHeight }} />}
       <div
         ref={barRef}
+        onFocus={() => setFocusWithin(true)}
+        onBlur={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocusWithin(false);
+        }}
         data-testid="wizard-action-bar"
         data-visible={visible}
         style={{

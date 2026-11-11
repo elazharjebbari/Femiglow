@@ -368,6 +368,13 @@ export function AddressStepV2() {
           </div>
         </div>
 
+        {/* Le bouton apparaît sans changement de focus : on l'annonce. La
+          région existe toujours, seul son texte change. */}
+        <span className="sr-only lg:hidden" aria-live="polite">
+          {showInlineCta && totalCents !== null
+            ? `${copy.inlineCtaTitle}. ${copy.inlineCtaSub(formatAmount(totalCents))}`
+            : ''}
+        </span>
         {showInlineCta && totalCents !== null && (
           <div className="pt-1 lg:hidden">
             <InlineConfirmButton

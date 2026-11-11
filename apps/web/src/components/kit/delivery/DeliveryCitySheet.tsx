@@ -10,7 +10,7 @@
  * pour toutes les autres.
  */
 
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { CityAutocomplete } from '@/components/checkout/wizard/components/CityAutocomplete';
@@ -66,12 +66,25 @@ export function DeliveryCitySheet({
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState<PublicCity | null>(null);
 
-  // À l'ouverture : la ville déjà enregistrée est présélectionnée si elle est
-  // dans les raccourcis ; la recherche repart vide.
+  // À l'ouverture : la recherche repart vide et la ville déjà enregistrée est
+  // présélectionnée si elle figure dans les raccourcis. Une seule fois par
+  // ouverture : des raccourcis arrivés tard (réseau lent) n'effacent pas une
+  // saisie en cours.
+  const initialisedRef = useRef(false);
   useEffect(() => {
-    if (!open) return;
-    setQuery('');
-    setSelected(shortcuts.find((c) => c.slug === savedSlug) ?? null);
+    if (!open) {
+      initialisedRef.current = false;
+      return;
+    }
+    if (!initialisedRef.current) {
+      initialisedRef.current = true;
+      setQuery('');
+      setSelected(shortcuts.find((c) => c.slug === savedSlug) ?? null);
+      return;
+    }
+    // Raccourcis arrivés après l'ouverture : présélection seulement si rien
+    // n'a encore été choisi.
+    setSelected((current) => current ?? shortcuts.find((c) => c.slug === savedSlug) ?? null);
   }, [open, savedSlug, shortcuts]);
 
   const shippingCents = selected ? shippingCentsFromPrice(selected.deliveryPriceMad, freeShipping) : null;
@@ -92,8 +105,8 @@ export function DeliveryCitySheet({
       closeLabel={copy.close}
       dir={dir}
       data-testid="delivery-city-sheet"
-      // Pas de clavier à l'ouverture : les raccourcis suffisent souvent.
-      onOpenAutoFocus={(event) => event.preventDefault()}
+      // Focus par défaut de BottomSheet : sur le panneau (annoncé par les
+      // lecteurs d'écran), sans ouvrir le clavier.
       bodyClassName="px-5 pb-8 pt-4 sm:px-8"
     >
       <div className="space-y-5" dir={dir}>
@@ -144,7 +157,14 @@ export function DeliveryCitySheet({
           freeShippingLabel={t.shipping.freeBadgeLabel}
           value={query}
           language={language}
-          onChange={setQuery}
+          onChange={(value) => {
+            setQuery(value);
+            // Texte modifié sans choisir de suggestion : l'ancienne ville ne
+            // vaut plus (sinon « Valider » enregistrerait une ville effacée).
+            setSelected((current) =>
+              current && value.trim() !== cityLabel(current, language) ? null : current,
+            );
+          }}
           onCitySelected={(city) => {
             setSelected(city);
             setQuery(cityLabel(city, language));

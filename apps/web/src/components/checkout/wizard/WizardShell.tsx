@@ -190,6 +190,8 @@ export function WizardShell({
   const draftCity = useWizardStore((s) => s.addressDraft.city);
   const draftCityPriceMad = useWizardStore((s) => s.addressDraft.cityDeliveryPriceMad);
   const { freeShipping } = useShippingConfig();
+  // Bornes « 19 à 45 MAD » : la livraison chiffrée avant le choix de la ville.
+  const deliveryBounds = useDeliveryBounds();
   const setFormContext = useWizardStore((s) => s.setFormContext);
   const setCartSnapshot = useWizardStore((s) => s.setCartSnapshot);
   const goToStep = useWizardStore((s) => s.goToStep);
@@ -336,8 +338,6 @@ export function WizardShell({
   // celui du store (hydraté). Empêche le clignotement « pas de cart »
   // pendant l'hydration.
   const cartForRecap = initialCart ?? storedCart ?? null;
-  // Bornes « 19 à 45 MAD » : la livraison chiffrée avant le choix de la ville.
-  const deliveryBounds = useDeliveryBounds();
   // Livraison payante au tarif de la ville — même règle que le serveur
   // (`shipping-fee.ts`). Avant hydratation ou sans ville : « selon la ville ».
   const recapShippingCents =

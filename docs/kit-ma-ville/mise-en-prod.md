@@ -33,7 +33,7 @@ Runbook préparé le 11/11/2026. Branche `fix/kit-bugs-graves`, partie de `4e44e
 2. **Relecture indépendante** des deux derniers commits (`bb6f485e` et le correctif), corrections éventuelles, tests relancés.
 3. **Pousser** la branche : `git push -u origin fix/kit-bugs-graves`. Ouvrir une PR vers `fix/stock-visible-admin` pour la trace.
 4. **Écarter la config locale** : `mv apps/web/.env.production.local ~/femiglow-env-local.bak`. ⚠️ Sinon `next build` la lit : le build embarquerait l'adresse de la base de test et les pages statiques seraient générées avec les données locales.
-5. **Compiler** : `bash bin/compiler-mac.sh` (Node 22, variables `NEXT_PUBLIC_` lues sur le serveur).
+5. **Compiler** : `bash bin/compiler-mac.sh` (Node 22, variables `NEXT_PUBLIC_` lues sur le serveur). Le script refuse de compiler si un fichier `.env*.local` est présent.
 6. **Contrôler le build** :
    - `grep -rl "55432\|femiglow_test" apps/web/.next | head` doit être vide ;
    - `grep -rl "delivery-estimate" apps/web/.next/static | head -1` doit trouver un fichier.
@@ -42,32 +42,22 @@ Runbook préparé le 11/11/2026. Branche `fix/kit-bugs-graves`, partie de `4e44e
 
 Heure creuse (avant 9 h ou après 23 h, heure du Maroc), hors pic de campagne. Prévenir les autres sessions et worktrees (`femiglow-wt-stock`, `Femiglow-kit-cro`, `Femiglow-tiktok-tracking`) : aucun déploiement d'une autre branche ensuite, sous peine de retirer ces correctifs. `fix/tiktok-tracking` n'est pas incluse.
 
-### 4.1 Sur le serveur, avant la bascule
+### 4.1 Vérifier, puis préparer le serveur (depuis le Mac)
 
 ```bash
-ssh alfenna
-cd /var/www/femiglow
-df -h / | tail -1                       # au moins 3 Go libres
-sudo -u postgres pg_dump -Fc femiglow > /var/backups/femiglow/pre-ma-ville-$(date -u +%Y%m%dT%H%M%SZ).dump
-cp apps/web/.env apps/web/.env.pre-ma-ville
-# Secret du devis, généré sur place (ne transite pas) :
-grep -q '^PRICE_QUOTE_SECRET=' apps/web/.env || echo "PRICE_QUOTE_SECRET=$(openssl rand -hex 32)" >> apps/web/.env
-# Source alignée sur ce qui va tourner (pas de build sur le serveur) :
-git fetch -q origin fix/kit-bugs-graves && git checkout -q -B fix/kit-bugs-graves origin/fix/kit-bugs-graves
-git log --oneline -1
+bash bin/deployer-kit.sh verifier    # commits à déployer, aucune migration ni dépendance, secret présent ou non
+bash bin/deployer-kit.sh preparer    # sauvegarde base + .env, PRICE_QUOTE_SECRET généré sur place, source alignée
 ```
 
-### 4.2 Installation sans coupure (depuis le Mac)
+`preparer` ne touche pas au site en ligne : le secret n'est lu qu'au redémarrage de l'installation.
 
-`bash bin/deployer-stock.sh installer` envoie le `.next` compilé, le démarre sur le port 8019, vérifie `/`, `/kit`, `/ar/kit`, l'admin, le stock et un chunk JS, puis bascule et redémarre. En cas d'échec à l'essai : aucune bascule. En cas d'échec après bascule : retour automatique à `.next-prev`.
-
-À ajouter à l'essai sur 8019 avant la bascule (à intégrer au script ou à lancer à la main pendant l'essai) :
+### 4.2 Installer sans coupure (depuis le Mac)
 
 ```bash
-curl -s http://127.0.0.1:8019/kit | grep -c 'data-testid="delivery-estimate"'   # ≥ 1
-curl -s http://127.0.0.1:8019/kit | grep -o '19 à 45 MAD[^<]*' | head -1         # fourchette lue en base
-curl -s http://127.0.0.1:8019/kit | grep -c 'priceQuote'                          # ≥ 1 : secret chargé
+bash bin/deployer-kit.sh installer
 ```
+
+Le script refuse si la compilation contient l'adresse de la base de test ou ne contient pas « Ma ville », et si `PRICE_QUOTE_SECRET` est absent. Il envoie le `.next`, le démarre sur le port 8019 et vérifie : `/`, `/kit`, `/ar/kit`, l'admin, le stock, la recherche de villes, un chunk JS, la ligne livraison, la fourchette lue en base et le devis signé. Puis il bascule, redémarre et contrôle la ligne livraison en ligne. En cas d'échec à l'essai : aucune bascule. Après bascule : retour automatique à `.next-prev`.
 
 ## 5. Contrôles juste après la bascule (15 minutes)
 
@@ -97,6 +87,8 @@ curl -s http://127.0.0.1:8019/kit | grep -c 'priceQuote'                        
 - part des commandes à 19 / 35 / 39 / 45 MAD ;
 - abandons après le choix de la ville (requête prête dans le rapport d'audit) ;
 - Meta Events Manager : ViewContent serveur en baisse (attendu), EMQ Lead/Purchase en hausse.
+
+**Rupture de série à noter** : à l'étape 2, l'événement `address_city_selected` part aussi quand la ville vient du panneau « Ma ville » (brouillon déjà rempli). Les mesures de l'étape 2 avant et après la mise en ligne ne sont pas directement comparables. Le panneau lui-même n'est pas encore mesuré (événement à ajouter).
 
 **Une à deux semaines** : taux de colis livrés et refusés, à comparer aux deux semaines d'avant. C'est le vrai critère.
 

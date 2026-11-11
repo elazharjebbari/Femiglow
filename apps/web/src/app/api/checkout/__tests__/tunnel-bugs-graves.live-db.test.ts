@@ -433,6 +433,15 @@ describe.skipIf(!RUN)('tunnel /kit sur base réelle — correctifs de l’audit 
     });
   });
 
+  it('bornes de livraison : min des villes payantes, max jamais sous le tarif par défaut (45)', async () => {
+    const { getDeliveryPriceBounds } = await import('@/lib/db/queries/delivery-cities');
+    const [row] = await sql`
+      SELECT min(nullif(delivery_price_mad, 0))::int AS min, max(delivery_price_mad)::int AS max
+      FROM delivery_cities WHERE is_active AND country_code = 'MA'`;
+    const bounds = await getDeliveryPriceBounds();
+    expect(bounds).toEqual({ minMad: row!.min, maxMad: Math.max(row!.max as number, 45) });
+  });
+
   describe('Bug 6 — limite de débit', () => {
     it('création de fiche : la 31e en 10 min depuis la même IP reçoit 429', async () => {
       const ipAddr = '41.99.99.99';

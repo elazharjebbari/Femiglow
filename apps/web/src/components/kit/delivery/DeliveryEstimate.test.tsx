@@ -137,4 +137,22 @@ describe('panneau « Ma ville »', () => {
     expect(screen.getByTestId('delivery-city-shortcut-casablanca').textContent).toContain('19 MAD');
     expect(screen.getByTestId('delivery-city-shortcut-marrakech').getAttribute('aria-pressed')).toBe('false');
   });
+
+  it('ville choisie puis texte effacé sans nouvelle suggestion : « Valider » redevient inactif', () => {
+    renderLine();
+    fireEvent.click(screen.getByTestId('delivery-estimate-open'));
+    fireEvent.click(screen.getByTestId('delivery-city-shortcut-marrakech'));
+    const validate = screen.getByTestId('delivery-city-validate') as HTMLButtonElement;
+    expect(validate.disabled).toBe(false);
+    fireEvent.change(screen.getByTestId('delivery-city-search'), { target: { value: 'Tang' } });
+    expect(validate.disabled).toBe(true);
+    expect(screen.queryByTestId('delivery-city-recap')).toBeNull();
+  });
+
+  it('le panneau reçoit le focus à l’ouverture (lecteurs d’écran)', () => {
+    renderLine();
+    fireEvent.click(screen.getByTestId('delivery-estimate-open'));
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.contains(document.activeElement)).toBe(true);
+  });
 });
