@@ -1,0 +1,279 @@
+<title>Étape 2 du kit, accusé de réception</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,500;1,600&family=Inter:wght@400;500;600&family=Noto+Naskh+Arabic:wght@400;600&display=swap">
+<style>
+/* Mise en page : une colonne de lecture, des téléphones côte à côte qui passent en pile sur mobile. */
+:root {
+  --page: #F6F2EA; --surface: #FFFFFF; --ink: #2C2A28; --ink-soft: #5A5650; --rule: rgba(44,42,40,.14);
+  --sage: #4F6D52; --sage-soft: #E0EDE0; --garnet: #8E3F3B; --garnet-soft: #FAE6E5; --amber: #7A5F38; --amber-soft: #F1E6CF;
+  /* Couleurs du site, figées : les écrans de téléphone reproduisent FemiGlow tel qu'il est. */
+  --fg-creme: #FAF7F0; --fg-creme-warm: #F4EEE3; --fg-encre: #2C2A28; --fg-encre-soft: #4A4744; --fg-sauge-dark: #4F6D52;
+  --fg-sauge-soft: #E0EDE0; --fg-action: #8E3F3B; --fg-action-light: #A34A45; --fg-white: #FFFFFF; --fg-placeholder: #6B675F; --fg-bar: #4A4744;
+  --display: 'Cormorant Garamond', Georgia, serif; --body: 'Inter', system-ui, sans-serif; --arabic: 'Noto Naskh Arabic', 'Geeza Pro', serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --page: #1C1B19; --surface: #262422; --ink: #F1ECE2; --ink-soft: #B9B2A6; --rule: rgba(241,236,226,.16);
+  --sage: #A9C9AB; --sage-soft: #2C3A2E; --garnet: #E39A94; --garnet-soft: #3F2726; --amber: #D9BE8E; --amber-soft: #3A3122; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --page: #1C1B19; --surface: #262422; --ink: #F1ECE2; --ink-soft: #B9B2A6; --rule: rgba(241,236,226,.16);
+  --sage: #A9C9AB; --sage-soft: #2C3A2E; --garnet: #E39A94; --garnet-soft: #3F2726; --amber: #D9BE8E; --amber-soft: #3A3122; color-scheme: dark }
+body { background: var(--page); color: var(--ink); font: 15px/1.55 var(--body); }
+.wrap { max-width: 1080px; margin: 0 auto; padding-block: 40px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 56px; }
+h1 { font: italic 500 clamp(34px, 5vw, 52px)/1.05 var(--display); margin: 0; text-wrap: balance; }
+h2 { font: italic 500 30px/1.1 var(--display); margin: 0 0 6px; text-wrap: balance; }
+h3 { font: 600 15px/1.3 var(--body); margin: 0; }
+p { margin: 0; max-width: 68ch; }
+.eyebrow { font: 600 11px/1 var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-soft); }
+.lede { font-size: 17px; color: var(--ink-soft); }
+.stack { display: flex; flex-direction: column; gap: 14px; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 0; border-block: 1px solid var(--rule); }
+.fact { padding: 16px 16px 16px 0; }
+.fact b { display: block; font: 500 34px/1 var(--display); font-variant-numeric: tabular-nums; }
+.fact span { color: var(--ink-soft); font-size: 13px; }
+.row { display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start; }
+.row > .text { flex: 1 1 320px; min-width: 0; }
+.option { display: flex; flex-wrap: wrap; gap: 28px; padding-block: 28px; border-top: 1px solid var(--rule); align-items: flex-start; }
+.option > .text { flex: 1 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.pm { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+.pm ul { margin: 6px 0 0; padding-left: 18px; color: var(--ink-soft); font-size: 14px; }
+.pm li { margin-bottom: 4px; }
+.plus { color: var(--sage); } .minus { color: var(--garnet); }
+.verdict { display: inline-flex; gap: 8px; align-items: center; font: 600 12px/1 var(--body); padding: 7px 10px; border-radius: 999px; width: fit-content; }
+.verdict.keep { background: var(--sage-soft); color: var(--sage); } .verdict.part { background: var(--amber-soft); color: var(--amber); } .verdict.drop { background: var(--garnet-soft); color: var(--garnet); }
+.score { font-variant-numeric: tabular-nums; color: var(--ink-soft); font-size: 13px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 9px 12px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font: 600 11px/1.2 var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); }
+td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.scroll { overflow-x: auto; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; }
+.controls button { font: 500 13px/1 var(--body); padding: 9px 12px; border-radius: 999px; border: 1px solid var(--rule); background: transparent; color: var(--ink); cursor: pointer; }
+.controls button[aria-pressed="true"] { background: var(--ink); color: var(--page); border-color: var(--ink); }
+.controls button:focus-visible { outline: 2px solid var(--sage); outline-offset: 2px; }
+.note { font-size: 13px; color: var(--ink-soft); }
+.rules { margin: 0; padding-left: 18px; } .rules li { margin-bottom: 6px; }
+
+/* ── Téléphone ── */
+.phone { flex: 0 0 auto; width: 300px; max-width: 100%; border-radius: 30px; padding: 9px; background: #1d1c1b; box-shadow: 0 18px 40px rgba(0,0,0,.18); }
+.screen { position: relative; height: 560px; border-radius: 22px; overflow: hidden; background: var(--fg-creme); color: var(--fg-encre); font: 13px/1.4 var(--body); display: flex; flex-direction: column; }
+.screen[dir="rtl"] { font-family: var(--arabic); }
+.topbar { background: #0c0c0c; color: #fff; font-size: 11px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; }
+.topbar i { font-style: normal; background: #fff; color: #111; border-radius: 99px; padding: 3px 9px; font-weight: 600; }
+.body { flex: 1; padding: 14px 14px 0; overflow: hidden; }
+.card { background: var(--fg-white); border: 1px solid rgba(44,42,40,.1); border-radius: 4px; padding: 16px 16px 18px; display: flex; flex-direction: column; gap: 11px; min-height: 300px; }
+.prog { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 11.5px; font-weight: 500; }
+.prog u { font-weight: 400; color: var(--fg-encre-soft); font-size: 10.5px; }
+.barline { height: 3px; border-radius: 3px; background: rgba(44,42,40,.1); margin-top: -5px; }
+.barline b { display: block; height: 100%; border-radius: 3px; background: var(--fg-sauge-dark); }
+.ttl { font: italic 500 23px/1.1 var(--display); margin: 2px 0 -6px; }
+.screen[dir="rtl"] .ttl { font: 600 19px/1.3 var(--arabic); }
+.sub { color: var(--fg-encre-soft); font-size: 12px; }
+.lbl { font-size: 12px; font-weight: 500; margin-bottom: -6px; }
+.inp { background: var(--fg-creme-warm); border-bottom: 1px solid rgba(44,42,40,.15); height: 40px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; color: var(--fg-placeholder); font-size: 13px; }
+.inp.filled { color: var(--fg-encre); } .inp.focus { border-bottom: 2px solid var(--fg-encre); }
+.tick { color: var(--fg-sauge-dark); font-weight: 600; }
+.ship { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--fg-encre-soft); margin-top: -4px; }
+.ship b { color: var(--fg-encre); font-weight: 500; }
+.sugg { border: 1px solid rgba(44,42,40,.12); margin-top: -8px; font-size: 12.5px; }
+.sugg div { padding: 8px 10px; display: flex; justify-content: space-between; border-bottom: 1px solid rgba(44,42,40,.06); }
+.cta { margin: 0 12px; background: var(--fg-bar); color: #fff; border-radius: 14px; padding: 13px; text-align: center; font-weight: 500; font-size: 14px; }
+.cta.go, .inline { background: linear-gradient(180deg, var(--fg-action-light), var(--fg-action)); color: #FFFDF8; }
+.inline { border-radius: 12px; padding: 10px 12px; font-weight: 600; font-size: 13.5px; box-shadow: 0 8px 18px rgba(142,63,59,.24); }
+.inline small { display: block; font-weight: 400; font-size: 11px; opacity: .9; }
+.foot { padding: 10px 0 12px; border-top: 1px solid rgba(44,42,40,.1); background: var(--fg-creme); }
+.foot small { display: block; text-align: center; color: var(--fg-encre-soft); font-size: 10.5px; margin-top: 6px; }
+.kb { height: 150px; background: #d2d5db; display: grid; place-items: center; color: #6b7280; font-size: 11px; }
+/* Accusé */
+.ack { background: var(--fg-sauge-soft); border-radius: 10px; padding: 11px 12px; display: grid; grid-template-columns: 26px 1fr; gap: 10px; align-items: start; }
+.ack .dot { width: 26px; height: 26px; border-radius: 50%; background: var(--fg-sauge-dark); color: #fff; display: grid; place-items: center; font-size: 14px; }
+.ack strong { display: block; font-size: 13.5px; }
+.ack span { font-size: 12px; color: var(--fg-encre-soft); }
+.ack bdi, .chip bdi { font-weight: 600; color: var(--fg-encre); white-space: nowrap; }
+.chip { display: flex; gap: 6px; align-items: center; font-size: 11.5px; color: var(--fg-sauge-dark); font-weight: 500; }
+.steps3 { display: flex; flex-direction: column; gap: 9px; border-inline-start: 2px solid rgba(79,109,82,.3); padding-inline-start: 12px; margin-inline-start: 6px; }
+.steps3 div { font-size: 12px; position: relative; } .steps3 div b { display: block; font-size: 12.5px; }
+.steps3 div::before { content: ""; position: absolute; inset-inline-start: -18px; top: 4px; width: 9px; height: 9px; border-radius: 50%; background: var(--fg-white); border: 2px solid var(--fg-sauge-dark); }
+.steps3 div.done::before { background: var(--fg-sauge-dark); }
+.steps3 div.todo { color: var(--fg-placeholder); }
+.big { text-align: center; display: flex; flex-direction: column; gap: 10px; align-items: center; padding-top: 10px; }
+.big .dot { width: 46px; height: 46px; border-radius: 50%; background: var(--fg-sauge-dark); color: #fff; display: grid; place-items: center; font-size: 22px; }
+.ghost { border: 1px solid rgba(44,42,40,.3); border-radius: 12px; padding: 11px; text-align: center; font-size: 13px; width: 100%; box-sizing: border-box; }
+.sms { background: #fff; color: #111; border-radius: 14px; padding: 12px; margin: 14px; box-shadow: 0 6px 20px rgba(0,0,0,.18); font-size: 12.5px; }
+.sms b { display: block; margin-bottom: 2px; }
+.dim { position: absolute; inset: 0; background: rgba(20,20,20,.55); display: flex; flex-direction: column; justify-content: flex-start; padding-top: 60px; }
+.caption { text-align: center; color: var(--ink-soft); font-size: 12px; margin-top: 10px; }
+@media (prefers-reduced-motion: no-preference) { .ack .dot, .big .dot { animation: pop .5s ease-out both; } @keyframes pop { from { transform: scale(.6); opacity: 0 } to { transform: none; opacity: 1 } } }
+</style>
+
+<div class="wrap">
+  <header class="stack">
+    <span class="eyebrow">FemiGlow · /kit · étape 2 du formulaire · 18 novembre 2026</span>
+    <h1>Dire « c’est noté, on vous appelle » au bon moment</h1>
+    <p class="lede">Aujourd’hui, une cliente qui donne son prénom et son numéro puis quitte l’écran d’adresse reçoit un appel qu’elle n’attend pas. Rien à l’étape 2 ne lui dit que son numéro est déjà enregistré. Cette page compare cinq façons de le lui dire et montre celle qui est retenue.</p>
+    <div class="facts">
+      <div class="fact"><b>43 %</b><span>des clientes quittaient l’étape 2 sans commander (mesure du 31/10, 30 jours)</span></div>
+      <div class="fact"><b>74 % / 42 %</b><span>de colis livrés : commandes finies sur le site, contre numéros rappelés après abandon (Trello, 05/11)</span></div>
+      <div class="fact"><b>0 ligne</b><span>à l’étape 2 actuelle qui annonce l’appel ou confirme l’enregistrement</span></div>
+    </div>
+  </header>
+
+  <section class="stack">
+    <span class="eyebrow">Situation actuelle</span>
+    <h2>L’écran d’adresse repart de zéro</h2>
+    <div class="row">
+      <div><div class="phone"><div class="screen" id="m-now"></div></div><div class="caption">Étape 2 en ligne aujourd’hui</div></div>
+      <div class="text stack">
+        <p>L’appel est annoncé une seule fois, à l’étape 1, dans une phrase grise et une case déjà cochée. À l’étape 2, la cliente lit « plus que la livraison », ce qui lui fait croire que rien n’est encore pris en compte.</p>
+        <p>Côté serveur, la réalité est autre : la fiche est créée dès l’étape 1, la ville et l’adresse sont enregistrées champ par champ, et après le délai réglé dans l’admin la fiche part au CRM. L’équipe appelle.</p>
+        <ul class="rules">
+          <li><b>Surprise à l’appel.</b> Celle qui part pense n’avoir rien commandé. Elle décroche moins, refuse plus.</li>
+          <li><b>Aucune raison de finir.</b> Rien n’explique à quoi sert la ville : voir le total exact, raccourcir l’appel.</li>
+          <li><b>Numéro jamais relu.</b> Une faute de frappe à l’étape 1 donne une cliente injoignable, sans qu’elle puisse le voir.</li>
+          <li><b>Place disponible.</b> Sur un écran de 844 px, la carte garde environ 300 px vides à l’arrivée.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="stack">
+    <span class="eyebrow">Cinq pistes</span>
+    <h2>Du plus léger au plus radical</h2>
+    <p>Chaque piste est notée sur cinq critères : clarté du message, effet probable sur les commandes finies, exactitude de ce qui est dit, coût et risque technique, tenue sur petit écran.</p>
+    <div id="options"></div>
+  </section>
+
+  <section class="stack">
+    <span class="eyebrow">Comparaison</span>
+    <h2>Notes par critère</h2>
+    <div class="scroll"><table>
+      <thead><tr><th>Piste</th><th>Clarté</th><th>Commandes finies</th><th>Exactitude</th><th>Coût et risque</th><th>Petit écran</th><th>Total / 25</th></tr></thead>
+      <tbody id="scores"></tbody>
+    </table></div>
+    <p class="note">Les notes sont un jugement argumenté, pas une mesure. La seule mesure fiable viendra du test en ligne : part de visiteuses réglable dans l’admin.</p>
+  </section>
+
+  <section class="stack">
+    <span class="eyebrow">Proposition retenue · en ligne depuis le 18 novembre, 11:50 UTC</span>
+    <h2>La carte d’accusé qui se replie</h2>
+    <p>La piste 2 sert de base. Elle reprend à la piste 1 sa ligne courte, pour ne jamais prendre la place du champ quand le clavier est ouvert, et à la piste 3 l’idée de dire ce qui se passe ensuite. Elle ne crée aucune commande à la place de la cliente et n’ajoute aucun écran.</p>
+    <div class="row">
+      <div>
+        <div class="phone"><div class="screen" id="m-final"></div></div>
+        <div class="caption" id="final-caption"></div>
+      </div>
+      <div class="text stack">
+        <div class="controls" id="state-controls" role="group" aria-label="Moment du parcours"></div>
+        <div class="controls" id="lang-controls" role="group" aria-label="Langue">
+          <button type="button" data-lang="fr" aria-pressed="true">Français</button>
+          <button type="button" data-lang="ar" aria-pressed="false">العربية</button>
+        </div>
+        <ul class="rules">
+          <li><b>À l’arrivée :</b> carte sauge, coche, « C’est noté, Salma. Nous vous appelons au 06 26 62 88 30 pour confirmer votre commande. »</li>
+          <li><b>Le numéro est affiché en entier.</b> Elle le relit. S’il est faux, « Modifier » est juste au-dessus.</li>
+          <li><b>Le sous-titre donne la raison de continuer :</b> avec la ville, l’appel est plus court. L’adresse reste facultative.</li>
+          <li><b>Dès qu’elle touche le champ ville,</b> la carte devient une ligne. Le champ et les suggestions gardent la place.</li>
+          <li><b>Si l’enregistrement a échoué</b> (réseau coupé), la carte ne s’affiche pas : on ne dit pas « c’est noté » quand ce n’est pas vrai.</li>
+          <li><b>La commande reste créée par le bouton grenat.</b> Prix, frais, stock, suivi des achats : rien ne change.</li>
+          <li><b>Réglage :</b> part de visiteuses dans l’admin (100 par défaut), coupe-circuit serveur, <code>?ack=off</code> pour comparer.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="stack">
+    <span class="eyebrow">Risques</span>
+    <h2>Ce qui peut mal tourner, et la parade</h2>
+    <div class="scroll"><table>
+      <thead><tr><th>Risque</th><th>Pourquoi</th><th>Parade</th></tr></thead>
+      <tbody>
+        <tr><td>Moins de commandes finies sur le site</td><td>« C’est noté » peut donner l’impression que tout est fait. Or une commande finie est livrée à 74 %, un rappel à 42 %.</td><td>Le texte dit « pour confirmer », jamais « commande confirmée ». Le sous-titre donne un gain concret. Mesure par bras, retour en un réglage.</td></tr>
+        <tr><td>Promesse d’appel non tenue</td><td>L’envoi au CRM dépend d’un réglage de l’admin et de l’équipe.</td><td>Vérifier le réglage « abandon étape 1 » avant la mise en ligne. Pas de délai chiffré dans la carte.</td></tr>
+        <tr><td>Arabe approximatif</td><td>Texte non relu par une personne native.</td><td>Relecture avant d’ouvrir à 100 % sur /ar/kit.</td></tr>
+        <tr><td>Écran trop chargé avec le clavier</td><td>La carte prend environ 100 px.</td><td>Elle se replie en une ligne de 20 px dès le premier contact avec le champ.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+</div>
+
+<script>
+const T = {
+  fr: { dir: 'ltr', offer: 'Offre du 18 novembre - Maroc', order: 'Commander', prog: 'Salma, plus que la livraison', progEnd: 'Salma, c’est presque fini', edit: 'Modifier',
+    ttl: 'Où livrer votre kit ?', subOld: 'Vous payez à la réception.', sub: 'Avec votre ville, l’appel de confirmation est plus rapide. Vous payez à la réception.',
+    city: 'Votre ville *', cityPh: 'Casablanca, Rabat, Agadir…', addr: 'Quartier, rue et numéro (facultatif)', addrPh: 'Ex. : Hay Salam, rue 4, n° 12',
+    choose: 'Choisir ma ville', nothing: 'Rien à payer maintenant', ackT: 'C’est noté, Salma.', ackB: 'Nous vous appelons au <bdi dir="ltr">06 26 62 88 30</bdi> pour confirmer votre commande.',
+    chip: 'Noté · on vous appelle au <bdi dir="ltr">06 26 62 88 30</bdi>', ship: 'Livraison en 24h - 48h', confirm: 'Confirmer ma commande', confirmSub: '234 MAD à la réception · rien à payer maintenant', kb: 'clavier', mar: 'Marrakech', addrVal: 'Hay Salam, rue 4, n° 12' },
+  ar: { dir: 'rtl', offer: 'عرض 18 نونبر - المغرب', order: 'اطلبي', prog: 'سلمى، بقي التوصيل فقط', progEnd: 'سلمى، أوشكتِ على الانتهاء', edit: 'تعديل',
+    ttl: 'أين نوصل طقمكِ؟', subOld: 'تدفعين عند الاستلام.', sub: 'بمدينتكِ يصبح اتصال التأكيد أسرع. تدفعين عند الاستلام.',
+    city: 'مدينتكِ *', cityPh: 'الدار البيضاء، الرباط، أكادير…', addr: 'الحي والشارع والرقم (اختياري)', addrPh: 'مثال: حي السلام، زنقة 4، رقم 12',
+    choose: 'اختيار مدينتي', nothing: 'لا شيء للدفع الآن', ackT: 'وصلتنا معلوماتكِ، سلمى.', ackB: 'سنتصل بكِ على الرقم <bdi dir="ltr">06 26 62 88 30</bdi> لتأكيد طلبكِ.',
+    chip: 'وصلتنا معلوماتكِ · سنتصل بكِ على <bdi dir="ltr">06 26 62 88 30</bdi>', ship: 'التوصيل خلال 24h - 48h', confirm: 'تأكيد طلبي', confirmSub: '234 MAD عند الاستلام · لا شيء للدفع الآن', kb: 'لوحة المفاتيح', mar: 'مراكش', addrVal: 'حي السلام، زنقة 4، رقم 12' },
+};
+const top = (t) => `<div class="topbar"><span>${t.offer}</span><i>${t.order}</i></div>`;
+const prog = (t, pct, end) => `<div class="prog"><span>${end ? t.progEnd : t.prog}</span><u>${t.edit}</u></div><div class="barline"><b style="width:${pct}%"></b></div>`;
+const cityField = (t, mode) => `<div class="lbl">${t.city}</div><div class="inp ${mode === 'filled' ? 'filled' : ''} ${mode === 'focus' ? 'focus' : ''}"><span>${mode === 'filled' ? t.mar : mode === 'focus' ? 'Marr' : t.cityPh}</span>${mode === 'filled' ? '<span class="tick">✓</span>' : ''}</div>`;
+const foot = (t, label, go) => `<div class="foot"><div class="cta ${go ? 'go' : ''}">${label}</div><small>${t.nothing}</small></div>`;
+const ack = (t) => `<div class="ack"><div class="dot">✓</div><div><strong>${t.ackT}</strong><span>${t.ackB}</span></div></div>`;
+const chip = (t) => `<div class="chip"><span>✓</span><span>${t.chip}</span></div>`;
+const shell = (t, inner, footer) => `${top(t)}<div class="body"><div class="card">${inner}</div></div>${footer}`;
+
+function screenNow(t) { return shell(t, prog(t, 66) + `<div class="ttl">${t.ttl}</div><div class="sub">${t.subOld}</div>` + cityField(t), foot(t, t.choose)); }
+const SCREENS = {
+  p1: (t) => shell(t, `<div class="prog"><span style="color:var(--fg-sauge-dark)">✓ Bien reçu, Salma · on vous appelle</span><u>${t.edit}</u></div><div class="barline"><b style="width:66%"></b></div><div class="ttl">${t.ttl}</div><div class="sub">Indiquez votre ville pour confirmer plus vite.</div>` + cityField(t), foot(t, t.choose)),
+  p2: (t) => shell(t, prog(t, 66) + ack(t) + `<div class="ttl">${t.ttl}</div><div class="sub">${t.sub}</div>` + cityField(t), foot(t, t.choose)),
+  p3: (t) => shell(t, prog(t, 66) + `<div class="steps3"><div class="done"><b>Demande reçue</b>Salma · 06 26 62 88 30</div><div><b>Appel de confirmation</b>Nous vous appelons pour valider</div><div class="todo"><b>Livraison</b>Vous payez à la réception</div></div><div class="sub">Gagnez du temps sur l’appel : indiquez votre ville.</div>` + cityField(t), foot(t, t.choose)),
+  p4: (t) => shell(t, `<div class="ack"><div class="dot">✓</div><div><strong>Commande enregistrée</strong><span>N° FG-48213 · nous vous appelons au <bdi>06 26 62 88 30</bdi></span></div></div><div class="ttl">Complétez la livraison</div><div class="sub">Frais et total calculés une fois la ville connue.</div>` + cityField(t) + `<div class="lbl">${t.addr}</div><div class="inp">${t.addrPh}</div>`, foot(t, 'Enregistrer mon adresse')),
+  p5: (t) => shell(t, `<div class="big"><div class="dot">✓</div><div class="ttl" style="margin:0">C’est noté, Salma</div><div class="sub">Nous vous appelons au <b>06 26 62 88 30</b> pour confirmer votre commande.</div><div class="inline" style="width:100%;box-sizing:border-box">Ajouter mon adresse<small>30 secondes · appel plus rapide</small></div><div class="ghost">Je la donnerai par téléphone</div></div>`, ''),
+};
+const FINAL = {
+  arrivee: { label: 'Arrivée', cap: 'Juste après « Continuer » : la carte confirme et annonce l’appel.', html: (t) => shell(t, prog(t, 66) + ack(t) + `<div class="ttl">${t.ttl}</div><div class="sub">${t.sub}</div>` + cityField(t), foot(t, t.choose)) },
+  saisie: { label: 'Ville en saisie', cap: 'Clavier ouvert : la carte est devenue une ligne, le champ garde la place.', html: (t) => shell(t, prog(t, 66) + chip(t) + cityField(t, 'focus') + `<div class="sugg"><div><span>${t.mar}</span><span>35 MAD</span></div><div><span>Marrakech Médina</span><span>35 MAD</span></div></div>`, `<div class="kb">${t.kb}</div>`) },
+  ville: { label: 'Ville choisie', cap: 'Les frais et le délai s’affichent, l’adresse s’ouvre.', html: (t) => shell(t, prog(t, 95, true) + chip(t) + cityField(t, 'filled') + `<div class="ship"><span>${t.ship}</span><b>35 MAD</b></div><div class="lbl">${t.addr}</div><div class="inp">${t.addrPh}</div>`, foot(t, t.confirm, true)) },
+  prete: { label: 'Prête à confirmer', cap: 'Le bouton grenat crée la commande, comme aujourd’hui.', html: (t) => shell(t, prog(t, 95, true) + chip(t) + cityField(t, 'filled') + `<div class="ship"><span>${t.ship}</span><b>35 MAD</b></div><div class="lbl">${t.addr}</div><div class="inp filled"><span>${t.addrVal}</span><span class="tick">✓</span></div><div class="inline">${t.confirm}<small>${t.confirmSub}</small></div>`, '') },
+  quitte: { label: 'Elle quitte', cap: 'Elle part sans finir : l’appel arrive, et elle l’attendait.', html: (t) => shell(t, prog(t, 66) + ack(t) + `<div class="ttl">${t.ttl}</div><div class="sub">${t.sub}</div>` + cityField(t), foot(t, t.choose)) + `<div class="dim"><div class="sms"><b>Appel entrant · FemiGlow</b>« Bonjour Salma, je vous appelle pour confirmer votre kit. Vous êtes dans quelle ville ? »</div></div>` },
+};
+const OPTIONS = [
+  { id: 'p1', n: 1, name: 'La ligne d’accusé', pitch: 'La phrase de progression devient « Bien reçu, Salma · on vous appelle ». Rien d’autre ne bouge.',
+    plus: ['Zéro hauteur ajoutée', 'Une demi-journée de travail', 'Aucun risque sur le clavier'], minus: ['Facile à ne pas lire : 11 px, en haut, tronquée à 360 px', 'Pas de numéro affiché, donc pas de relecture', 'Ne dit pas à quoi sert la ville'],
+    fit: 'Utile comme état replié, trop discrète seule.', verdict: ['part', 'Reprise en partie'], s: [2, 4, 5, 5, 5] },
+  { id: 'p2', n: 2, name: 'La carte d’accusé', pitch: 'Une carte sauge avec une coche : « C’est noté. Nous vous appelons au 06… pour confirmer votre commande. » Le sous-titre explique le gain de la ville.',
+    plus: ['Message lu en premier, dans la couleur « tout va bien » du site', 'Numéro relu par la cliente', 'La commande reste créée par le bouton : prix, stock et suivi inchangés', 'Occupe de la place aujourd’hui vide'], minus: ['Environ 100 px de plus à l’arrivée', '« C’est noté » peut faire croire que tout est fini'],
+    fit: 'Répond exactement à la demande, sans toucher au moteur de commande.', verdict: ['keep', 'Base retenue'], s: [5, 4, 5, 4, 4] },
+  { id: 'p3', n: 3, name: 'Le suivi en trois temps', pitch: 'Un fil comme un suivi de colis : demande reçue, appel de confirmation, livraison. Le champ ville vient dessous.',
+    plus: ['Explique toute la suite, pas seulement l’appel', 'Le premier point déjà coché pousse à continuer'], minus: ['Environ 130 px : le champ descend sous le milieu de l’écran', 'Beaucoup à lire avant d’agir', 'Miroir arabe à soigner'],
+    fit: 'Bonne idée, mieux placée sur l’écran de remerciement.', verdict: ['part', 'Idée gardée pour plus tard'], s: [4, 3, 5, 3, 2] },
+  { id: 'p4', n: 4, name: 'La commande créée dès l’étape 1', pitch: 'Le numéro suffit à créer la commande. L’étape 2 devient « Complétez la livraison ».',
+    plus: ['« Commande enregistrée » devient exact', 'Plus aucun abandon entre les deux étapes'], minus: ['Commande sans ville : ni frais ni total', 'Stock retiré pour des demandes non qualifiées', 'Les achats envoyés à Meta, TikTok et Google changent de sens', 'Le CRM ne distingue plus commande et panier abandonné', 'Refonte du moteur de commande'],
+    fit: 'Change le métier, pas seulement l’écran. À étudier à part.', verdict: ['drop', 'Écartée'], s: [5, 2, 4, 1, 4] },
+  { id: 'p5', n: 5, name: 'L’écran de choix', pitch: 'Un écran entier après l’étape 1 : « C’est noté », puis deux boutons, « Ajouter mon adresse » ou « Je la donnerai par téléphone ».',
+    plus: ['Impossible à manquer', 'La cliente choisit en connaissance de cause'], minus: ['Un tap de plus avant la ville', 'Offre une sortie : moins de commandes finies, donc plus de rappels à 42 %', 'Nouvel état « par téléphone » à gérer partout'],
+    fit: 'Clair, mais pousse vers le parcours le moins rentable.', verdict: ['drop', 'Écartée'], s: [5, 1, 5, 2, 4] },
+];
+const fr = T.fr;
+document.getElementById('m-now').innerHTML = screenNow(fr);
+document.getElementById('options').innerHTML = OPTIONS.map((o) => `
+  <article class="option">
+    <div><div class="phone"><div class="screen">${SCREENS[o.id](fr)}</div></div></div>
+    <div class="text">
+      <span class="eyebrow">Piste ${o.n}</span><h2>${o.name}</h2><p>${o.pitch}</p>
+      <div class="pm"><div><h3 class="plus">Forces</h3><ul>${o.plus.map((x) => `<li>${x}</li>`).join('')}</ul></div><div><h3 class="minus">Faiblesses</h3><ul>${o.minus.map((x) => `<li>${x}</li>`).join('')}</ul></div></div>
+      <p><b>Pertinence.</b> ${o.fit}</p>
+      <span class="verdict ${o.verdict[0]}">${o.verdict[1]}</span><span class="score">${o.s.reduce((a, b) => a + b, 0)} / 25</span>
+    </div>
+  </article>`).join('');
+const rows = OPTIONS.map((o) => ({ name: `${o.n}. ${o.name}`, s: o.s })).concat([{ name: 'Retenue : carte qui se replie', s: [5, 4, 5, 4, 5], bold: true }]);
+document.getElementById('scores').innerHTML = rows.map((r) => `<tr><td>${r.bold ? '<b>' + r.name + '</b>' : r.name}</td>${r.s.map((v) => `<td class="n">${v}</td>`).join('')}<td class="n"><b>${r.s.reduce((a, b) => a + b, 0)}</b></td></tr>`).join('');
+
+let state = 'arrivee', lang = 'fr';
+const sc = document.getElementById('state-controls');
+sc.innerHTML = Object.entries(FINAL).map(([k, v]) => `<button type="button" data-state="${k}" aria-pressed="${k === state}">${v.label}</button>`).join('');
+function draw() {
+  const t = T[lang], el = document.getElementById('m-final');
+  el.dir = t.dir; el.innerHTML = FINAL[state].html(t);
+  document.getElementById('final-caption').textContent = FINAL[state].cap;
+  sc.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.state === state)));
+  document.querySelectorAll('#lang-controls button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lang === lang)));
+}
+sc.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { state = b.dataset.state; draw(); } });
+document.getElementById('lang-controls').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { lang = b.dataset.lang; draw(); } });
+draw();
+</script>
