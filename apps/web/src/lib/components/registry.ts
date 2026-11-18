@@ -1175,6 +1175,18 @@ export const SITE_COMPONENT_REGISTRY: SiteComponentSeed[] = [
         order: 3,
         config: { min: 0, max: 100, step: 1 },
       },
+      {
+        key: 'step2AckSharePct',
+        label: "Part des visiteuses qui voient « C'est noté, on vous appelle » (%)",
+        type: 'number',
+        required: false,
+        defaultValue: 100,
+        description:
+          "Message affiché à l'étape adresse, après le prénom et le téléphone : il annonce l'appel de confirmation. 100 = toutes, 0 = aucune (coupe-circuit), 50 = test sur la moitié. Chaque visiteuse garde toujours la même version. Recette : ajouter ?ack=on ou ?ack=off à l'URL.",
+        group: 'Comportement',
+        order: 4,
+        config: { min: 0, max: 100, step: 1 },
+      },
     ],
   },
   {

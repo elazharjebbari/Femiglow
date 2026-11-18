@@ -69,6 +69,12 @@ export const dictionaryFr: WizardDictionary = {
     progressNoName: 'Plus que la livraison',
     title: 'Où livrer votre kit ?',
     subtitle: 'Vous payez à la réception.',
+    ackTitle: (name) => `C’est noté, ${name}.`,
+    ackTitleNoName: 'C’est noté.',
+    ackBody: (phone) => `Nous vous appelons au ${phone} pour confirmer votre commande.`,
+    ackCompact: (phone) => `Noté · on vous appelle au ${phone}`,
+    subtitleAck:
+      'Avec votre ville, l’appel de confirmation est plus rapide. Vous payez à la réception.',
     cityLabel: 'Votre ville',
     cityPlaceholder: 'Casablanca, Rabat, Agadir…',
     addressLabel: 'Quartier, rue et numéro (facultatif)',

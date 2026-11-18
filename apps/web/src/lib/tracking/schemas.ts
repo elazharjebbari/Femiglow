@@ -543,6 +543,8 @@ export const eventSchemas: Record<string, z.ZodTypeAny> = {
   address_step_view: z
     .object({
       step2_variant: step2VariantSchema,
+      // Accusé « C'est noté » affichable pour cette visiteuse (bras du test).
+      step2_ack: z.boolean().optional(),
       viewport_h: z.number().int().nonnegative().max(10000),
       kit_angle: z.union([z.enum(KIT_ANGLES), z.literal('none')]).optional(),
     })
@@ -577,6 +579,7 @@ export const eventSchemas: Record<string, z.ZodTypeAny> = {
   address_step_abandon: z
     .object({
       step2_variant: step2VariantSchema,
+      step2_ack: z.boolean().optional(),
       phase: z.enum(ADDRESS_STEP_PHASES),
       has_city: z.boolean(),
       ms_on_step: z.number().int().nonnegative(),

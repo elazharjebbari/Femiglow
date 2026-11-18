@@ -44,6 +44,7 @@ import {
 } from '@/lib/checkout/shipping-fee';
 import { useAppliedCoupon } from '@/lib/checkout/state/use-applied-coupon';
 import { useWizardStore } from '@/lib/checkout/state/wizard-store';
+import { formatLeadPhoneForDisplay } from '@/lib/checkout/helpers/phone-mask';
 import { useShippingConfig } from '@/lib/checkout/use-shipping-config';
 import { arriveAtWizardStep, highlightWizardField } from '@/lib/checkout/wizard-arrival';
 import { cn } from '@/lib/utils/cn';
@@ -52,6 +53,7 @@ import { ActionBarTotal } from '../ActionBarTotal';
 import { AddressCouponDisclosure } from '../AddressCouponDisclosure';
 import { ConfirmOrderButton } from '../ConfirmOrderButton';
 import { InlineConfirmButton } from '../InlineConfirmButton';
+import { LeadAckNotice } from '../LeadAckNotice';
 import { StepActionBar } from '../StepActionBar';
 import { StepProgressLine } from '../StepProgressLine';
 import { StockIndicator } from '../StockIndicator';
@@ -74,6 +76,15 @@ const FIELD_CLASS =
 
 // Les erreurs passent en bleu : le grenat est réservé au bouton de confirmation.
 const NOTICE_THEME = { '--color-petale-dark': 'var(--color-notice)' } as CSSProperties;
+
+/** Écran tactile : le clavier va s'ouvrir, la place revient au champ. */
+function isCoarsePointer(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(pointer: coarse)').matches
+  );
+}
 
 function ValidMark() {
   return (
@@ -113,6 +124,16 @@ export function AddressStepV2() {
   const [noteOpen, setNoteOpen] = useState(() => draft.notes.trim().length > 0);
   // Bouton de confirmation dans le formulaire à l'écran : la barre s'efface.
   const [inlineCtaOnScreen, setInlineCtaOnScreen] = useState(false);
+
+  // Accusé de l'étape 1 : affiché seulement s'il dit vrai (fiche partie au
+  // serveur, numéro lisible). Docs : docs/kit-etape2-accuse/.
+  const ackEnabled = useWizardStore((s) => s.formContext?.step2Ack === true);
+  const syncDegraded = useWizardStore((s) => s.syncDegraded);
+  const leadPhone = useWizardStore((s) => s.leadDraft.phone);
+  const ackPhone = useMemo(() => formatLeadPhoneForDisplay(leadPhone), [leadPhone]);
+  const showAck = ackEnabled && !syncDegraded && ackPhone !== null;
+  // Une fois replié, il le reste : la mise en page ne rebondit pas.
+  const [ackCollapsed, setAckCollapsed] = useState(false);
 
   const {
     revealed,
@@ -251,6 +272,11 @@ export function AddressStepV2() {
   const showInlineCta =
     revealed && phase !== 'city' && phase !== 'address' && isAddressLineValid(watchedLine1) && totalCents !== null;
 
+  const ackExpanded = showAck && !ackCollapsed && !revealed && watchedCity.trim() === '';
+  useEffect(() => {
+    if (showAck && !ackExpanded) setAckCollapsed(true);
+  }, [showAck, ackExpanded]);
+
   const lineField = register('addressLine1', { onBlur: onLineBlur });
   const primaryVariantId = cart?.items[0]?.variantId;
 
@@ -262,6 +288,7 @@ export function AddressStepV2() {
       data-testid="wizard-step-address"
       data-variant="v2"
       data-phase={phase}
+      data-ack={showAck}
     >
       <StepProgressLine
         label={progressLabel}
@@ -270,13 +297,24 @@ export function AddressStepV2() {
         backDisabled={submitting}
       />
 
+      {showAck && ackPhone && (
+        <LeadAckNotice
+          title={firstName ? copy.ackTitle(firstName) : copy.ackTitleNoName}
+          body={copy.ackBody(ackPhone)}
+          compactLabel={copy.ackCompact(ackPhone)}
+          phone={ackPhone}
+          expanded={ackExpanded}
+        />
+      )}
+
       {/* Le titre cède sa place aux champs, mais reste pour les lecteurs d'écran. */}
       <header className={cn('space-y-1', revealed && 'sr-only')}>
         <Heading as="h2" size="md" id={headingId} italic="always">
           {copy.title}
         </Heading>
         <Text size="small" tone="secondary">
-          {copy.subtitle}
+          {/* La raison de donner sa ville se lit à l'arrivée ; ensuite, la place revient au champ. */}
+          {ackExpanded ? copy.subtitleAck : copy.subtitle}
         </Text>
       </header>
 
@@ -303,6 +341,7 @@ export function AddressStepV2() {
               onChange={field.onChange}
               onFocus={() => {
                 setCityFocused(true);
+                if (isCoarsePointer()) setAckCollapsed(true);
                 tracking.trackCityFocus();
               }}
               onBlur={() => {

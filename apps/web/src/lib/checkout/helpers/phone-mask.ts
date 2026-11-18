@@ -54,3 +54,13 @@ function toLatinDigits(input: string): string {
     String(c.charCodeAt(0) % 16),
   );
 }
+
+/**
+ * Numéro de l'étape 1 tel qu'on le redonne à lire à la cliente
+ * (`06 12 34 56 78`). `null` si ce n'est pas un mobile ou fixe marocain
+ * complet : mieux vaut ne rien afficher qu'un numéro tronqué.
+ */
+export function formatLeadPhoneForDisplay(raw: string | null | undefined): string | null {
+  const local = toLocalMoroccanDigits(raw ?? '');
+  return /^0[5-7]\d{8}$/u.test(local) ? formatPhoneFR(local) : null;
+}

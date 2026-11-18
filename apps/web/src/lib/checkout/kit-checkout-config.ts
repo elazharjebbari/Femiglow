@@ -19,6 +19,10 @@ import {
   DEFAULT_STEP2_V2_SHARE_PCT,
   normalizeStep2SharePct,
 } from '@/lib/checkout/step2-variant';
+import {
+  DEFAULT_STEP2_ACK_SHARE_PCT,
+  normalizeStep2AckSharePct,
+} from '@/lib/checkout/step2-ack';
 
 export const KIT_CHECKOUT_COMPONENT_KEY = 'kit-checkout';
 /**
@@ -33,12 +37,15 @@ export interface KitCheckoutConfig {
   sheetSharePct: number;
   /** Part (0–100) des visiteurs sur l'étape 2 progressive. 0 : coupe-circuit. */
   step2V2SharePct: number;
+  /** Part (0–100) des visiteuses qui voient l'accusé « C'est noté ». 0 : coupe-circuit. */
+  step2AckSharePct: number;
 }
 
 export const DEFAULT_KIT_CHECKOUT_CONFIG: KitCheckoutConfig = {
   ctaMode: DEFAULT_COMMANDER_CMS_MODE,
   sheetSharePct: DEFAULT_SHEET_SHARE_PCT,
   step2V2SharePct: DEFAULT_STEP2_V2_SHARE_PCT,
+  step2AckSharePct: DEFAULT_STEP2_ACK_SHARE_PCT,
 };
 
 export function parseKitCheckoutConfig(
@@ -53,5 +60,6 @@ export function parseKitCheckoutConfig(
         ? DEFAULT_KIT_CHECKOUT_CONFIG.sheetSharePct
         : normalizeSharePct(rawPct),
     step2V2SharePct: normalizeStep2SharePct(fields?.step2V2SharePct?.value),
+    step2AckSharePct: normalizeStep2AckSharePct(fields?.step2AckSharePct?.value),
   };
 }

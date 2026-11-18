@@ -45,7 +45,7 @@ describe('registre — kit-checkout', () => {
     expect(seed).toBeDefined();
     expect(seed!.pageGroup).toBe('kit');
     expect(seed!.slots).toEqual([]);
-    expect(seed!.fields?.map((f) => f.key)).toEqual(['ctaMode', 'sheetSharePct', 'step2V2SharePct']);
+    expect(seed!.fields?.map((f) => f.key)).toEqual(['ctaMode', 'sheetSharePct', 'step2V2SharePct', 'step2AckSharePct']);
   });
 
   it('ctaMode : enum scroll | sheet | ab, défaut scroll', () => {
@@ -80,23 +80,23 @@ describe('parseKitCheckoutConfig', () => {
   it('valeurs valides', () => {
     expect(parseKitCheckoutConfig(resolved({ ctaMode: 'ab', sheetSharePct: 20 }))).toEqual({
       ctaMode: 'ab',
-      sheetSharePct: 20, step2V2SharePct: 100,
+      sheetSharePct: 20, step2V2SharePct: 100, step2AckSharePct: 100,
     });
   });
 
   it('absence de champs → défauts (scroll, 50)', () => {
     expect(parseKitCheckoutConfig({})).toEqual(DEFAULT_KIT_CHECKOUT_CONFIG);
-    expect(parseKitCheckoutConfig(null)).toEqual({ ctaMode: 'scroll', sheetSharePct: 50, step2V2SharePct: 100 });
+    expect(parseKitCheckoutConfig(null)).toEqual({ ctaMode: 'scroll', sheetSharePct: 50, step2V2SharePct: 100, step2AckSharePct: 100 });
   });
 
   it('valeurs invalides → repli sûr', () => {
     expect(parseKitCheckoutConfig(resolved({ ctaMode: 'modal', sheetSharePct: 'x' }))).toEqual({
       ctaMode: 'scroll',
-      sheetSharePct: 50, step2V2SharePct: 100,
+      sheetSharePct: 50, step2V2SharePct: 100, step2AckSharePct: 100,
     });
     expect(parseKitCheckoutConfig(resolved({ ctaMode: 'sheet', sheetSharePct: 400 }))).toEqual({
       ctaMode: 'sheet',
-      sheetSharePct: 100, step2V2SharePct: 100,
+      sheetSharePct: 100, step2V2SharePct: 100, step2AckSharePct: 100,
     });
   });
 });
@@ -114,7 +114,7 @@ describe('getKitCheckoutConfig — résolution via le registre', () => {
   it('registre seedé → défauts du registre (scroll, 50)', async () => {
     await syncComponentRegistry();
     await seedComponentFields();
-    expect(await getKitCheckoutConfig()).toEqual({ ctaMode: 'scroll', sheetSharePct: 50, step2V2SharePct: 100 });
+    expect(await getKitCheckoutConfig()).toEqual({ ctaMode: 'scroll', sheetSharePct: 50, step2V2SharePct: 100, step2AckSharePct: 100 });
   });
 
   it('un binding publié depuis l’admin prime sur le défaut', async () => {
@@ -140,7 +140,7 @@ describe('getKitCheckoutConfig — résolution via le registre', () => {
         actorId: 'adm_test',
       });
     }
-    expect(await getKitCheckoutConfig()).toEqual({ ctaMode: 'ab', sheetSharePct: 30, step2V2SharePct: 100 });
+    expect(await getKitCheckoutConfig()).toEqual({ ctaMode: 'ab', sheetSharePct: 30, step2V2SharePct: 100, step2AckSharePct: 100 });
   });
 });
 
@@ -163,5 +163,41 @@ describe('étape 2 progressive — réglage et coupe-circuit', () => {
     expect(parseKitCheckoutConfig(fields(50)).step2V2SharePct).toBe(50);
     expect(parseKitCheckoutConfig(fields(250)).step2V2SharePct).toBe(100);
     expect(parseKitCheckoutConfig(fields('x')).step2V2SharePct).toBe(0);
+  });
+});
+
+describe('accusé « C’est noté » — réglage et coupe-circuit', () => {
+  const fields = (value: unknown) =>
+    ({ step2AckSharePct: { value } }) as unknown as Parameters<typeof parseKitCheckoutConfig>[0];
+
+  it('affiché par défaut, même si le champ n’existe pas encore en base', () => {
+    expect(parseKitCheckoutConfig(null).step2AckSharePct).toBe(100);
+    expect(DEFAULT_KIT_CHECKOUT_CONFIG.step2AckSharePct).toBe(100);
+  });
+
+  it('lit la part publiée, bornée ; valeur illisible : coupé', () => {
+    expect(parseKitCheckoutConfig(fields(0)).step2AckSharePct).toBe(0);
+    expect(parseKitCheckoutConfig(fields(50)).step2AckSharePct).toBe(50);
+    expect(parseKitCheckoutConfig(fields(250)).step2AckSharePct).toBe(100);
+    expect(parseKitCheckoutConfig(fields('x')).step2AckSharePct).toBe(0);
+  });
+
+  it('champ du registre : nombre de 0 à 100, défaut 100', () => {
+    const def = field('step2AckSharePct');
+    expect(def.type).toBe('number');
+    expect(def.defaultValue).toBe(100);
+    expect(validateFieldValue(def, encodeValue(50, 'number')).ok).toBe(true);
+    expect(validateFieldValue(def, encodeValue(150, 'number')).ok).toBe(false);
+  });
+
+  it('CHECKOUT_STEP2_ACK=off coupe l’accusé sans toucher à la V2', async () => {
+    resetMemoryStore();
+    vi.stubEnv('CHECKOUT_STEP2_ACK', 'off');
+    await syncComponentRegistry();
+    await seedComponentFields();
+    const config = await getKitCheckoutConfig();
+    vi.unstubAllEnvs();
+    expect(config.step2AckSharePct).toBe(0);
+    expect(config.step2V2SharePct).toBe(100);
   });
 });

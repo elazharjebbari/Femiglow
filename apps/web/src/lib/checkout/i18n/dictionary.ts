@@ -96,6 +96,15 @@ export interface WizardDictionary {
     progressNoName: string;
     title: string;
     subtitle: string;
+    /** Accusé de l'étape 1 : « C'est noté, {prénom}. » */
+    ackTitle: (name: string) => string;
+    ackTitleNoName: string;
+    /** Annonce de l'appel (numéro déjà formaté `06 12 34 56 78`). */
+    ackBody: (phone: string) => string;
+    /** Accusé replié sur une ligne, une fois la saisie commencée. */
+    ackCompact: (phone: string) => string;
+    /** Sous-titre quand l'accusé est affiché : la raison de donner sa ville. */
+    subtitleAck: string;
     cityLabel: string;
     cityPlaceholder: string;
     addressLabel: string;

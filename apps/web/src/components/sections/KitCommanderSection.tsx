@@ -61,6 +61,11 @@ import {
   resolveStep2Variant,
   step2NeedsVisitor,
 } from '@/lib/checkout/step2-variant';
+import {
+  STEP2_ACK_QUERY_PARAM,
+  resolveStep2Ack,
+  step2AckNeedsVisitor,
+} from '@/lib/checkout/step2-ack';
 import { readKitAngleFromDocument } from '@/lib/kit/angle';
 import { readHeroMediaTrackingFromDocument } from '@/lib/kit/hero-media';
 import { getAnonymousId } from '@/lib/tracking/identity';
@@ -247,7 +252,7 @@ export function KitCommanderSection({
   // antérieur, résolu à la demande) : la clé suit toujours le bras attribué.
   // Variante de l'étape 2 : `formContext` n'alimente aucun rendu serveur (le
   // wizard attend l'hydratation), `fg_aid` et l'URL peuvent être lus ici.
-  const { step2V2SharePct } = checkoutConfig;
+  const { step2V2SharePct, step2AckSharePct } = checkoutConfig;
   const step2Variant = useMemo(() => {
     if (typeof window === 'undefined') return 'control';
     const override = new URLSearchParams(window.location.search).get(STEP2_QUERY_PARAM);
@@ -257,15 +262,26 @@ export function KitCommanderSection({
       visitorId: step2NeedsVisitor(step2V2SharePct, override) ? getAnonymousId() : null,
     });
   }, [step2V2SharePct]);
+  // Accusé « C'est noté » : même mécanique, tirage indépendant.
+  const step2Ack = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    const override = new URLSearchParams(window.location.search).get(STEP2_ACK_QUERY_PARAM);
+    return resolveStep2Ack({
+      sharePct: step2AckSharePct,
+      override,
+      visitorId: step2AckNeedsVisitor(step2AckSharePct, override) ? getAnonymousId() : null,
+    });
+  }, [step2AckSharePct]);
 
   const formContext = useMemo<WizardFormContext>(
     () => ({
       ...KIT_FORM_CONTEXT,
       variantKey: sheetMode ? 'B' : 'A',
       step2Variant,
+      step2Ack,
       ...(wizardLanguage ? { language: wizardLanguage } : {}),
     }),
-    [sheetMode, step2Variant, wizardLanguage],
+    [sheetMode, step2Variant, step2Ack, wizardLanguage],
   );
 
   // Cette section sait afficher le panneau : le lanceur peut l'utiliser.

@@ -71,6 +71,12 @@ export const dictionaryAr: WizardDictionary = {
     progressNoName: 'بقي التوصيل فقط',
     title: 'أين نوصل طقمكِ؟',
     subtitle: 'تدفعين عند الاستلام.',
+    // À faire relire par une personne native (docs/kit-etape2-accuse/05-textes.md).
+    ackTitle: (name) => `وصلتنا معلوماتكِ، ${name}.`,
+    ackTitleNoName: 'وصلتنا معلوماتكِ.',
+    ackBody: (phone) => `سنتصل بكِ على الرقم ${phone} لتأكيد طلبكِ.`,
+    ackCompact: (phone) => `وصلتنا معلوماتكِ · سنتصل بكِ على ${phone}`,
+    subtitleAck: 'بمدينتكِ يصبح اتصال التأكيد أسرع. تدفعين عند الاستلام.',
     cityLabel: 'مدينتكِ',
     cityPlaceholder: 'الدار البيضاء، الرباط، أكادير…',
     addressLabel: 'الحي والشارع والرقم (اختياري)',

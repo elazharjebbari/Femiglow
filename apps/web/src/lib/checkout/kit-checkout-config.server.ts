@@ -10,7 +10,7 @@ import 'server-only';
  * casser à cause d'un réglage d'A/B.
  *
  * `CHECKOUT_STEP2_V2=off` : coupe-circuit de l'étape 2 progressive, sans passer
- * par le CMS.
+ * par le CMS. `CHECKOUT_STEP2_ACK=off` : même chose pour l'accusé « C'est noté ».
  */
 
 import { resolveComponentFields } from '@/lib/components/field-resolver';
@@ -26,7 +26,11 @@ export async function getKitCheckoutConfig(): Promise<KitCheckoutConfig> {
   try {
     const fields = await resolveComponentFields(KIT_CHECKOUT_COMPONENT_KEY, KIT_CHECKOUT_LOCALE);
     const config = parseKitCheckoutConfig(fields);
-    return process.env.CHECKOUT_STEP2_V2 === 'off' ? { ...config, step2V2SharePct: 0 } : config;
+    return {
+      ...config,
+      ...(process.env.CHECKOUT_STEP2_V2 === 'off' ? { step2V2SharePct: 0 } : {}),
+      ...(process.env.CHECKOUT_STEP2_ACK === 'off' ? { step2AckSharePct: 0 } : {}),
+    };
   } catch {
     return DEFAULT_KIT_CHECKOUT_CONFIG;
   }
