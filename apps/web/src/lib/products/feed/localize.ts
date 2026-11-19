@@ -72,7 +72,7 @@ const VALUE_BREAKDOWN_KEY_BY_INDEX: Record<number, string> = {
 
 /**
  * Retourne une copie du feed avec toutes les strings affichables traduites.
- * Les champs non textuels (accent, duration, icon, prix, ratings…) sont
+ * Les champs non textuels (accent, icon, prix, ratings…) sont
  * préservés tels quels — seule la copy bascule de locale. Le `valueBreakdown`
  * voit ses `label` traduits ; les `valueLabel` chiffrés (prix) restent intacts,
  * sauf les items `muted` (offert → `value_breakdown.free`).
@@ -162,6 +162,8 @@ export function localizeKitProductFeed(
         kicker: t(`steps.${key}.kicker`),
         title: t(`steps.${key}.title`),
         description: t(`steps.${key}.description`),
+        // Durée localisée (« 30 ث ») : en RTL, « 30 s » latin s'affiche inversé.
+        ...(step.duration ? { duration: t(`steps.${key}.duration`) } : {}),
       };
     }),
     // `as` : sous `exactOptionalPropertyTypes`, le spread d'une prop optionnelle
@@ -176,6 +178,7 @@ export function localizeKitProductFeed(
     stepsPostCta: {
       ...feed.stepsPostCta,
       label: t('steps.post_cta.label'),
+      note: t('steps.post_cta.note'),
     } as ProductFeed['stepsPostCta'],
     claims: feed.claims.map((claim) => {
       const key = CLAIM_KEY_BY_ICON[claim.icon];

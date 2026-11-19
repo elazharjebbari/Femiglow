@@ -53,7 +53,11 @@ export function useAddressStepTracking(
 ): AddressStepTracking {
   const { emit, flush, isReady } = useTracking();
   const variant = useWizardStore((s) => s.formContext?.step2Variant ?? 'control');
+  const ack = useWizardStore((s) => s.formContext?.step2Ack === true);
   const { freeShipping } = useShippingConfig();
+
+  const ackRef = useRef(ack);
+  ackRef.current = ack;
 
   const snapshotRef = useRef(getSnapshot);
   snapshotRef.current = getSnapshot;
@@ -101,6 +105,7 @@ export function useAddressStepTracking(
     viewedAtRef.current = performance.now();
     const angle = readKitAngleFromDocument();
     emitStepEvent(ADDRESS_STEP_EVENTS.view, {
+      step2_ack: ack,
       viewport_h: Math.round(window.innerHeight),
       ...(angle ? { kit_angle: angle } : {}),
     });
@@ -115,7 +120,7 @@ export function useAddressStepTracking(
         eta: cityDeliveryEta,
       });
     }
-  }, [isReady, once, emitStepEvent, trackCitySelected]);
+  }, [isReady, once, emitStepEvent, trackCitySelected, ack]);
 
   // Abandon : `visibilitychange` en plus de `pagehide`, que les navigateurs
   // intégrés (Instagram, Facebook) ne déclenchent pas toujours. L'envoi est
@@ -125,6 +130,7 @@ export function useAddressStepTracking(
       if (!once('abandon')) return;
       const { phase, hasCity } = snapshotRef.current();
       emitStepEvent(ADDRESS_STEP_EVENTS.abandon, {
+        step2_ack: ackRef.current,
         phase,
         has_city: hasCity,
         ms_on_step: msSinceView(),

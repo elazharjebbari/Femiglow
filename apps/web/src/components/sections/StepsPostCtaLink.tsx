@@ -1,10 +1,9 @@
 /**
- * `StepsPostCtaLink` — lien éditorial chuchoté sous la grille des
- * 4 gestes (Kolenda §4.7 Attention #12 — directional cues).
- *
- * Style : aligné sur `PostCtaLink` (section composition `/kit`) —
- * uppercase tracking-wide, soulignement focus-visible, no surface
- * decoration. Émet `pack_steps_cta_click` au clic.
+ * `StepsPostCtaLink` — bouton de commande sous le mode d'emploi : la
+ * visiteuse vient de comprendre le geste, c'est le moment de proposer la
+ * commande. Bouton plein (charte `Button` primaire), pleine largeur sur
+ * mobile, suivi d'une ligne de réassurance (paiement à la livraison).
+ * Émet `pack_steps_cta_click` au clic.
  */
 'use client';
 
@@ -15,18 +14,22 @@ import {
   getEffectiveCommanderMode,
   openCommander,
 } from '@/lib/checkout/commander-launcher';
+import { buttonClasses } from '@/components/ui/Button';
 import { useTracking } from '@/lib/tracking/use-tracking';
 
 export interface StepsPostCtaLinkProps {
-  /** Libellé du lien (« Démarrer le rituel »). */
+  /** Libellé du bouton (« Commander mon kit »). */
   label: string;
   /** Ancre cible (sans `#`, ex. `commander-femiglow`). */
   anchorId: string;
+  /** Réassurance sous le bouton ; rien n'est rendu si absente. */
+  note?: string;
 }
 
 export function StepsPostCtaLink({
   label,
   anchorId,
+  note,
 }: StepsPostCtaLinkProps): JSX.Element {
   const { emit } = useTracking();
 
@@ -51,16 +54,23 @@ export function StepsPostCtaLink({
   );
 
   return (
-    <div className="mt-12 text-center">
+    <div className="mx-auto mt-9 max-w-xl text-center">
       <a
         href={`#${anchorId}`}
         onClick={handleClick}
         data-testid="steps-post-cta"
-        className="inline-flex items-center gap-1 pt-1 font-body text-[12px] uppercase tracking-[0.18em] text-encre/70 underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C8A876] focus-visible:ring-offset-2 focus-visible:ring-offset-creme"
+        className={buttonClasses('primary', 'lg', false, 'w-full sm:w-auto sm:min-w-[18rem]')}
       >
         {label}
-        <span aria-hidden="true">↓</span>
       </a>
+      {note && (
+        <p
+          data-testid="steps-post-cta-note"
+          className="mt-3 font-body text-[13px] leading-[1.5] text-encre-soft"
+        >
+          {note}
+        </p>
+      )}
     </div>
   );
 }

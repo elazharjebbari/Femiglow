@@ -105,10 +105,9 @@ describe('StepsTimeline', () => {
     expect(screen.getByTestId('step-card-4')).toBeDefined();
   });
 
-  it('rend le connecteur visuel (Server StepsConnector)', () => {
+  it('relie chaque geste au suivant (un fil de moins que de gestes)', () => {
     render(<StepsTimeline steps={steps} />);
-    expect(screen.getByTestId('steps-connector-mobile')).toBeDefined();
-    expect(screen.getByTestId('steps-connector-desktop')).toBeDefined();
+    expect(screen.getAllByTestId('steps-connector')).toHaveLength(steps.length - 1);
   });
 
   it('porte aria-labelledby si header présent', () => {

@@ -22,6 +22,7 @@ export function shouldSyncFormContext(
     stored.formMode !== incoming.formMode ||
     stored.variantKey !== incoming.variantKey ||
     stored.language !== incoming.language ||
-    stored.step2Variant !== incoming.step2Variant
+    stored.step2Variant !== incoming.step2Variant ||
+    Boolean(stored.step2Ack) !== Boolean(incoming.step2Ack)
   );
 }

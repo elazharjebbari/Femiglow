@@ -543,9 +543,18 @@
 [dir='rtl'] .fg-inline-cta-chevron {
   transform: scaleX(-1);
 }
+/* Accusé de l'étape 1 (« C'est noté ») : une entrée douce, une seule fois. */
+@keyframes fg-ack-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fg-ack-in {
+  animation: fg-ack-in 320ms ease-out both;
+}
 @media (prefers-reduced-motion: reduce) {
   .fg-amount-in,
-  .fg-inline-cta {
+  .fg-inline-cta,
+  .fg-ack-in {
     animation: none;
   }
 }

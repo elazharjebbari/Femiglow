@@ -1,39 +1,35 @@
 /**
- * `StepCard` — carte d'une étape du rituel 4 gestes (Kolenda §4.7).
+ * `StepCard` — un geste du rituel : pastille numérotée, titre, durée,
+ * consigne en une phrase.
  *
- * Refonte du `FeedStepCard` inline historique :
- *  - pastille numérotée colorée (palette FemiGlow)
- *  - badge durée (« · 30 s ») si `duration` présente
- *  - anneau doublé + badge « RÉSULTAT » + italique sur le step `isResult`
- *  - icône SVG optionnelle au-dessus de la pastille (rendue en G3)
+ * La pastille porte le numéro (l'ordre est l'information utile) ; le geste
+ * final (`isResult`) a une pastille pleine et une pastille « Résultat ».
+ * Les couleurs n'utilisent que des jetons pleins de la charte : les variantes
+ * transparentes (`text-encre/70`, `ring-…/15`) ne sont pas générées, les
+ * jetons étant des variables CSS.
  *
  * Server Component pur — aucune dépendance navigateur.
  */
-import { Heading } from '@/components/ui/Heading';
-import { Kicker } from '@/components/ui/Kicker';
-import { Text } from '@/components/ui/Text';
-import { StepIcon } from '@/components/sections/StepIcon';
 import { cn } from '@/lib/utils/cn';
 import type { FeedAccent, ProductFeedStep } from '@/lib/products/feed/types';
 
 const accentDot: Record<FeedAccent, string> = {
-  sauge: 'bg-sauge-soft text-sauge-dark ring-1 ring-sauge-dark/15',
-  petale: 'bg-petale-soft text-petale-dark ring-1 ring-petale-dark/15',
-  champagne:
-    'bg-champagne-soft text-champagne-dark ring-1 ring-champagne-dark/15',
-  ciel: 'bg-ciel-soft text-ciel-dark ring-1 ring-ciel-dark/15',
+  sauge: 'bg-sauge-soft text-sauge-dark',
+  petale: 'bg-petale-soft text-petale-dark',
+  champagne: 'bg-champagne-soft text-champagne-dark',
+  ciel: 'bg-ciel-soft text-ciel-dark',
 };
 
-const accentResultRing: Record<FeedAccent, string> = {
-  sauge: 'ring-2 ring-sauge-dark/30',
-  petale: 'ring-2 ring-petale-dark/30',
-  champagne: 'ring-2 ring-champagne-dark/30',
-  ciel: 'ring-2 ring-ciel-dark/30',
+const accentDotResult: Record<FeedAccent, string> = {
+  sauge: 'bg-sauge-dark text-creme',
+  petale: 'bg-petale-dark text-creme',
+  champagne: 'bg-champagne-dark text-creme',
+  ciel: 'bg-ciel-dark text-creme',
 };
 
 export interface StepCardProps {
   step: ProductFeedStep;
-  /** Phase 9bis — libellé du badge « Résultat » localisé. Défaut FR. */
+  /** Libellé localisé de la pastille « Résultat ». Défaut FR. */
   resultLabel?: string;
 }
 
@@ -43,52 +39,48 @@ export function StepCard({ step, resultLabel = 'Résultat' }: StepCardProps): JS
       data-testid={`step-card-${step.step}`}
       data-step={step.step}
       data-is-result={step.isResult ? 'true' : undefined}
-      className="flex h-full flex-col gap-3"
+      className="flex gap-4 lg:flex-col lg:gap-5"
     >
-      {step.icon && (
-        <StepIcon name={step.icon} className="h-6 w-6 text-encre/55" />
-      )}
-      <div className="flex items-center gap-3">
-        <span
-          aria-hidden="true"
+      <span
+        aria-hidden="true"
+        data-testid={`step-dot-${step.step}`}
+        className={cn(
+          'relative z-10 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-body text-[15px] font-semibold leading-none tabular-nums',
+          step.isResult ? accentDotResult[step.accent] : accentDot[step.accent],
+        )}
+      >
+        {step.step}
+      </span>
+      <div className="min-w-0 flex-1 pt-1 lg:pt-0">
+        <h4 className="font-display text-[1.375rem] font-medium leading-[1.2] text-encre [text-wrap:balance]">
+          {step.title}
+        </h4>
+        {(step.duration || step.isResult) && (
+          <p className="mt-1.5 flex flex-wrap items-center gap-2 font-body text-[13px] font-medium text-encre-soft">
+            {step.duration && (
+              <span data-testid={`step-duration-${step.step}`} className="tabular-nums">
+                {step.duration}
+              </span>
+            )}
+            {step.isResult && (
+              <span
+                data-testid={`step-badge-${step.step}`}
+                className="inline-flex items-center rounded-full border border-champagne bg-creme px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-[0.12em] text-champagne-dark"
+              >
+                {resultLabel}
+              </span>
+            )}
+          </p>
+        )}
+        <p
           className={cn(
-            'inline-flex h-12 w-12 items-center justify-center rounded-full font-display text-xl',
-            accentDot[step.accent],
-            step.isResult && accentResultRing[step.accent],
+            'mt-2 font-body text-[15px] leading-[1.6]',
+            step.isResult ? 'text-encre' : 'text-encre-soft',
           )}
         >
-          {step.step}
-        </span>
-        {step.duration && (
-          <span
-            data-testid={`step-duration-${step.step}`}
-            className="inline-flex items-baseline gap-1 text-xs font-medium uppercase tracking-[0.14em] text-encre/60 tabular-nums"
-          >
-            <span aria-hidden="true">·</span>
-            <span>{step.duration}</span>
-          </span>
-        )}
-        {step.isResult && (
-          <span
-            data-testid={`step-badge-${step.step}`}
-            className="inline-flex items-center rounded-full bg-champagne-dark/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-champagne-dark"
-          >
-            {resultLabel}
-          </span>
-        )}
+          {step.description}
+        </p>
       </div>
-      <Kicker>{step.kicker}</Kicker>
-      <Heading as="h4" size="sm">
-        {step.title}
-      </Heading>
-      <Text
-        size="body"
-        tone="secondary"
-        prose
-        className={cn(step.isResult && 'font-display italic')}
-      >
-        {step.description}
-      </Text>
     </article>
   );
 }

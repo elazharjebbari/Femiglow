@@ -28,7 +28,7 @@ describe('buildKitProductFeed', () => {
     expect(feed.steps[0]!.title).toMatch(/pr\u00E9parez/i);
     expect(feed.steps[1]!.title).toMatch(/p\u00E2te/i);
     expect(feed.steps[2]!.title).toMatch(/poudre/i);
-    expect(feed.steps[3]!.title).toMatch(/polish|shine/i);
+    expect(feed.steps[3]!.title).toMatch(/briller/i);
   });
 
   it('utilise les couleurs FemiGlow (sauge/petale/champagne) sur les pastilles', () => {

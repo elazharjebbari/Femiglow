@@ -61,6 +61,8 @@ export interface WizardFormContext {
   language?: DictionaryLanguage;
   /** Variante de l'étape 2 (A/B distinct de `variantKey`). Absente → `control`. */
   step2Variant?: Step2Variant;
+  /** Accusé « C'est noté, on vous appelle » à l'étape 2. Absent → non affiché. */
+  step2Ack?: boolean;
 }
 
 export interface LeadDraft {
