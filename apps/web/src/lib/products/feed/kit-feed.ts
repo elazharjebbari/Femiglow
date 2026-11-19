@@ -118,9 +118,9 @@ function buildSteps(): ProductFeedStep[] {
       step: 1,
       kicker: 'Pr\u00E9paration',
       title: 'Pr\u00E9parez vos ongles',
-      // Pr\u00E9sent + verbes sensoriels (Kolenda Copy #1, #29).
+      // Consigne courte \u00E0 l'imp\u00E9ratif : un geste, une phrase.
       description:
-        'On nettoie, on s\u00E8che, on lime l\u00E9g\u00E8rement \u2014 la plaque s\u2019ouvre au soin.',
+        'Nettoyez, s\u00E9chez, puis limez l\u00E9g\u00E8rement vos ongles.',
       accent: 'sauge',
       duration: '30\u00A0s',
       icon: 'buffer',
@@ -130,7 +130,7 @@ function buildSteps(): ProductFeedStep[] {
       kicker: 'Geste 1',
       title: 'Appliquez la p\u00E2te',
       description:
-        'Une noisette de p\u00E2te, le polissoir glisse, la cire d\u2019abeille nourrit la k\u00E9ratine.',
+        'Une noisette de p\u00E2te, puis frottez au polissoir\u00A0: la cire d\u2019abeille nourrit l\u2019ongle.',
       accent: 'sauge',
       duration: '1\u00A0min',
       icon: 'drop',
@@ -140,7 +140,7 @@ function buildSteps(): ProductFeedStep[] {
       kicker: 'Geste 2',
       title: 'Appliquez la poudre',
       description:
-        'On d\u00E9pose un voile de poudre blanche, on lustre lentement, la lumi\u00E8re revient \u00E0 la surface.',
+        'Un voile de poudre blanche, puis lustrez lentement\u00A0: la brillance appara\u00EEt.',
       accent: 'petale',
       duration: '2\u00A0min',
       icon: 'sparkle',
@@ -148,10 +148,9 @@ function buildSteps(): ProductFeedStep[] {
     {
       step: 4,
       kicker: 'Polissoir Step\u00A04',
-      title: 'Polish & Shine',
-      // Premier pas montr\u00E9 comme d\u00E9j\u00E0 accompli (Copy #21).
+      title: 'Faites briller',
       description:
-        'On finit au polissoir Step\u00A04 \u2014 l\u2019ongle devient miroir, sans vernis, sans abrasion.',
+        'Finissez au polissoir Step\u00A04\u00A0: l\u2019ongle brille comme un miroir, sans vernis, sans abrasion.',
       accent: 'champagne',
       duration: '1\u00A0min',
       icon: 'mirror',
@@ -166,7 +165,7 @@ function buildSteps(): ProductFeedStep[] {
  */
 function buildStepsHeader(): ProductFeedStepsHeader {
   return {
-    kicker: 'EN TOUT',
+    kicker: 'Mode d\u2019emploi',
     totalDuration: `${capitalize(KIT_COPY.fr.duration)} en tout`,
     lead: `${KIT_COPY.fr.gestures} lents, ${KIT_COPY.fr.frequency}.`,
   };
@@ -178,7 +177,8 @@ function buildStepsHeader(): ProductFeedStepsHeader {
  */
 function buildStepsPostCta(): ProductFeedStepsPostCta {
   return {
-    label: 'D\u00E9marrer le rituel',
+    label: 'Commander mon kit',
+    note: 'Paiement \u00E0 la livraison \u00B7 Vous v\u00E9rifiez avant de payer',
     anchorId: 'commander-femiglow',
   };
 }
@@ -192,12 +192,12 @@ function buildClaims(): ProductFeedClaim[] {
     {
       icon: 'leaf',
       label: 'Ingr\u00E9dients d\u2019origine naturelle',
-      detail: 'Cire d\u2019abeille, jojoba, kaolin, poudre de riz \u2014 manucure japonaise.',
+      detail: 'Cire d\u2019abeille, jojoba, kaolin et poudre de riz.',
     },
     {
       icon: 'drop',
       label: 'Sans produits chimiques agressifs',
-      detail: 'Ni ac\u00E9tone, ni phtalates, ni toluene \u2014 la plaque respire.',
+      detail: 'Ni ac\u00E9tone, ni phtalates, ni tolu\u00E8ne.',
     },
     {
       icon: 'sparkle',

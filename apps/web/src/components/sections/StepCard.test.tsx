@@ -25,9 +25,11 @@ describe('StepCard — base', () => {
     expect(card.querySelector('span')?.className).toContain('bg-sauge-soft');
   });
 
-  it('rend kicker, h4, description', () => {
+  it('rend le numéro, le h4 et la description, sans surtitre', () => {
     render(<StepCard step={baseStep} />);
-    expect(screen.getByText('Préparation')).toBeDefined();
+    // Le surtitre (« Geste 1 » sous la pastille 2) contredisait le numéro.
+    expect(screen.queryByText('Préparation')).toBeNull();
+    expect(screen.getByTestId('step-dot-1').textContent).toBe('1');
     expect(screen.getByRole('heading', { level: 4 }).textContent).toBe(
       'Préparez vos ongles',
     );
@@ -62,12 +64,17 @@ describe('StepCard — isResult', () => {
     ).toBe('true');
   });
 
-  it('pastille a anneau doublé champagne', () => {
+  it('pastille pleine sur le geste final, claire sur les autres', () => {
     render(<StepCard step={resultStep} />);
-    const card = screen.getByTestId('step-card-4');
-    const pastille = card.querySelector('span');
-    expect(pastille?.className).toContain('ring-2');
-    expect(pastille?.className).toContain('ring-champagne-dark/30');
+    expect(screen.getByTestId('step-dot-4').className).toContain('bg-champagne-dark');
+    render(<StepCard step={baseStep} />);
+    expect(screen.getByTestId('step-dot-1').className).toContain('bg-sauge-soft');
+  });
+
+  it('aucune couleur à transparence (non générée : jetons en variables CSS)', () => {
+    render(<StepCard step={{ ...resultStep, duration: '1 min' }} />);
+    const html = screen.getByTestId('step-card-4').outerHTML;
+    expect(html).not.toMatch(/(?:encre|sauge|petale|champagne|ciel)(?:-\w+)?\/\d/);
   });
 
   it('rend le badge RÉSULTAT', () => {
@@ -76,11 +83,11 @@ describe('StepCard — isResult', () => {
     expect(badge.textContent).toContain('Résultat');
   });
 
-  it('description en font-display italic', () => {
+  it('description droite et en encre pleine (lisible)', () => {
     render(<StepCard step={resultStep} />);
     const desc = screen.getByText(resultStep.description);
-    expect(desc.className).toContain('font-display');
-    expect(desc.className).toContain('italic');
+    expect(desc.className).not.toContain('italic');
+    expect(desc.className).toContain('text-encre');
   });
 
   it('un step non-isResult ne porte ni badge ni ring doublé', () => {

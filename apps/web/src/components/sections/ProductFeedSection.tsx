@@ -29,11 +29,8 @@ import { PriceBlock } from '@/components/sections/PriceBlock';
 import { RescueOffer } from '@/components/sections/RescueOffer';
 import { PackVisualBound } from '@/components/sections/PackVisualBound';
 import { StepsTimeline } from '@/components/sections/StepsTimeline';
-import { cn } from '@/lib/utils/cn';
-import type {
-  ProductFeed,
-  ProductFeedClaim,
-} from '@/lib/products/feed/types';
+import { FeedClaims } from '@/components/sections/FeedClaims';
+import type { ProductFeed } from '@/lib/products/feed/types';
 import type { Product } from '@/lib/schemas';
 
 interface ProductFeedSectionProps {
@@ -130,15 +127,7 @@ export function ProductFeedSection({
         />
 
         {/* 3 — Promesses (3 claims) ------------------------------------- */}
-        <ul
-          role="list"
-          aria-label="Promesses produit"
-          className="mt-20 grid grid-cols-1 gap-8 border-y border-encre/10 py-10 sm:grid-cols-3"
-        >
-          {feed.claims.map((claim) => (
-            <FeedClaimItem key={claim.label} claim={claim} />
-          ))}
-        </ul>
+        <FeedClaims claims={feed.claims} />
 
         {/* 4 — Social proof condensé ------------------------------------
             Masqué sans avis réels (`socialProof` absent). Étoiles et note
@@ -179,61 +168,5 @@ export function ProductFeedSection({
         )}
       </Container>
     </section>
-  );
-}
-
-/** Item promesse : icône SVG + libellé + détail. */
-function FeedClaimItem({ claim }: { claim: ProductFeedClaim }) {
-  return (
-    <li className="flex flex-col items-center gap-3 text-center sm:flex-row sm:items-start sm:text-start">
-      <span
-        className={cn(
-          'inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full',
-          claim.icon === 'leaf' && 'bg-sauge-soft text-sauge-dark',
-          claim.icon === 'drop' && 'bg-ciel-soft text-ciel-dark',
-          claim.icon === 'sparkle' && 'bg-petale-soft text-petale-dark',
-        )}
-        aria-hidden="true"
-      >
-        <FeedClaimIcon name={claim.icon} />
-      </span>
-      <div className="space-y-1">
-        <Text size="body" className="font-medium">
-          {claim.label}
-        </Text>
-        <Text size="caption" tone="tertiary" className="!normal-case !tracking-normal">
-          {claim.detail}
-        </Text>
-      </div>
-    </li>
-  );
-}
-
-/**
- * Icônes SVG inline (3 pictos, légers, sans dépendance externe).
- * Charte : trait fin, courbes douces, en cohérence avec la typo Cormorant.
- */
-function FeedClaimIcon({ name }: { name: 'leaf' | 'drop' | 'sparkle' }) {
-  const stroke = 'currentColor';
-  if (name === 'leaf') {
-    return (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" role="img" aria-label="Origine naturelle">
-        <path d="M5 19c8 0 14-6 14-14-7 0-14 5-14 14Z" />
-        <path d="M5 19c4-4 7-7 12-12" />
-      </svg>
-    );
-  }
-  if (name === 'drop') {
-    return (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" role="img" aria-label="Sans agressif">
-        <path d="M12 3.5s6 6.5 6 11a6 6 0 1 1-12 0c0-4.5 6-11 6-11Z" />
-      </svg>
-    );
-  }
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" role="img" aria-label="Ongles éclatants">
-      <path d="M12 4v4M12 16v4M4 12h4M16 12h4" />
-      <path d="M7.5 7.5l2.2 2.2M14.3 14.3l2.2 2.2M16.5 7.5l-2.2 2.2M9.7 14.3l-2.2 2.2" />
-    </svg>
   );
 }

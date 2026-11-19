@@ -89,10 +89,12 @@ export interface ProductFeedStepsHeader {
  * vers le bloc commande (Kolenda Attention #12, directional cues).
  */
 export interface ProductFeedStepsPostCta {
-  /** Libellé du lien (« Démarrer le rituel »). */
+  /** Libellé du bouton (« Commander mon kit »). */
   label: string;
   /** Ancre cible (sans #). */
   anchorId: string;
+  /** Ligne de réassurance sous le bouton (paiement à la livraison). */
+  note?: string;
 }
 
 /**

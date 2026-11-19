@@ -48,6 +48,7 @@ const stepsPostCtaSchema = z.object({
   label: z.string().min(1).max(40),
   // Anchor id sans `#` — caractères URL-safe.
   anchorId: z.string().regex(/^[a-z0-9-]+$/i).min(1).max(60),
+  note: z.string().min(1).max(90).optional(),
 });
 
 const valueItemSchema = z.object({

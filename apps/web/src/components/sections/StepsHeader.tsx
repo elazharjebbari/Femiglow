@@ -1,12 +1,10 @@
 /**
- * `StepsHeader` — en-tête de la grille « rituel 4 gestes » (Kolenda §4.7).
- *
- * Affiché au-dessus des 4 cartes pour annoncer la durée totale et
- * réduire l'anxiété temps (Attention #18). Server Component pur.
+ * `StepsHeader` — en-tête du mode d'emploi : surtitre, durée totale en
+ * titre, phrase de cadence. Annonce le temps demandé avant la liste.
+ * Server Component pur.
  */
 import { Heading } from '@/components/ui/Heading';
 import { Kicker } from '@/components/ui/Kicker';
-import { Text } from '@/components/ui/Text';
 import type { ProductFeedStepsHeader } from '@/lib/products/feed/types';
 
 export interface StepsHeaderProps {
@@ -28,9 +26,9 @@ export function StepsHeader({
       <Heading id={headingId} as="h3" size="display-sm">
         {header.totalDuration}
       </Heading>
-      <Text size="body" tone="secondary" prose className="mx-auto">
+      <p className="font-body text-base leading-[1.6] text-encre-soft">
         {header.lead}
-      </Text>
+      </p>
     </div>
   );
 }

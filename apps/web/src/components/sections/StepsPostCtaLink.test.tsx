@@ -35,11 +35,21 @@ describe('StepsPostCtaLink', () => {
     expect(link.getAttribute('href')).toBe('#commander-femiglow');
   });
 
-  it('rend label + chevron ↓', () => {
+  it('rend un bouton plein avec son libellé', () => {
     render(<StepsPostCtaLink label="Custom label" anchorId="x" />);
     const link = screen.getByTestId('steps-post-cta');
-    expect(link.textContent).toContain('Custom label');
-    expect(link.textContent).toContain('↓');
+    expect(link.textContent).toBe('Custom label');
+    expect(link.className).toContain('bg-encre');
+    expect(link.className).toContain('h-14');
+  });
+
+  it('rend la réassurance seulement si elle est fournie', () => {
+    const { rerender } = render(<StepsPostCtaLink label="L" anchorId="x" />);
+    expect(screen.queryByTestId('steps-post-cta-note')).toBeNull();
+    rerender(<StepsPostCtaLink label="L" anchorId="x" note="Paiement à la livraison" />);
+    expect(screen.getByTestId('steps-post-cta-note').textContent).toBe(
+      'Paiement à la livraison',
+    );
   });
 
   it('au click → émet pack_steps_cta_click avec cta_target', () => {

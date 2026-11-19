@@ -510,36 +510,37 @@
         },
         "steps": {
           "header": {
-            "kicker": "In total",
+            "kicker": "How it works",
             "total_duration": "Five minutes in all",
             "lead": "Four slow gestures, once a week."
           },
           "post_cta": {
-            "label": "Start the ritual"
+            "label": "Order my kit",
+            "note": "Cash on delivery · Inspect before you pay"
           },
           "result_label": "Result",
           "preparation": {
             "kicker": "Preparation",
             "title": "Prepare your nails",
-            "description": "Cleanse, dry, file lightly — the plate opens to care.",
+            "description": "Clean, dry, then lightly file your nails.",
             "duration": "30 s"
           },
           "paste": {
             "kicker": "Gesture 1",
             "title": "Apply the paste",
-            "description": "A dab of cream paste, the buffer glides, the wax enters the keratin.",
+            "description": "A dab of paste, then rub with the buffer: the beeswax nourishes the nail.",
             "duration": "1 min"
           },
           "powder": {
             "kicker": "Gesture 2",
             "title": "Apply the powder",
-            "description": "Set the white powder, polish slowly, light returns to the surface.",
+            "description": "A veil of white powder, then buff slowly: the shine appears.",
             "duration": "2 min"
           },
           "step4": {
             "kicker": "Step 4 buffer",
-            "title": "Polish & Shine",
-            "description": "Finish with the sky blue buffer — the nail becomes a mirror, no polish, no abrasion.",
+            "title": "Make them shine",
+            "description": "Finish with the Step 4 buffer: the nail shines like a mirror, no polish, no abrasion.",
             "duration": "1 min",
             "badge_result": "Result"
           }
@@ -547,11 +548,11 @@
         "claims": {
           "naturel": {
             "label": "Naturally sourced ingredients",
-            "detail": "Beeswax, jojoba, kaolin, rice powder — Japanese manicure."
+            "detail": "Beeswax, jojoba, kaolin and rice powder."
           },
           "agressif": {
             "label": "No aggressive chemicals",
-            "detail": "No acetone, no phthalates, no toluene — the plate breathes."
+            "detail": "No acetone, no phthalates, no toluene."
           },
           "eclatants": {
             "label": "For strong, glowing nails",

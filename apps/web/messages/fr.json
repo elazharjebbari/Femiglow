@@ -515,36 +515,37 @@
         },
         "steps": {
           "header": {
-            "kicker": "En tout",
+            "kicker": "Mode d’emploi",
             "total_duration": "Cinq minutes en tout",
             "lead": "Quatre gestes lents, une fois par semaine."
           },
           "post_cta": {
-            "label": "Démarrer le rituel"
+            "label": "Commander mon kit",
+            "note": "Paiement à la livraison · Vous vérifiez avant de payer"
           },
           "result_label": "Résultat",
           "preparation": {
             "kicker": "Préparation",
             "title": "Préparez vos ongles",
-            "description": "On nettoie, on sèche, on lime légèrement — la plaque s’ouvre au soin.",
+            "description": "Nettoyez, séchez, puis limez légèrement vos ongles.",
             "duration": "30 s"
           },
           "paste": {
             "kicker": "Geste 1",
             "title": "Appliquez la pâte",
-            "description": "Une noisette de pâte crème, le polissoir glisse, la cire entre dans la kératine.",
+            "description": "Une noisette de pâte, puis frottez au polissoir : la cire d’abeille nourrit l’ongle.",
             "duration": "1 min"
           },
           "powder": {
             "kicker": "Geste 2",
             "title": "Appliquez la poudre",
-            "description": "On dépose la poudre blanche, on lustre lentement, la lumière revient à la surface.",
+            "description": "Un voile de poudre blanche, puis lustrez lentement : la brillance apparaît.",
             "duration": "2 min"
           },
           "step4": {
             "kicker": "Polissoir Step 4",
-            "title": "Polish & Shine",
-            "description": "On finit au polissoir bleu ciel — l’ongle devient miroir, sans vernis, sans abrasion.",
+            "title": "Faites briller",
+            "description": "Finissez au polissoir Step 4 : l’ongle brille comme un miroir, sans vernis, sans abrasion.",
             "duration": "1 min",
             "badge_result": "Résultat"
           }
@@ -552,15 +553,15 @@
         "claims": {
           "naturel": {
             "label": "Ingrédients d’origine naturelle",
-            "detail": "Cire d’abeille, jojoba, kaolin, poudre de riz — manucure japonaise."
+            "detail": "Cire d’abeille, jojoba, kaolin et poudre de riz."
           },
           "agressif": {
             "label": "Sans produits chimiques agressifs",
-            "detail": "Ni acétone, ni phtalates, ni toluene — la plaque respire."
+            "detail": "Ni acétone, ni phtalates, ni toluène."
           },
           "eclatants": {
             "label": "Pour des ongles forts et éclatants",
-            "detail": "Kératine renforcée brillance lustrée au polissoir Step 4."
+            "detail": "Kératine renforcée, brillance lustrée au polissoir Step 4."
           }
         },
         "social_proof": {

@@ -69,7 +69,7 @@ describe('ProductFeedSection', () => {
     expect(within(list).getByText(/préparez vos ongles/i)).toBeInTheDocument();
     expect(within(list).getByText(/appliquez la pâte/i)).toBeInTheDocument();
     expect(within(list).getByText(/appliquez la poudre/i)).toBeInTheDocument();
-    expect(within(list).getByText(/polish\s*&\s*shine/i)).toBeInTheDocument();
+    expect(within(list).getByText(/faites briller/i)).toBeInTheDocument();
   });
 
   it('expose les 3 promesses du visuel officiel', () => {
